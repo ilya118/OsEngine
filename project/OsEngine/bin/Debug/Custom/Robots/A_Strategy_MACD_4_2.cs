@@ -110,7 +110,7 @@ namespace OsEngine.Robots.AO
             // Trade setting
             AlertsRegime = CreateParameter("Alerts Regime", "Off", new[] { "Off", "On" }, "Base");
             VolumeType = CreateParameter("Volume type", "Contract currency", new[] { "Contracts", "Contract currency", "Deposit percent" }, "Base");
-            Volume = CreateParameter("Volume", 100000, 1.0m, 50, 4, "Base");
+            Volume = CreateParameter("Volume", 50000, 1.0m, 50, 4, "Base");
 
             // Create indicator Ema
             _Ema = IndicatorsFactory.CreateIndicatorByName("Ema", name + "EMA", false);
@@ -517,7 +517,7 @@ namespace OsEngine.Robots.AO
         private async void SendTelegramMessageAsync(string message)
         {
             // Collecting query string
-            string reqStr = "https://api.telegram.org/bot7192179868:AAGwaGc9LZGV_hjlI-RGRGChZYsomswYm2o/sendMessage?chat_id=-1002450626729&text=" + message;
+            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=-1002450626729&text=" + message;
 
             try
             {
