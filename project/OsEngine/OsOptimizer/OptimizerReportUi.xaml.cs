@@ -78,6 +78,13 @@ namespace OsEngine.OsOptimizer
             {
                 // Генерация имени файла с текущей датой и временем
                 string saveFileName = _master.StrategyName;
+
+                // Удаляем ".txt" из saveFileName, если оно есть
+                if (saveFileName.EndsWith(".txt"))
+                {
+                    saveFileName = saveFileName.Substring(0, saveFileName.Length - 4);
+                }
+
                 DateTime now = DateTime.Now;
                 string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
 
@@ -86,9 +93,9 @@ namespace OsEngine.OsOptimizer
                 {
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
-                    saveFileName += "_" + dateTimeString + ".txt";
+                    saveFileName += "_" + dateTimeString; // Добавляем ".txt" только в конце
                 }
-
+                saveFileName = saveFileName.Replace(".txt", "");
                 // Указанный путь для сохранения файла
                 string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
 
@@ -97,9 +104,10 @@ namespace OsEngine.OsOptimizer
                 {
                     Directory.CreateDirectory(saveDirectory);
                 }
-
+             
                 // Полный путь к файлу
                 string savePath = Path.Combine(saveDirectory, saveFileName);
+                savePath = savePath + ".txt";
 
                 // Формирование строки для сохранения
                 StringBuilder saveStr = new StringBuilder();
@@ -127,7 +135,7 @@ namespace OsEngine.OsOptimizer
         private async void SendTelegramMessageAsync(string message)
         {
             // Collecting query string
-            string reqStr = "https://api.telegram.org/bot7192179868:AAGwaGc9LZGV_hjlI-RGRGChZYsomswYm2o/sendMessage?chat_id=130972649&text=" + message;
+            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=130972649&text=" + message;
 
             WebRequest request = WebRequest.Create(reqStr);
             using (await request.GetResponseAsync()) { }
@@ -881,17 +889,17 @@ namespace OsEngine.OsOptimizer
                 {
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
-                    saveFileName += "_" + dateTimeString + ".txt";
+                    saveFileName += "_" + dateTimeString;
                 }
 
                 IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
 
-                /*if (regime != null)
+                if (regime != null)
                 {
 
                     saveFileName += "_" + ((StrategyParameterString)regime).ValueString;
-                }*/
-                //saveFileName = saveFileName.Replace(".txt", "");
+                }
+                saveFileName = saveFileName.Replace(".txt", "");
 
                 myDialog.FileName = saveFileName;
 

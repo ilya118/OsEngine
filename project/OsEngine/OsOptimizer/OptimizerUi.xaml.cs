@@ -23,6 +23,7 @@ using OsEngine.Layout;
 using System.IO;
 using System.Windows.Markup;
 using System.Globalization;
+using System.Net;
 
 namespace OsEngine.OsOptimizer
 {
@@ -622,7 +623,7 @@ namespace OsEngine.OsOptimizer
 
             _testIsEnd = false;
 
-            int botsCount = _master.GetMaxBotsCount();
+            /*int botsCount = _master.GetMaxBotsCount();
 
             if (botsCount > 100000)
             {
@@ -652,8 +653,8 @@ namespace OsEngine.OsOptimizer
                 {
                     return;
                 }
-            }
-
+            }*/
+            SendTelegramMessageAsync("Оптимизация началась");
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9 
                 && _master.Start())
             {
@@ -675,7 +676,14 @@ namespace OsEngine.OsOptimizer
                 ButtonGo.Content = OsLocalization.Optimizer.Label9;
             }
         }
+        private async void SendTelegramMessageAsync(string message)
+        {
+            // Collecting query string
+            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=130972649&text=" + message;
 
+            WebRequest request = WebRequest.Create(reqStr);
+            using (await request.GetResponseAsync()) { }
+        }
         void TextBoxPercentFiltration_TextChanged(object sender, TextChangedEventArgs e)
         {
             try
