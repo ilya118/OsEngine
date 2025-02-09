@@ -3,33 +3,30 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
-using OsEngine.Entity;
 using System;
 using System.Collections.Generic;
 
 namespace OsEngine.Indicators
 {
     /// <summary>
-    /// Indicator parameter interface
+    /// parameter interface
+    /// интерфейс для параметра
     /// </summary>
     public abstract class IndicatorParameter
     {
-        /// <summary>
-        /// set the default value of the parameter
-        /// </summary>
         public void DoDefault()
         {
             if (this.Type == IndicatorParameterType.Bool)
             {
-                ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)this).ValueBoolDefault;
+                ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)this).ValueBoolDefolt;
             }
             if (this.Type == IndicatorParameterType.Decimal)
             {
-                ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)this).ValueDecimalDefault;
+                ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)this).ValueDecimalDefolt;
             }
             if (this.Type == IndicatorParameterType.Int)
             {
-                ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)this).ValueIntDefault;
+                ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)this).ValueIntDefolt;
             }
             if (this.Type == IndicatorParameterType.String)
             {
@@ -37,119 +34,127 @@ namespace OsEngine.Indicators
             }
         }
 
-        /// <summary>
-        /// link a parameter value to another
-        /// </summary>
-        public void Bind(IndicatorParameter parameter)
+        public void Bind(IndicatorParameter param)
         {
-            if (parameter.Type != Type)
+            if (param.Type != Type)
             {
-                throw new Exception("Can`t bind parameter with not equals types");
+                throw new Exception("Can`t bind param with not equals types");
             }
 
-            if (parameter.Type == IndicatorParameterType.Bool)
+            if (param.Type == IndicatorParameterType.Bool)
             {
-                ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)parameter).ValueBool;
+                ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)param).ValueBool;
             }
-            if (parameter.Type == IndicatorParameterType.Decimal)
+            if (param.Type == IndicatorParameterType.Decimal)
             {
-                ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)parameter).ValueDecimal;
+                ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)param).ValueDecimal;
             }
-            if (parameter.Type == IndicatorParameterType.Int)
+            if (param.Type == IndicatorParameterType.Int)
             {
-                ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)parameter).ValueInt;
+                ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)param).ValueInt;
             }
-            if (parameter.Type == IndicatorParameterType.String)
+            if (param.Type == IndicatorParameterType.String)
             {
-                ((IndicatorParameterString)this).ValueString = ((IndicatorParameterString)parameter).ValueString;
+                ((IndicatorParameterString)this).ValueString = ((IndicatorParameterString)param).ValueString;
             }
 
-            parameter.ValueChange += delegate
+            param.ValueChange += delegate
             {
-                if (parameter.Type == IndicatorParameterType.Bool)
+                if (param.Type == IndicatorParameterType.Bool)
                 {
-                    ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)parameter).ValueBool;
+                    ((IndicatorParameterBool)this).ValueBool = ((IndicatorParameterBool)param).ValueBool;
                 }
-                if (parameter.Type == IndicatorParameterType.Decimal)
+                if (param.Type == IndicatorParameterType.Decimal)
                 {
-                    ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)parameter).ValueDecimal;
+                    ((IndicatorParameterDecimal)this).ValueDecimal = ((IndicatorParameterDecimal)param).ValueDecimal;
                 }
-                if (parameter.Type == IndicatorParameterType.Int)
+                if (param.Type == IndicatorParameterType.Int)
                 {
-                    ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)parameter).ValueInt;
+                    ((IndicatorParameterInt)this).ValueInt = ((IndicatorParameterInt)param).ValueInt;
                 }
-                if (parameter.Type == IndicatorParameterType.String)
+                if (param.Type == IndicatorParameterType.String)
                 {
-                    ((IndicatorParameterString)this).ValueString = ((IndicatorParameterString)parameter).ValueString;
+                    ((IndicatorParameterString)this).ValueString = ((IndicatorParameterString)param).ValueString;
                 }
             };
 
             this.ValueChange += delegate
             {
-                if (parameter.Type == IndicatorParameterType.Bool)
+                if (param.Type == IndicatorParameterType.Bool)
                 {
-                    ((IndicatorParameterBool)parameter)._valueBool = ((IndicatorParameterBool)this).ValueBool;
+                    ((IndicatorParameterBool)param)._valueBool = ((IndicatorParameterBool)this).ValueBool;
                 }
-                if (parameter.Type == IndicatorParameterType.Decimal)
+                if (param.Type == IndicatorParameterType.Decimal)
                 {
-                    ((IndicatorParameterDecimal)parameter)._valueDecimal = ((IndicatorParameterDecimal)this).ValueDecimal;
+                    ((IndicatorParameterDecimal)param)._valueDecimal = ((IndicatorParameterDecimal)this).ValueDecimal;
                 }
-                if (parameter.Type == IndicatorParameterType.Int)
+                if (param.Type == IndicatorParameterType.Int)
                 {
-                    ((IndicatorParameterInt)parameter)._valueInt = ((IndicatorParameterInt)this).ValueInt;
+                    ((IndicatorParameterInt)param)._valueInt = ((IndicatorParameterInt)this).ValueInt;
                 }
-                if (parameter.Type == IndicatorParameterType.String)
+                if (param.Type == IndicatorParameterType.String)
                 {
-                    ((IndicatorParameterString)parameter)._valueString = ((IndicatorParameterString)this).ValueString;
+                    ((IndicatorParameterString)param)._valueString = ((IndicatorParameterString)this).ValueString;
                 }
             };
         }
 
         /// <summary>
-        /// unique parameter name
+        /// уникальное имя параметра
         /// </summary>
         public abstract string Name { get; }
 
         /// <summary>
-        /// get save string
+        /// unique parameter name
+        /// взять строку для сохранения
         /// </summary>
         public abstract string GetStringToSave();
 
         /// <summary>
-        /// load a parameter from the string
+        /// загрузить параметр из строки
+        /// загрузить параметр из строки
         /// </summary>
+        /// <param name="save">line with saved parameters/строка с сохранёнными параметрами</param>
         public abstract void LoadParamFromString(string[] save);
 
         /// <summary>
         /// parameter type
+        /// тип параметра
         /// </summary>
         public abstract IndicatorParameterType Type { get; }
 
         /// <summary>
         /// the parameter state has changed
+        /// изменилось состояние параметра
         /// </summary>
         public abstract event Action ValueChange;
     }
 
     /// <summary>
-    /// Parameter for an Int value
+    /// Parameter for an Int strategy
+    /// параметр для стратегии типа Int
     /// </summary>
     public class IndicatorParameterInt : IndicatorParameter
     {
         /// <summary>
         /// constructor to create a parameter storing Int variables
+        /// конструктор для создания параметра хранящего переменные типа Int
         /// </summary>
-        /// <param name="name">parameter name</param>
-        /// <param name="value">default value</param>
+        /// <param name="name">Parameter name/Имя параметра</param>
+        /// <param name="value">Default value/Значение по умолчанию</param>
+        /// <param name="start">First value in optimization/Первое значение при оптимизации</param>
+        /// <param name="stop">Last value during optimization/Последнее значение при оптимизации</param>
+        /// <param name="step">Step change in optimization/Шаг изменения при оптимизации</param>
         public IndicatorParameterInt(string name, int value)
         {
             _name = name;
             _valueInt = value;
-            _valueIntDefault = value;
+            _valueIntDefolt = value;
         }
 
         /// <summary>
         /// closed constructor
+        /// закрытый конструктор
         /// </summary>
         private IndicatorParameterInt()
         {
@@ -158,6 +163,7 @@ namespace OsEngine.Indicators
 
         /// <summary>
         /// unique parameter name
+        /// уникальное имя параметра
         /// </summary>
         public override string Name
         {
@@ -166,7 +172,8 @@ namespace OsEngine.Indicators
         private string _name;
 
         /// <summary>
-        /// get save string
+        /// save the line
+        /// взять строку сохранения
         /// </summary>
         public override string GetStringToSave()
         {
@@ -177,7 +184,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// load a parameter from the string
+        /// Load the parameter from the saved file
+        /// загрузить параметр из сохранённого файла
         /// </summary>
         public override void LoadParamFromString(string[] save)
         {
@@ -186,6 +194,7 @@ namespace OsEngine.Indicators
 
         /// <summary>
         /// parameter type
+        /// тип параметра
         /// </summary>
         public override IndicatorParameterType Type
         {
@@ -193,7 +202,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// current value
+        /// current value of the parameter of Int type
+        /// текущее значение параметра типа Int
         /// </summary>
         public int ValueInt
         {
@@ -217,44 +227,50 @@ namespace OsEngine.Indicators
         internal int _valueInt;
 
         /// <summary>
-        /// default value
+        /// default value for the Int type parameter
+        /// значение по умолчанию для параметра типа Int
         /// </summary>
-        public int ValueIntDefault
+        public int ValueIntDefolt
         {
             get
             {
-                return _valueIntDefault;
+                return _valueIntDefolt;
             }
         }
-        private int _valueIntDefault;
+        private int _valueIntDefolt;
+
 
         /// <summary>
         /// the parameter state has changed
+        /// изменилось состояние параметра
         /// </summary>
         public override event Action ValueChange;
     }
 
     /// <summary>
-    /// Parameter for a Decimal value
+    /// The parameter of the Decimal type strategy
+    /// параметр стратегии типа Decimal
     /// </summary>
     public class IndicatorParameterDecimal : IndicatorParameter
     {
 
         /// <summary>
-        /// constructor for creating a parameter storing Decimal variables
+        /// Designer for creating a parameter storing Decimal type variables
+        /// конструктор для создания параметра хранящего переменные типа Decimal
         /// </summary>
-        /// <param name="name">parameter name</param>
-        /// <param name="value">default value</param>
+        /// <param name="name">Parameter name/Имя параметра</param>
+        /// <param name="value">Default value/Значение по умолчанию</param>
         public IndicatorParameterDecimal(string name, decimal value)
         {
             _name = name;
             _valueDecimal = value;
-            _valueDecimalDefault = value;
+            _valueDecimalDefolt = value;
             _type = IndicatorParameterType.Decimal;
         }
 
         /// <summary>
-        /// closed constructor
+        /// blank. it is impossible to create a variable of StrategyParameter type with an empty constructor
+        /// заглушка. нельзя создать переменную типа StrategyParameter с пустым конструктором
         /// </summary>
         private IndicatorParameterDecimal()
         {
@@ -262,16 +278,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// unique parameter name
-        /// </summary>
-        public override string Name
-        {
-            get { return _name; }
-        }
-        private string _name;
-
-        /// <summary>
-        /// get save string
+        /// to take a line to save
+        /// взять строку для сохранения
         /// </summary>
         public override string GetStringToSave()
         {
@@ -281,15 +289,28 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// load a parameter from the string
+        /// download settings from the save file
+        /// загрузить настройки из файла сохранения
         /// </summary>
+        /// <param name="save"></param>
         public override void LoadParamFromString(string[] save)
         {
-            _valueDecimal = save[1].ToDecimal();
+            _valueDecimal = Convert.ToDecimal(save[1]);
         }
 
         /// <summary>
+        /// Parameter name. Used to identify a parameter in the settings windows
+        /// Название параметра. Используется для идентификации параметра в окнах настроек
+        /// </summary>
+        public override string Name
+        {
+            get { return _name; }
+        }
+        private string _name;
+
+        /// <summary>
         /// parameter type
+        /// тип параметра
         /// </summary>
         public override IndicatorParameterType Type
         {
@@ -298,7 +319,8 @@ namespace OsEngine.Indicators
         private IndicatorParameterType _type;
 
         /// <summary>
-        /// current value
+        /// current value of the Decimal parameter
+        /// текущее значение параметра Decimal
         /// </summary>
         public decimal ValueDecimal
         {
@@ -322,43 +344,43 @@ namespace OsEngine.Indicators
         internal decimal _valueDecimal;
 
         /// <summary>
-        /// default value
+        /// default value for the Decimal type
+        /// значение по умолчанию для параметра типа Decimal
         /// </summary>
-        public decimal ValueDecimalDefault
+        public decimal ValueDecimalDefolt
         {
             get
             {
-                return _valueDecimalDefault;
+                return _valueDecimalDefolt;
             }
         }
-        private decimal _valueDecimalDefault;
+        private decimal _valueDecimalDefolt;
+
 
         /// <summary>
-        /// the parameter state has changed
+        /// event: the parameter has changed
+        /// событие: параметр изменился
         /// </summary>
         public override event Action ValueChange;
     }
 
     /// <summary>
-    /// Parameter for a Bool value
+    /// Bool type strategy parameter
+    /// параметр стратегии типа Bool
     /// </summary>
     public class IndicatorParameterBool : IndicatorParameter
     {
-        /// <summary>
-        /// constructor for creating a parameter storing Bool variables
-        /// </summary>
-        /// <param name="name">parameter name</param>
-        /// <param name="value">default value</param>
         public IndicatorParameterBool(string name, bool value)
         {
             _name = name;
-            _valueBoolDefault = value;
+            _valueBoolDefolt = value;
             _valueBool = value;
             _type = IndicatorParameterType.Bool;
         }
 
         /// <summary>
-        /// closed constructor
+        /// blank. it is impossible to create a variable of StrategyParameter type with an empty constructor
+        /// заглушка. нельзя создать переменную типа StrategyParameter с пустым конструктором
         /// </summary>
         private IndicatorParameterBool()
         {
@@ -366,16 +388,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// unique parameter name
-        /// </summary>
-        public override string Name
-        {
-            get { return _name; }
-        }
-        private string _name;
-
-        /// <summary>
-        /// get save string
+        /// to take a line to save
+        /// взять строку для сохранения
         /// </summary>
         public override string GetStringToSave()
         {
@@ -385,15 +399,28 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// load a parameter from the string
+        ///  download settings from the save file
+        /// загрузить настройки из файла сохранения
         /// </summary>
+        /// <param name="save"></param>
         public override void LoadParamFromString(string[] save)
         {
             _valueBool = Convert.ToBoolean(save[1]);
         }
 
         /// <summary>
+        /// Parameter name. Used to identify a parameter in the settings windows
+        /// Название параметра. Используется для идентификации параметра в окнах настроек
+        /// </summary>
+        public override string Name
+        {
+            get { return _name; }
+        }
+        private string _name;
+
+        /// <summary>
         /// parameter type
+        /// тип параметра
         /// </summary>
         public override IndicatorParameterType Type
         {
@@ -402,7 +429,8 @@ namespace OsEngine.Indicators
         private IndicatorParameterType _type;
 
         /// <summary>
-        /// current value
+        /// parameter Boolean value
+        /// значение булева параметра
         /// </summary>
         public bool ValueBool
         {
@@ -426,34 +454,38 @@ namespace OsEngine.Indicators
         internal bool _valueBool;
 
         /// <summary>
-        /// default value
+        /// default setting for the parameter boolean
+        /// значение по умолчанию для булева параметра
         /// </summary>
-        public bool ValueBoolDefault
+        public bool ValueBoolDefolt
         {
             get
             {
-                return _valueBoolDefault;
+                return _valueBoolDefolt;
             }
         }
-        private bool _valueBoolDefault;
+        private bool _valueBoolDefolt;
 
         /// <summary>
-        /// the parameter state has changed
+        /// event: the parameter has changed
+        /// событие: параметр изменился
         /// </summary>
         public override event Action ValueChange;
     }
 
     /// <summary>
-    /// Parameter for a String or string collection values
+    /// A strategy parameter that stores a collection of strings
+    /// параметр стратегии хранящий в себе коллекцию строк
     /// </summary>
     public class IndicatorParameterString : IndicatorParameter
     {
         /// <summary>
-        /// constructor for creating a parameter storing String collection variables
+        /// constructor to create a parameter storing variables of String type
+        /// конструктор для создания параметра хранящего переменные типа String
         /// </summary>
-        /// <param name="name">parameter name</param>
-        /// <param name="value">default value</param>
-        /// <param name="collection">possible values collection</param>
+        /// <param name="name">Parameter name/Имя параметра</param>
+        /// <param name="value">Default value/Значение по умолчанию</param>
+        /// <param name="collection">Possible value options/Возможные варианты значений</param>
         public IndicatorParameterString(string name, string value, List<string> collection)
         {
             _name = name;
@@ -464,10 +496,11 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// constructor for creating a parameter storing single String variable
+        /// constructor to create a parameter storing variables of String type
+        /// конструктор для создания параметра хранящего переменные типа String
         /// </summary>
-        /// <param name="name">parameter name</param>
-        /// <param name="value">default value</param>
+        /// <param name="name">Parameter name/Имя параметра</param>
+        /// <param name="value">Default value/Значение по умолчанию</param>
         public IndicatorParameterString(string name, string value)
         {
             if (value == null)
@@ -483,7 +516,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// closed constructor
+        /// blank. it is impossible to create a variable of StrategyParameter type with an empty constructor
+        /// заглушка. нельзя создать переменную типа StrategyParameter с пустым конструктором
         /// </summary>
         private IndicatorParameterString()
         {
@@ -491,16 +525,8 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// unique parameter name
-        /// </summary>
-        public override string Name
-        {
-            get { return _name; }
-        }
-        private string _name;
-
-        /// <summary>
-        /// get save string
+        /// to take a line to save
+        /// взять строку для сохранения
         /// </summary>
         public override string GetStringToSave()
         {
@@ -511,15 +537,28 @@ namespace OsEngine.Indicators
         }
 
         /// <summary>
-        /// load a parameter from the string
+        /// download settings from the save file
+        /// загрузить настройки из файла сохранения
         /// </summary>
+        /// <param name="save"></param>
         public override void LoadParamFromString(string[] save)
         {
             _valueString = save[1];
         }
 
         /// <summary>
+        /// Parameter name. Used to identify a parameter in the settings windows
+        /// Название параметра. Используется для идентификации параметра в окнах настроек
+        /// </summary>
+        public override string Name
+        {
+            get { return _name; }
+        }
+        private string _name;
+
+        /// <summary>
         /// parameter type
+        /// тип параметра
         /// </summary>
         public override IndicatorParameterType Type
         {
@@ -528,7 +567,8 @@ namespace OsEngine.Indicators
         private IndicatorParameterType _type;
 
         /// <summary>
-        /// current value
+        /// current value of the string type parameter
+        /// текущее значение параметра типа string
         /// </summary>
         public string ValueString
         {
@@ -551,9 +591,6 @@ namespace OsEngine.Indicators
         }
         internal string _valueString;
 
-        /// <summary>
-        /// default value
-        /// </summary>
         public string ValueStringDefault
         {
             get { return _valueStringDefault; }
@@ -574,33 +611,39 @@ namespace OsEngine.Indicators
         private List<string> _setStringValues;
 
         /// <summary>
-        /// the parameter state has changed
+        /// event: the parameter has changed
+        /// событие: параметр изменился
         /// </summary>
         public override event Action ValueChange;
     }
 
     /// <summary>
-    /// Parameter type
+    /// parameter type
+    /// тип параметра
     /// </summary>
     public enum IndicatorParameterType
     {
         /// <summary>
-        /// Int parameter
+        /// an integer number with the type Int
+        /// целое число с типом Int
         /// </summary>
         Int,
 
         /// <summary>
-        /// Decimal parameter
+        /// a floating point number of the decimal type
+        /// число с плавающей точкой типа decimal
         /// </summary>
         Decimal,
 
         /// <summary>
-        /// String collection parameter
+        /// string
+        /// строка
         /// </summary>
         String,
 
         /// <summary>
-        /// Boolean parameter
+        /// Boolean value
+        /// булево значение
         /// </summary>
         Bool
     }

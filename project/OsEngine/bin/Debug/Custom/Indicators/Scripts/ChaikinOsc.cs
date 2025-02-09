@@ -1,20 +1,18 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+
+namespace CustomIndicators.Scripts
 {
-    [Indicator("ChaikinOsc")]
     public class ChaikinOsc : Aindicator
     {
         private IndicatorDataSeries _seriesLine;
-
         private IndicatorDataSeries _seriesVi;
-
         private IndicatorDataSeries _seriesAccDistr;
 
         private IndicatorParameterInt _longPeriod;
-
         private IndicatorParameterInt _shortPeriod;
 
         public override void OnStateChange(IndicatorState state)
@@ -85,19 +83,19 @@ namespace OsEngine.Indicators
             return _seriesAccDistr.Values[index - 1] + vi[index];
         }
 
-        private decimal GetSma(List<decimal> values, int length, int index)
+        private decimal GetSma(List<decimal> values, int lenght, int index)
         {
             decimal result = 0;
 
-            int lengthReal = 0;
+            int lenghtReal = 0;
 
-            for (int i = index; i > 0 && i > index - length; i--)
+            for (int i = index; i > 0 && i > index - lenght; i--)
             {
                 result += values[i];
-                lengthReal++;
+                lenghtReal++;
             }
 
-            return result / lengthReal; ;
+            return result / lenghtReal; ;
         }
     }
 }

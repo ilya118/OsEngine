@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("CCI")]
     public class CCI : Aindicator
     {
-        private IndicatorParameterInt _length;
+
+        private IndicatorParameterInt _lenght;
 
         private IndicatorParameterString _candlePoint;
 
@@ -18,7 +19,7 @@ namespace OsEngine.Indicators
         {
             if (state == IndicatorState.Configure)
             {
-                _length = CreateParameterInt("Length", 20);
+                _lenght = CreateParameterInt("Length", 20);
                 _candlePoint = CreateParameterStringCollection("Candle Point", "Typical", Entity.CandlePointsArray);
                 _series = CreateSeries("Cci", Color.CadetBlue, IndicatorChartPaintType.Line, true);
             }
@@ -26,32 +27,27 @@ namespace OsEngine.Indicators
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index - _length.ValueInt <= 0)
+            if (index - _lenght.ValueInt <= 0)
             {
                 return;
             }
 
             decimal sum = 0;
-            for (int i = index; i > index - _length.ValueInt; i--)
+            for (int i = index; i > index - _lenght.ValueInt; i--)
             {
                 sum += candles[i].GetPoint(_candlePoint.ValueString);
             }
             // average count
             // подсчет средней
-            var ma = sum / _length.ValueInt;
+            var ma = sum / _lenght.ValueInt;
 
             decimal md = 0;
-            for (int i = index; i > index - _length.ValueInt; i--)
+            for (int i = index; i > index - _lenght.ValueInt; i--)
             {
                 md += Math.Abs(ma - candles[i].GetPoint(_candlePoint.ValueString));
             }
 
-            if(md == 0)
-            {
-                return;
-            }
-
-            var cciP = (candles[index].GetPoint(_candlePoint.ValueString) - ma) / (md * 0.015m / _length.ValueInt);
+            var cciP = (candles[index].GetPoint(_candlePoint.ValueString) - ma) / (md * 0.015m / _lenght.ValueInt);
 
             _series.Values[index] = Math.Round(cciP, 5);
         }

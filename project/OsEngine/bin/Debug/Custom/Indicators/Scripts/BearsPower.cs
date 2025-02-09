@@ -1,16 +1,14 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("BearsPower")]
     public class BearsPower : Aindicator
     {
         private IndicatorParameterInt _length;
-
         private Aindicator _sma;
-
         private IndicatorDataSeries _series;
 
         public override void OnStateChange(IndicatorState state)

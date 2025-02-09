@@ -2,26 +2,26 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("RSI")]
     public class RSI : Aindicator
     {
-        private IndicatorParameterInt _length;
+        private IndicatorParameterInt _lenght;
 
         private IndicatorDataSeries _series;
 
         public override void OnStateChange(IndicatorState state)
         {
-            _length = CreateParameterInt("Length", 14);
+            _lenght = CreateParameterInt("Lenght", 14);
 
             _series = CreateSeries("Ma", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
         }
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index - _length.ValueInt - 1 <= 0)
+            if (index - _lenght.ValueInt - 1 <= 0)
             {
                 return;
             }
@@ -33,31 +33,31 @@ namespace OsEngine.Indicators
                 startIndex = index - 150;
             }
 
-            List<decimal> priceChangeHigh = new List<decimal>();
-            List<decimal> priceChangeLow = new List<decimal>();
+            decimal[] priceChangeHigh = new decimal[candles.Count];
+            decimal[] priceChangeLow = new decimal[candles.Count];
 
-            List<decimal> priceChangeHighAverage = new List<decimal>();
-            List<decimal> priceChangeLowAverage = new List<decimal>();
+            decimal[] priceChangeHighAverage = new decimal[candles.Count];
+            decimal[] priceChangeLowAverage = new decimal[candles.Count];
 
-            for (int i = startIndex, valueInd = 0; i <= index && i < candles.Count; i++, valueInd++)
+            for (int i = startIndex; i < candles.Count; i++)
             {
                 if (candles[i].Close - candles[i - 1].Close > 0)
                 {
-                    priceChangeHigh.Add(candles[i].Close - candles[i - 1].Close);
-                    priceChangeLow.Add(0);
+                    priceChangeHigh[i] = candles[i].Close - candles[i - 1].Close;
+                    priceChangeLow[i] = 0;
                 }
                 else
                 {
-                    priceChangeLow.Add(candles[i - 1].Close - candles[i].Close);
-                    priceChangeHigh.Add(0);
+                    priceChangeLow[i] = candles[i - 1].Close - candles[i].Close;
+                    priceChangeHigh[i] = 0;
                 }
 
-                MovingAverageHard(priceChangeHigh, priceChangeHighAverage, _length.ValueInt, valueInd);
-                MovingAverageHard(priceChangeLow, priceChangeLowAverage, _length.ValueInt, valueInd);
+                MovingAverageHard(priceChangeHigh, priceChangeHighAverage, _lenght.ValueInt, i);
+                MovingAverageHard(priceChangeLow, priceChangeLowAverage, _lenght.ValueInt, i);
             }
 
-            decimal averageHigh = priceChangeHighAverage[priceChangeHighAverage.Count - 1];
-            decimal averageLow = priceChangeLowAverage[priceChangeHighAverage.Count - 1];
+            decimal averageHigh = priceChangeHighAverage[index];
+            decimal averageLow = priceChangeLowAverage[index];
 
             decimal rsi;
 
@@ -65,6 +65,7 @@ namespace OsEngine.Indicators
                 averageLow != 0)
             {
                 rsi = 100 * (1 - averageLow / (averageLow + averageHigh));
+                //rsi = 100 - 100 / (1 + averageHigh / averageLow);
             }
             else
             {
@@ -74,37 +75,27 @@ namespace OsEngine.Indicators
             _series.Values[index] = Math.Round(rsi, 2);
         }
 
-        private void MovingAverageHard(List<decimal> valuesSeries, List<decimal> moving, int length, int index)
+        private void MovingAverageHard(decimal[] valuesSeries, decimal[] moving, int length, int index)
         {
             if (index == length)
             {
                 decimal lastMoving = 0;
 
-                for (int i = index; i < valuesSeries.Count && i > index - 1 - length; i--)
+                for (int i = index; i > index - 1 - length; i--)
                 {
                     lastMoving += valuesSeries[i];
                 }
                 lastMoving = lastMoving / length;
 
-                while (moving.Count <= index)
-                {
-                    moving.Add(0);
-                }
-
                 moving[index] = lastMoving;
             }
             else if (index > length)
             {
-                decimal a = 2.0m / (length * 2);
+                decimal a = Math.Round(2.0m / (length * 2), 10);
                 decimal lastValueMoving = moving[index - 1];
-                decimal lastValueSeries = valuesSeries[index];
+                decimal lastValueSeries = Math.Round(valuesSeries[index], 10);
                 decimal nowValueMoving;
-                nowValueMoving = lastValueMoving + a * (lastValueSeries - lastValueMoving);
-
-                while (moving.Count <= index)
-                {
-                    moving.Add(0);
-                }
+                nowValueMoving = Math.Round(lastValueMoving + a * (lastValueSeries - lastValueMoving), 10);
 
                 moving[index] = nowValueMoving;
             }

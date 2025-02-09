@@ -222,6 +222,7 @@ namespace OsEngine.Robots.My_bots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
+            Position pos = openPositions[0];
 
             decimal _slippage = Slippage.ValueDecimal * _tab.Securiti.PriceStep;
 
@@ -238,18 +239,19 @@ namespace OsEngine.Robots.My_bots
                     continue;
                 }
 
+
                 if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (_lastVWMAFast < _lastVWMASlow)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (_lastVWMAFast > _lastVWMASlow)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
 
                 }

@@ -198,7 +198,8 @@ namespace OsEngine.Robots.MyBots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+            Position pos = openPositions[0];
+
             // The last value of the indicator
             decimal lastMi = _Mi.DataSeries[2].Last;
             decimal lastTrix = _Trix.DataSeries[0].Last;
@@ -208,14 +209,14 @@ namespace OsEngine.Robots.MyBots
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position pos = openPositions[i];
+                Position positions = openPositions[i];
 
-                if (pos.State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (pos.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (lastMi > MiLine.ValueDecimal && lastTrix < 0)
                     {

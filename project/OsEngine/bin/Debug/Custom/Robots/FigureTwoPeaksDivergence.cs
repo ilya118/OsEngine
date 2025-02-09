@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Indicators;
+using OsEngine.Market.Servers.Tinkoff.TinkoffJsonSchema;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
@@ -217,7 +218,9 @@ namespace OsEngine.Robots.ZZAO
         //  logic close position
         private void LogicClosePosition(List<Candle> candles)
         {
+
             List<Position> openPositions = _tab.PositionsOpenAll;
+            Position pos = openPositions[0];
 
             decimal lastPrice = candles[candles.Count - 1].Close;
 
@@ -240,14 +243,14 @@ namespace OsEngine.Robots.ZZAO
                 {
                     if (DevirgenceSell(zzHigh, zzAOHigh, zzAOLow) == true)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (DevirgenceBuy(zzLow, zzAOLow,zzAOHigh) == true)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
 

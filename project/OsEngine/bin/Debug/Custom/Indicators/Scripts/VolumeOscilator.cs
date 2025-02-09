@@ -1,54 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolumeOscilator")]
     public class VolumeOscilator : Aindicator
+
     {
-        private IndicatorDataSeries _series1;
-
-        private IndicatorParameterInt _length1;
-
-        private IndicatorParameterInt _length2;
+        private IndicatorDataSeries series1;
+        private IndicatorParameterInt lenght1;
+        private IndicatorParameterInt lenght2;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _length1 = CreateParameterInt("Length 1", 20);
-                _length2 = CreateParameterInt("Length 2", 10);
-                _series1 = CreateSeries("VO", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
+                lenght1 = CreateParameterInt("Lenght 1", 20);
+                lenght2 = CreateParameterInt("Lenght 2", 10);
+                series1 = CreateSeries("VO", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
             }
         }
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            _series1.Values[index] = GetValueVolumeOscillator(candles, index);
+            series1.Values[index] = GetValueVolumeOscillator(candles, index);
         }
 
         private decimal GetValueVolumeOscillator(List<Candle> candles, int index)
         {
-            if ((index < _length1.ValueInt) || (index < _length2.ValueInt))
+            if ((index < lenght1.ValueInt) || (index < lenght2.ValueInt))
             {
                 return 0;
             }
 
             decimal sum1 = 0;
-            for (int i = index; i > index - _length1.ValueInt; i--)
+            for (int i = index; i > index - lenght1.ValueInt; i--)
             {
                 sum1 += candles[i].Volume;  //GetPoint(candles, i);
             }
-            var ma1 = sum1 / _length1.ValueInt;
+            var ma1 = sum1 / lenght1.ValueInt;
 
             decimal sum2 = 0;
-            for (int i = index; i > index - _length2.ValueInt; i--)
+            for (int i = index; i > index - lenght2.ValueInt; i--)
             {
                 sum2 += candles[i].Volume;  //GetPoint(candles, i);
             }
-            var ma2 = sum2 / _length2.ValueInt;
+            var ma2 = sum2 / lenght2.ValueInt;
 
             var vo = (100 * (ma2 - ma1) / ma1);
             return Math.Round(vo, 5);

@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("PivotFloor")]
     public class PivotFloor : Aindicator
     {
         private IndicatorParameterString _period;
@@ -13,15 +13,11 @@ namespace OsEngine.Indicators
         private IndicatorDataSeries _seriesP;
 
         private IndicatorDataSeries _seriesR1;
-
         private IndicatorDataSeries _seriesR2;
-
         private IndicatorDataSeries _seriesR3;
 
         private IndicatorDataSeries _seriesS1;
-
         private IndicatorDataSeries _seriesS2;
-
         private IndicatorDataSeries _seriesS3;
 
         public override void OnStateChange(IndicatorState state)
@@ -117,7 +113,6 @@ namespace OsEngine.Indicators
             _seriesS2.Values[index] = _valuesS2[index];
             _seriesS3.Values[index] = _valuesS3[index];
         }
-
         private List<decimal> _valuesP = new List<decimal>();
         private List<decimal> _valuesR1 = new List<decimal>();
         private List<decimal> _valuesR2 = new List<decimal>();
@@ -139,6 +134,10 @@ namespace OsEngine.Indicators
             }
         }
 
+        /// <summary>
+        /// load only last candle
+        /// прогрузить только последнюю свечку
+        /// </summary>
         private void ProcessOne(List<Candle> candles)
         {
             if (candles == null)
@@ -179,6 +178,10 @@ namespace OsEngine.Indicators
 
         DateTime _lastTimeReload = DateTime.MinValue;
 
+        /// <summary>
+        /// to upload from the beginning
+        /// прогрузить с самого начала
+        /// </summary>
         private void ProcessAll(List<Candle> candles)
         {
             _lastTimeReload = DateTime.MinValue;
@@ -247,6 +250,10 @@ namespace OsEngine.Indicators
             }
         }
 
+        /// <summary>
+        /// variables to calculate the indicator
+        /// переменные для расчета индикатора
+        /// </summary>
         private decimal _r1;
         private decimal _r2;
         private decimal _r3;
@@ -257,6 +264,12 @@ namespace OsEngine.Indicators
         private decimal _s2;
         private decimal _s3;
 
+        /// <summary>
+        /// update indicator values
+        /// обновить значения индикатора
+        /// </summary>
+        /// <param name="newCandles"></param>
+        /// <param name="index"></param>
         private void Reload(List<Candle> newCandles, List<int> index)
         {
             decimal H = 0;

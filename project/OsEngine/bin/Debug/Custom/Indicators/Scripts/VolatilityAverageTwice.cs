@@ -1,11 +1,11 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolatilityAverageTwice")]
     public class VolatilityAverageTwice : Aindicator
     {
         private IndicatorParameterString _typeVolatilityPeriod;
@@ -166,7 +166,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaFast.Values[i] = Math.Round(valueSma,5);
+                _seriesSmaFast.Values[i] = valueSma;
             }
 
             // SMA Slow
@@ -202,7 +202,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaSlow.Values[i] = Math.Round(valueSma,5);
+                _seriesSmaSlow.Values[i] = valueSma;
             }
 
         }
@@ -313,7 +313,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaFast.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaFast.Values[i] = valueSma;
             }
 
             // SMA Slow
@@ -349,7 +349,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaSlow.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaSlow.Values[i] = valueSma;
             }
         }
 
@@ -386,7 +386,7 @@ namespace OsEngine.Indicators
             }
 
             decimal valueSma = summValue / countChangeVola;
-            _seriesSmaFast.Values[index] = Math.Round(valueSma, 5);
+            _seriesSmaFast.Values[index] = valueSma;
 
             // Sma slow
 
@@ -405,7 +405,7 @@ namespace OsEngine.Indicators
             }
 
             valueSma = summValue / countChangeVola;
-            _seriesSmaSlow.Values[index] = Math.Round(valueSma, 5);
+            _seriesSmaSlow.Values[index] = valueSma;
         }
     }
 }

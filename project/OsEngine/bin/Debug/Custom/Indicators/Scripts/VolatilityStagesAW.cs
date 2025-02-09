@@ -1,11 +1,11 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolatilityStagesAW")]
     public class VolatilityStagesAW : Aindicator
     {
         private IndicatorParameterString _volatilityStagesRegime;
@@ -55,7 +55,7 @@ namespace OsEngine.Indicators
                 _lenSmaFast = CreateParameterInt("Fast sma len", 7);
                 _channelDeviation = CreateParameterDecimal("Channel Deviation", 0.25m);
 
-                _seriesVolatilityStages = CreateSeries("Stages volatility", Color.Green, IndicatorChartPaintType.Line, true);
+                _seriesVolatilityStages = CreateSeries("Stages volatility", Color.WhiteSmoke, IndicatorChartPaintType.Line, true);
                 _seriesVolatilityStages.CanReBuildHistoricalValues = true;
 
                 _seriesUpChannel = CreateSeries("Up channel", Color.WhiteSmoke, IndicatorChartPaintType.Line, true);
@@ -191,7 +191,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaFast.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaFast.Values[i] = valueSma;
             }
 
             // SMA Slow / Channel
@@ -227,14 +227,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                if (i >= _seriesSmaSlow.Values.Count
-                    || i >= _seriesUpChannel.Values.Count
-                    || i >= _seriesDownChannel.Values.Count)
-                {
-                    continue;
-                }
-
-                _seriesSmaSlow.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaSlow.Values[i] = valueSma;
                 _seriesUpChannel.Values[i] = Math.Round(valueSma + valueSma * _channelDeviation.ValueDecimal, 5);
                 _seriesDownChannel.Values[i] = Math.Round(valueSma - valueSma * _channelDeviation.ValueDecimal, 5);
             }
@@ -359,7 +352,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaFast.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaFast.Values[i] = valueSma;
             }
 
             // SMA Slow / Channel
@@ -395,7 +388,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaSlow.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaSlow.Values[i] = valueSma;
                 _seriesUpChannel.Values[i] = Math.Round(valueSma + valueSma * _channelDeviation.ValueDecimal, 5);
                 _seriesDownChannel.Values[i] = Math.Round(valueSma - valueSma * _channelDeviation.ValueDecimal, 5);
             }
@@ -448,7 +441,7 @@ namespace OsEngine.Indicators
             }
 
             decimal valueSma = summValue / countChangeVola;
-            _seriesSmaFast.Values[index] = Math.Round(valueSma, 5);
+            _seriesSmaFast.Values[index] = valueSma;
 
             // Sma slow
 
@@ -467,7 +460,7 @@ namespace OsEngine.Indicators
             }
 
             valueSma = summValue / countChangeVola;
-            _seriesSmaSlow.Values[index] = Math.Round(valueSma, 5);
+            _seriesSmaSlow.Values[index] = valueSma;
             _seriesUpChannel.Values[index] = Math.Round(valueSma + valueSma * _channelDeviation.ValueDecimal, 5);
             _seriesDownChannel.Values[index] = Math.Round(valueSma - valueSma * _channelDeviation.ValueDecimal, 5);
 

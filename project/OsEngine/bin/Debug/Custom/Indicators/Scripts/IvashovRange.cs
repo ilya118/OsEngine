@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("IvashovRange")]
     public class IvashovRange: Aindicator
     {
         private IndicatorDataSeries _series;
-
         private IndicatorParameterInt _lengthMa;
-
         private IndicatorParameterInt _lengthAvg;
 
         public override void OnStateChange(IndicatorState state)
@@ -24,17 +22,17 @@ namespace OsEngine.Indicators
             }
             else if (state == IndicatorState.Dispose)
             {
-                if (_averageList != null)
+                if (averagelist != null)
                 {
-                    _averageList.Clear();
+                    averagelist.Clear();
                 }
-                if (_movingList != null)
+                if (movinglist != null)
                 {
-                    _movingList.Clear();
+                    movinglist.Clear();
                 }
-                if (_range != null)
+                if (range != null)
                 {
-                    _range.Clear();
+                    range.Clear();
                 }
             }
         }
@@ -43,45 +41,44 @@ namespace OsEngine.Indicators
         {
             _series.Values[index] = GetValue(candles, index);
         }
-
         private decimal GetValue(List<Candle> candles, int index)
         {
             if (index < 2)
             {
-                if (_averageList != null)
+                if (averagelist != null)
                 {
-                    _averageList.Clear();
+                    averagelist.Clear();
                 }
-                if (_movingList != null)
+                if (movinglist != null)
                 {
-                    _movingList.Clear();
+                    movinglist.Clear();
                 }
-                if (_range != null)
+                if (range != null)
                 {
-                    _range.Clear();
+                    range.Clear();
                 }
             }
 
-            while (index >= _movingList.Count)
+            while (index >= movinglist.Count)
             {
-                _movingList.Add(CandlesMA(candles, index));
+                movinglist.Add(CandlesMA(candles, index));
             }
-            while (index>=_range.Count)
+            while (index>=range.Count)
             {
-                _range.Add(GetRange(candles, _movingList, index));
+                range.Add(GetRange(candles, movinglist, index));
             }
-            while (index >= _averageList.Count)
+            while (index >= averagelist.Count)
             {
-                _averageList.Add(GetAvg(_range, index));
+                averagelist.Add(GetAvg(range, index));
             }
 
             if (index < _lengthAvg.ValueInt ||
                 index < _lengthMa.ValueInt ||
-                _movingList[index] == 0)
+                movinglist[index] == 0)
             {
                 return 0;
             }
-            return _averageList[index];
+            return averagelist[index];
         }
 
         private decimal CandlesMA(List<Candle> candles, int index)
@@ -92,7 +89,6 @@ namespace OsEngine.Indicators
             }
             return candles.Summ(index - _lengthMa.ValueInt, index, "Close") / _lengthMa.ValueInt;
         }
-
         private decimal GetRange(List<Candle> candles, List<decimal> moving, int index)
         {
             if (moving[index] == 0)
@@ -120,10 +116,8 @@ namespace OsEngine.Indicators
 
         }
 
-        private List<decimal> _range = new List<decimal>();
-
-        private List<decimal> _movingList = new List<decimal>();
-
-        private List<decimal> _averageList = new List<decimal>();
+        private List<decimal> range = new List<decimal>();
+        private List<decimal> movinglist = new List<decimal>();
+        private List<decimal> averagelist = new List<decimal>();
     }
 }

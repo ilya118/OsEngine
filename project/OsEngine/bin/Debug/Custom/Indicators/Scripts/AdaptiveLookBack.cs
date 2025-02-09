@@ -4,11 +4,9 @@ using OsEngine.Entity;
 
 namespace OsEngine.Indicators
 {
-    [Indicator("AdaptiveLookBack")]
     class AdaptiveLookBack : Aindicator
     {
         private IndicatorParameterInt _length;
-
         private IndicatorDataSeries _series;
 
         public override void OnStateChange(IndicatorState state)
@@ -33,10 +31,10 @@ namespace OsEngine.Indicators
             if (index == 0)
             {
                 _swingBarArray = new List<int>();
-                _lastUpdIndex = index;
+                _lastUpdInex = index;
             }
 
-            if (index != _lastUpdIndex)
+            if (index != _lastUpdInex)
             {
                 _series.Values[index] = GetValue(candles, index, false);
             }
@@ -45,10 +43,10 @@ namespace OsEngine.Indicators
                 _series.Values[index] = GetValue(candles, index, true);
             }
 
-            _lastUpdIndex = index;
+            _lastUpdInex = index;
         }
 
-        private int _lastUpdIndex;
+        private int _lastUpdInex;
 
         private List<int> _swingBarArray = new List<int>();
 

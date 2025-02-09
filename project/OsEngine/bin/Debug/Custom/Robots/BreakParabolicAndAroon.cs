@@ -218,8 +218,7 @@ namespace OsEngine.Robots.MyBots
             {
                 _tab.SellAtStopCancel();
                 _tab.BuyAtStopCancel();
-
-                Position pos = openPositions[i];
+                Position pos = openPositions[0];
 
                 if (pos.CloseActiv == true && pos.CloseOrders != null && pos.CloseOrders.Count > 0)
                 {

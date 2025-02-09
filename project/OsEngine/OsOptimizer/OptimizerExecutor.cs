@@ -149,7 +149,7 @@ namespace OsEngine.OsOptimizer
                 }
                 else
                 {
-
+                    /*
                     SendLogMessage("ReportsCount" + ReportsToFazes[ReportsToFazes.Count - 1].Reports.Count.ToString(), LogMessageType.System);
 
                     OptimazerFazeReport reportFiltred = new OptimazerFazeReport();
@@ -163,6 +163,7 @@ namespace OsEngine.OsOptimizer
                     StartAsuncBotFactoryOutOfSample(reportFiltred, _master.StrategyName, _master.IsScript, "OutOfSample");
 
                     StartOptimazeFazeOutOfSample(report, reportFiltred);
+                    */
                 }
             }
 

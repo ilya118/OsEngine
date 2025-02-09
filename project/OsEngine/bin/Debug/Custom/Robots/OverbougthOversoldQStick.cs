@@ -189,25 +189,25 @@ namespace OsEngine.Robots.MyBots
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position position = openPositions[i];
+                Position positions = openPositions[i];
 
-                if (position.State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (position.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (lastQStick > SellValue.ValueDecimal)
                     {
-                        _tab.CloseAtLimit(position, lastPrice - _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (lastQStick < -BuyValue.ValueDecimal)
                     {
-                        _tab.CloseAtLimit(position, lastPrice + _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
             }

@@ -90,7 +90,7 @@ namespace OsEngine.Robots.AO
 
             // Create indicator MACD
             _MACD = IndicatorsFactory.CreateIndicatorByName("MACD", name + "MACD", false);
-            _MACD = (Aindicator)_tab.CreateCandleIndicator(_MACD, "NewArea0");
+            _MACD = (Aindicator)_tab.CreateCandleIndicator(_MACD, "NewArea");
             ((IndicatorParameterInt)_MACD.Parameters[0]).ValueInt = FastLineLengthMACD.ValueInt;
             ((IndicatorParameterInt)_MACD.Parameters[1]).ValueInt = SlowLineLengthMACD.ValueInt;
             ((IndicatorParameterInt)_MACD.Parameters[2]).ValueInt = SignalLineLengthMACD.ValueInt;
@@ -250,7 +250,7 @@ namespace OsEngine.Robots.AO
                     if (_lastMACD < 0 || _lastMACD < _prevMACD)
                     {
 
-                        _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
@@ -258,7 +258,7 @@ namespace OsEngine.Robots.AO
 
                     if (_lastMACD > 0 || _lastMACD > _prevMACD)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
             }

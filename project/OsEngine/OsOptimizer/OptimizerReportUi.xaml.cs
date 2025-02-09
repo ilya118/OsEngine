@@ -15,6 +15,8 @@ using MessageBox = System.Windows.MessageBox;
 using OsEngine.OsOptimizer.OptEntity;
 using System.IO;
 using System.Threading.Tasks;
+using System.Net;
+using System.Text;
 
 namespace OsEngine.OsOptimizer
 {
@@ -70,6 +72,67 @@ namespace OsEngine.OsOptimizer
             this.Focus();
         }
 
+        private void AutoSaveReport()
+        {
+            try
+            {
+                // Генерация имени файла с текущей датой и временем
+                string saveFileName = _master.StrategyName;
+                DateTime now = DateTime.Now;
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+                // Проверка на null для _master.TabsSimpleNamesAndTimeFrames
+                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
+                {
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString + ".txt";
+                }
+
+                // Указанный путь для сохранения файла
+                string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
+
+                // Проверка существования директории. Если её нет, создаём.
+                if (!Directory.Exists(saveDirectory))
+                {
+                    Directory.CreateDirectory(saveDirectory);
+                }
+
+                // Полный путь к файлу
+                string savePath = Path.Combine(saveDirectory, saveFileName);
+
+                // Формирование строки для сохранения
+                StringBuilder saveStr = new StringBuilder();
+
+                foreach (var report in _reports)
+                {
+                    if (report != null)
+                    {
+                        saveStr.AppendLine(report.GetSaveString());
+                    }
+                }
+
+                // Сохранение в файл
+                File.WriteAllText(savePath, saveStr.ToString());
+
+                // Логирование успешного сохранения
+                _master.SendLogMessage($"Отчет успешно сохранен в файл: {savePath}", LogMessageType.System);
+            }
+            catch (Exception error)
+            {
+                // Логирование ошибки
+                _master.SendLogMessage($"Ошибка при автоматическом сохранении отчета: {error}", LogMessageType.Error);
+            }
+        }
+        private async void SendTelegramMessageAsync(string message)
+        {
+            // Collecting query string
+            string reqStr = "https://api.telegram.org/bot7192179868:AAGwaGc9LZGV_hjlI-RGRGChZYsomswYm2o/sendMessage?chat_id=130972649&text=" + message;
+
+            WebRequest request = WebRequest.Create(reqStr);
+            using (await request.GetResponseAsync()) { }
+        }
+
         public void Paint(List<OptimazerFazeReport> reports)
         {
             if (reports == null)
@@ -85,6 +148,13 @@ namespace OsEngine.OsOptimizer
             }
 
             RepaintResults();
+
+            // Вызов AutoSaveReport после заполнения _reports
+            if (_reports != null && _reports.Count > 0)
+            {
+                AutoSaveReport();
+                SendTelegramMessageAsync("Оптимизация завершена");
+            }
         }
 
         OptimizerMaster _master;
@@ -800,20 +870,28 @@ namespace OsEngine.OsOptimizer
 
                 string saveFileName = _master.StrategyName;
 
+                // Получаем текущую дату и время
+                DateTime now = DateTime.Now;
+
+                // Форматируем дату и время в строку (например, "yyyyMMdd_HHmmss")
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+
                 if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
                 {
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString + ".txt";
                 }
 
                 IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
 
-                if (regime != null)
+                /*if (regime != null)
                 {
 
                     saveFileName += "_" + ((StrategyParameterString)regime).ValueString;
-                }
-                saveFileName = saveFileName.Replace(".txt", "");
+                }*/
+                //saveFileName = saveFileName.Replace(".txt", "");
 
                 myDialog.FileName = saveFileName;
 

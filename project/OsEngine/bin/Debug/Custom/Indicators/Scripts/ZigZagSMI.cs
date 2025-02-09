@@ -4,35 +4,26 @@ using System.Linq;
 using System.Drawing;
 using OsEngine.Entity;
 
-namespace OsEngine.Indicators
+namespace OsEngine.Indicators.My_ind
 {
-    [Indicator("ZigZagSMI")]
-    public class ZigZagSMI : Aindicator
+    internal class ZigZagSMI : Aindicator
     {
         private Aindicator _SMI;
-
-        private IndicatorParameterInt _stochasticPeriod1;
-
-        private IndicatorParameterInt _stochasticPeriod2;
-
-        private IndicatorParameterInt _stochasticPeriod3;
-
-        private IndicatorParameterInt _stochasticPeriod4;
+        private IndicatorParameterInt StochasticPeriod1;
+        private IndicatorParameterInt StochasticPeriod2;
+        private IndicatorParameterInt StochasticPeriod3;
+        private IndicatorParameterInt StochasticPeriod4;
 
         private IndicatorDataSeries _seriesSMI;
 
         private IndicatorParameterInt _lengthZigZag;
 
         private IndicatorDataSeries _seriesZigZag;
-
         private IndicatorDataSeries _seriesToLine;
-
         private IndicatorDataSeries _seriesZigZagHighs;
-
         private IndicatorDataSeries _seriesZigZagLows;
 
         private IndicatorDataSeries _seriesZigZagUpChannel;
-
         private IndicatorDataSeries _seriesZigZagDownChannel;
 
         public override void OnStateChange(IndicatorState state)
@@ -40,10 +31,10 @@ namespace OsEngine.Indicators
             if (state == IndicatorState.Configure)
             {
 
-                _stochasticPeriod1 = CreateParameterInt("StochasticPeriod1", 13);
-                _stochasticPeriod2 = CreateParameterInt("StochasticPeriod2", 25);
-                _stochasticPeriod3 = CreateParameterInt("StochasticPeriod3", 2);
-                _stochasticPeriod4 = CreateParameterInt("StochasticPeriod4", 3);
+                StochasticPeriod1 = CreateParameterInt("StochasticPeriod1", 13);
+                StochasticPeriod2 = CreateParameterInt("StochasticPeriod2", 25);
+                StochasticPeriod3 = CreateParameterInt("StochasticPeriod3", 2);
+                StochasticPeriod4 = CreateParameterInt("StochasticPeriod4", 3);
                 _lengthZigZag = CreateParameterInt("Length ZigZag", 14);
 
                 _seriesSMI = CreateSeries("StochasticMomentumIndex", Color.Blue, IndicatorChartPaintType.Line, true);
@@ -67,10 +58,10 @@ namespace OsEngine.Indicators
                 _seriesZigZagDownChannel.CanReBuildHistoricalValues = true;
 
                 _SMI = IndicatorsFactory.CreateIndicatorByName("StochasticMomentumIndex", Name + "StochasticMomentumIndex", false);
-                ((IndicatorParameterInt)_SMI.Parameters[0]).Bind(_stochasticPeriod1);
-                ((IndicatorParameterInt)_SMI.Parameters[1]).Bind(_stochasticPeriod2);
-                ((IndicatorParameterInt)_SMI.Parameters[2]).Bind(_stochasticPeriod3);
-                ((IndicatorParameterInt)_SMI.Parameters[3]).Bind(_stochasticPeriod4);
+                ((IndicatorParameterInt)_SMI.Parameters[0]).Bind(StochasticPeriod1);
+                ((IndicatorParameterInt)_SMI.Parameters[1]).Bind(StochasticPeriod2);
+                ((IndicatorParameterInt)_SMI.Parameters[2]).Bind(StochasticPeriod3);
+                ((IndicatorParameterInt)_SMI.Parameters[3]).Bind(StochasticPeriod4);
                 ProcessIndicator("StochasticMomentumIndex", _SMI);
 
             }
@@ -84,11 +75,11 @@ namespace OsEngine.Indicators
 
             if (index < _lengthZigZag.ValueInt * 2)
             {
-                _currentZigZagHigh = 0;
-                _currentZigZagLow = 0;
-                _lastSwingIndex = -1;
-                _lastSwingPrice = 0;
-                _trendDir = 0;
+                currentZigZagHigh = 0;
+                currentZigZagLow = 0;
+                lastSwingIndex = -1;
+                lastSwingPrice = 0;
+                trendDir = 0;
                 return;
             }
 
@@ -106,8 +97,8 @@ namespace OsEngine.Indicators
             Low = valuesStochastic[valuesStochastic.Count - 1];
 
 
-            if (_lastSwingPrice == 0)
-                _lastSwingPrice = Low + (High - Low) / 2;
+            if (lastSwingPrice == 0)
+                lastSwingPrice = Low + (High - Low) / 2;
 
             bool isSwingHigh = High == GetExtremum(values, _lengthZigZag.ValueInt, "High", index);
             bool isSwingLow = Low == GetExtremum(values, _lengthZigZag.ValueInt, "Low", index);
@@ -123,59 +114,59 @@ namespace OsEngine.Indicators
                 return;
             }
 
-            if (_trendDir == 1 && isSwingHigh && High >= _lastSwingPrice)
+            if (trendDir == 1 && isSwingHigh && High >= lastSwingPrice)
             {
                 saveValue = High;
                 updateHigh = true;
             }
-            else if (_trendDir == -1 && isSwingLow && Low <= _lastSwingPrice)
+            else if (trendDir == -1 && isSwingLow && Low <= lastSwingPrice)
             {
                 saveValue = Low;
                 updateLow = true;
             }
-            else if (_trendDir <= 0 && isSwingHigh)
+            else if (trendDir <= 0 && isSwingHigh)
             {
                 saveValue = High;
                 addHigh = true;
-                _trendDir = 1;
+                trendDir = 1;
             }
-            else if (_trendDir >= 0 && isSwingLow)
+            else if (trendDir >= 0 && isSwingLow)
             {
                 saveValue = Low;
                 addLow = true;
-                _trendDir = -1;
+                trendDir = -1;
             }
 
             if (addHigh || addLow || updateHigh || updateLow)
             {
-                if (updateHigh && _lastSwingIndex >= 0)
+                if (updateHigh && lastSwingIndex >= 0)
                 {
-                    _seriesZigZag.Values[_lastSwingIndex] = 0;
-                    _seriesZigZagHighs.Values[_lastSwingIndex] = 0;
+                    _seriesZigZag.Values[lastSwingIndex] = 0;
+                    _seriesZigZagHighs.Values[lastSwingIndex] = 0;
                 }
-                else if (updateLow && _lastSwingIndex >= 0)
+                else if (updateLow && lastSwingIndex >= 0)
                 {
-                    _seriesZigZag.Values[_lastSwingIndex] = 0;
-                    _seriesZigZagLows.Values[_lastSwingIndex] = 0;
+                    _seriesZigZag.Values[lastSwingIndex] = 0;
+                    _seriesZigZagLows.Values[lastSwingIndex] = 0;
                 }
 
                 if (addHigh || updateHigh)
                 {
-                    _currentZigZagHigh = saveValue;
-                    _seriesZigZag.Values[index] = _currentZigZagHigh;
-                    _seriesZigZagHighs.Values[index] = _currentZigZagHigh;
+                    currentZigZagHigh = saveValue;
+                    _seriesZigZag.Values[index] = currentZigZagHigh;
+                    _seriesZigZagHighs.Values[index] = currentZigZagHigh;
 
                 }
                 else if (addLow || updateLow)
                 {
-                    _currentZigZagLow = saveValue;
-                    _seriesZigZag.Values[index] = _currentZigZagLow;
-                    _seriesZigZagLows.Values[index] = _currentZigZagLow;
+                    currentZigZagLow = saveValue;
+                    _seriesZigZag.Values[index] = currentZigZagLow;
+                    _seriesZigZagLows.Values[index] = currentZigZagLow;
 
                 }
 
-                _lastSwingIndex = index;
-                _lastSwingPrice = saveValue;
+                lastSwingIndex = index;
+                lastSwingPrice = saveValue;
 
                 if (updateHigh || updateLow)
                 {
@@ -185,15 +176,12 @@ namespace OsEngine.Indicators
             ReBuildChannel(_seriesZigZagUpChannel, _seriesZigZagDownChannel, _seriesZigZagHighs.Values, _seriesZigZagLows.Values, index);
         }
 
-        private decimal _currentZigZagHigh = 0;
+        private decimal currentZigZagHigh = 0;
+        private decimal currentZigZagLow = 0;
+        private int lastSwingIndex = -1;
+        private decimal lastSwingPrice = 0;
+        private int trendDir = 0;
 
-        private decimal _currentZigZagLow = 0;
-
-        private int _lastSwingIndex = -1;
-
-        private decimal _lastSwingPrice = 0;
-
-        private int _trendDir = 0;
 
         private decimal GetExtremum(List<decimal> values, int period, string points, int index)
         {
@@ -216,6 +204,7 @@ namespace OsEngine.Indicators
 
             return 0;
         }
+
 
         private void ReBuildLine(List<decimal> zigZag, List<decimal> line)
         {
@@ -255,6 +244,7 @@ namespace OsEngine.Indicators
                 lastPointIndex = i;
             }
         }
+
 
         private void ReBuildChannel(IndicatorDataSeries _seriesZigZagUpChannel, IndicatorDataSeries _seriesZigZagDownChannel,
        List<decimal> _seriesZigZagHighs, List<decimal> _seriesZigZagLows, int index)
@@ -307,3 +297,5 @@ namespace OsEngine.Indicators
         }
     }
 }
+
+

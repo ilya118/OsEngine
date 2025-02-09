@@ -10,6 +10,8 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using System.Linq;
 using OsEngine.Logging;
+using System.Runtime.CompilerServices;
+using OsEngine.Market.Servers.Tinkoff.TinkoffJsonSchema;
 
 /* Description
 trading robot for osengine
@@ -200,25 +202,25 @@ namespace OsEngine.Robots.CMO
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position position = openPositions[i];
+                Position positions = openPositions[i];
 
-                if (position.State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (position.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (_lastCMO > -50 && _prevCMO < -50)
                     {
-                        _tab.CloseAtLimit(position, lastPrice - _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (_lastCMO < 50 && _prevCMO > 50)
                     {
-                        _tab.CloseAtLimit(position, lastPrice + _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
             }

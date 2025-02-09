@@ -1,32 +1,28 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("StochasticMomentumIndex")]
     public class StochasticMomentumIndex : Aindicator
     {
         public IndicatorParameterInt Period1;
-
         public IndicatorParameterInt Period2;
-
         public IndicatorParameterInt Period3;
-
         public IndicatorParameterInt Period4;
 
         public IndicatorDataSeries SeriesOne;
-
         public IndicatorDataSeries SeriesTwo;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                Period1 = CreateParameterInt("Period 1", 13);
-                Period2 = CreateParameterInt("Period 2", 25);
-                Period3 = CreateParameterInt("Period 3", 2);
+                Period1 = CreateParameterInt("Period 1", 5);
+                Period2 = CreateParameterInt("Period 2", 3);
+                Period3 = CreateParameterInt("Period 3", 3);
                 Period4 = CreateParameterInt("Period 4", 3);
 
                 SeriesOne = CreateSeries("Stochastic", Color.BlueViolet, IndicatorChartPaintType.Line, true);
@@ -39,11 +35,8 @@ namespace OsEngine.Indicators
                     _dm.Clear(); _dm = null;
                     _diff.Clear(); _diff = null;
 
-                    _dm1.Clear(); _dm1 = null;
-                    _diff1.Clear(); _diff1 = null;
-
-                    _dm2.Clear(); _dm2 = null;
-                    _diff2.Clear(); _diff2 = null;
+                    _dms.Clear(); _dms = null;
+                    _dms2.Clear(); _dms2 = null;
 
                     _diffS.Clear(); _diffS = null;
                     _diffS2.Clear(); _diffS2 = null;
@@ -51,20 +44,23 @@ namespace OsEngine.Indicators
             }
         }
 
+
+        //Close- High + Low
         private List<decimal> _dm;
 
+        // High - Low
         private List<decimal> _diff;
 
-        private List<decimal> _dm1;
+        //сглаживание Close - High + Low
+        private List<decimal> _dms;
 
-        private List<decimal> _diff1;
+        //средняя для сглаживания High - low
+        private List<decimal> _dms2;
 
-        private List<decimal> _dm2;
-
-        private List<decimal> _diff2;
-
+        // первая линия
         private List<decimal> _diffS;
 
+        //средняя для сглаживания _diffs
         private List<decimal> _diffS2;
 
         public override void OnProcess(List<Candle> candles, int index)
@@ -73,10 +69,8 @@ namespace OsEngine.Indicators
             {
                 _dm = new List<decimal>();
                 _diff = new List<decimal>();
-                _diff1 = new List<decimal>();
-                _dm1 = new List<decimal>();
-                _diff2 = new List<decimal>();
-                _dm2 = new List<decimal>();
+                _dms2 = new List<decimal>();
+                _dms = new List<decimal>();
                 _diffS = new List<decimal>();
                 _diffS2 = new List<decimal>();
             }
@@ -94,17 +88,11 @@ namespace OsEngine.Indicators
             while (index >= _diff.Count)
             { _diff.Add(0); }
 
-            while (index >= _dm1.Count)
-            { _dm1.Add(0); }
+            while (index >= _dms.Count)
+            { _dms.Add(0); }
 
-            while (index >= _diff1.Count)
-            { _diff1.Add(0); }
-
-            while (index >= _dm2.Count)
-            { _dm2.Add(0); }
-
-            while (index >= _diff2.Count)
-            { _diff2.Add(0); }
+            while (index >= _dms2.Count)
+            { _dms2.Add(0); }
 
             while (index >= _diffS.Count)
             { _diffS.Add(0); }
@@ -113,30 +101,32 @@ namespace OsEngine.Indicators
             { _diffS2.Add(0); }
 
             _dm[index] = GetDM(candles, index);
-            _diff[index] = GetDiff(candles, index);
+            _diff[index] = GetDiffS(index);
 
-            _dm1[index] = GetAverage(_dm, index, Period2.ValueInt);
-            _diff1[index] = GetAverage(_diff, index, Period2.ValueInt);
+            _dms[index] = GetAverage(_dm, index, Period2.ValueInt, Period1.ValueInt);
+            _dms2[index] = GetAverage(_dms, index, Period2.ValueInt, Period4.ValueInt);
 
-            _dm2[index] = GetAverage(_dm1, index, Period3.ValueInt);
-            _diff2[index] = GetAverage(_diff1, index, Period3.ValueInt);
-
-            _diffS[index] = GetDiffS(index); 
-            _diffS2[index] = GetAverage(_diffS, index, Period4.ValueInt);
+            _diffS[index] = GetDiff(candles, index);
+            _diffS2[index] = GetAverage(_diffS, index, Period3.ValueInt, Period4.ValueInt);
 
             SeriesOne.Values[index] = Math.Round(_diffS[index], 2);
             SeriesTwo.Values[index] = Math.Round(_diffS2[index], 2);
         }
 
-        private decimal GetAverage(List<decimal> list, int index, int length)
+        private decimal GetAverage(List<decimal> list, int index, int length, int length1)
         {
             decimal lastMoving = 0;
+
+            for (int g = index; g > -1 && g > list.Count - 1 - length1; g--)
+            {
+                lastMoving += list[g];
+            }
 
             for (int i = index; i > -1 && i > list.Count - 1 - length; i--)
             {
                 lastMoving += list[i];
             }
-            return lastMoving / length;
+            return lastMoving / length / length1;
         }
 
         private decimal GetDM(List<Candle> candles, int index)
@@ -165,7 +155,7 @@ namespace OsEngine.Indicators
                     hi = candles[i].High;
                 }
             }
-            return candles[index].Close - (hi + low) /2;
+            return candles[index].Close - hi + low;
         }
 
         private decimal GetDiff(List<Candle> candles, int index)
@@ -199,13 +189,14 @@ namespace OsEngine.Indicators
 
         private decimal GetDiffS(int index)
         {
-            if (index < Period2.ValueInt + Period3.ValueInt + Period4.ValueInt + 3 
-                || _dm2[index] == 0 ||  _diff2[index] == 0)
+            if (index < Period2.ValueInt + Period3.ValueInt + Period4.ValueInt + 3 ||
+                _dms2[index] == 0 ||
+                _diffS2[index] == 0)
             {
                 return 0;
             }
 
-            return 100 * _dm2[index] / _diff2[index];
+            return (100 * _dms2[index]) / (0.5m * _diffS2[index]);
         }
     }
 }

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("MFI")]
     public class MFI : Aindicator
     {
         private IndicatorParameterInt _period;
-
         private IndicatorDataSeries _series;
 
         public override void OnStateChange(IndicatorState state)
@@ -95,10 +94,19 @@ namespace OsEngine.Indicators
             return (candles[index].High + candles[index].Low + candles[index].Close) / 3;
         }
 
+        /// <summary>
+        /// pozitive flow
+        /// </summary>
         private List<decimal> _fp = new List<decimal>();
 
+        /// <summary>
+        /// negative flow
+        /// </summary>
         private List<decimal> _fn = new List<decimal>();
 
+        /// <summary>
+        /// typical prive
+        /// </summary>
         private List<decimal> _tp = new List<decimal>();
     }
 }

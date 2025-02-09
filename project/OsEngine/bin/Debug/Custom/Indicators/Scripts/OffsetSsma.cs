@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("OffsetSsma")]
     public class OffsetSsma : Aindicator
     {
         private IndicatorParameterInt _lengthSsma;

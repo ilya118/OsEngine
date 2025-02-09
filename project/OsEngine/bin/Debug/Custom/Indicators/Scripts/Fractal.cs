@@ -1,14 +1,15 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("Fractal")]
     public class Fractal: Aindicator
     {
         private IndicatorDataSeries _seriesUp;
-
         private IndicatorDataSeries _seriesDown;
 
         public override void OnStateChange(IndicatorState state)
@@ -46,6 +47,10 @@ namespace OsEngine.Indicators
 
         private decimal GetValueUp(List<Candle> candles, int index)
         {
+            // fractal considered to be formed only after two candles have passed
+            // фрактал у нас считается сформированным только после прошедших уже двух свечей
+            // looking at trird candle from index
+            // т.ч. смотрим трейтью свечу от индекса
             if (index - 5 <= 0)
             {
                 return 0;
@@ -59,11 +64,21 @@ namespace OsEngine.Indicators
                 return candles[index - 2].High;
             }
 
+
+
             return 0;
         }
 
+        /// <summary>
+        /// take lower value of indicator by index
+        /// взять нижнее значение индикатора по индексу
+        /// </summary>
         private decimal GetValueDown(List<Candle> candles, int index)
         {
+            // fractal considered to be formed only after two candles have passed
+            // фрактал у нас считается сформированным только после прошедших уже двух свечей
+            // looking at trird candle from index
+            // т.ч. смотрим трейтью свечу от индекса
             if (index - 5 <= 0)
             {
                 return 0;
@@ -77,11 +92,15 @@ namespace OsEngine.Indicators
                 return candles[index - 2].Low;
             }
 
+
+
             return 0;
         }
 
-        private List<decimal> ValuesUp = new List<decimal>();
 
+        private List<decimal> ValuesUp = new List<decimal>();
         private List<decimal> ValuesDown = new List<decimal>();
+
     }
+
 }

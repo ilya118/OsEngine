@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("KalmanFilter")]
     public class KalmanFilter:Aindicator
     {
         private IndicatorDataSeries _series;
-
         private IndicatorParameterDecimal _sharpness;
-
         private IndicatorParameterDecimal K;
 
         public override void OnStateChange(IndicatorState state)
@@ -60,16 +58,9 @@ namespace OsEngine.Indicators
 
             _velocity[index] = _velocity[index - 1] + distans * Convert.ToDouble(K.ValueDecimal) / 100;
 
-            try
-            {
-                double error = Convert.ToDouble(_series.Values[index - 1]) + distans * shk;
+            double error = Convert.ToDouble(_series.Values[index - 1]) + distans * shk;
 
-                return Convert.ToDecimal(error + _velocity[index]);
-            }
-            catch
-            {
-                return _series.Values[index - 1];
-            }
+            return Convert.ToDecimal(error + _velocity[index]);
         }
     }
 }

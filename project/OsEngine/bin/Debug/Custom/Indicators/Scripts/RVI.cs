@@ -2,16 +2,15 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("RVI")]
     public class RVI : Aindicator
     {
         private IndicatorParameterInt _p1;
 
         private IndicatorDataSeries _seriesOne;
-
         private IndicatorDataSeries _seriesTwo;
 
         public override void OnStateChange(IndicatorState state)
@@ -35,9 +34,7 @@ namespace OsEngine.Indicators
         }
 
         private List<decimal> _moveAverage;
-
         private List<decimal> _rangeAverage;
-
         private List<decimal> _rvi;
 
         public override void OnProcess(List<Candle> candles, int index)

@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("ATR")]
-    public class ATR : Aindicator
+    class ATR : Aindicator
     {
-        private IndicatorParameterInt _length;
 
-        private IndicatorParameterString _typeSeries;
+        private IndicatorParameterInt _lenght;
+
 
         private IndicatorDataSeries _series;
 
@@ -18,11 +18,7 @@ namespace OsEngine.Indicators
         {
             if (state == IndicatorState.Configure)
             {
-                _length = CreateParameterInt("Length", 14);
-                _typeSeries = CreateParameterStringCollection("Series type",
-                    "Absolute",
-                    new List<string>() { "Absolute", "Percent" });
-
+                _lenght = CreateParameterInt("Lenght", 14);
                 _series = CreateSeries("Atr value", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
             }
             else if (state == IndicatorState.Dispose)
@@ -41,7 +37,7 @@ namespace OsEngine.Indicators
         public override void OnProcess(List<Candle> candles, int index)
         {
             TrueRangeReload(candles, index);
-            _moving = MovingAverageWild(_trueRange, _moving, _length.ValueInt, index);
+            _moving = MovingAverageWild(_trueRange, _moving, _lenght.ValueInt, index);
             _series.Values[index] = Math.Round(_moving[index], 9);
         }
 
@@ -67,16 +63,7 @@ namespace OsEngine.Indicators
             decimal closeToHigh = Math.Abs(candles[index - 1].Close - candles[index].High);
             decimal closeToLow = Math.Abs(candles[index - 1].Close - candles[index].Low);
 
-            decimal value = Math.Max(Math.Max(hiToLow, closeToHigh), closeToLow);
-
-            if (_typeSeries.ValueString == "Percent"
-                && value != 0
-                && candles[index - 1].Open != 0)
-            {
-                value = value / (candles[index - 1].Open / 100);
-            }
-
-            _trueRange[index] = value;
+            _trueRange[index] = Math.Max(Math.Max(hiToLow, closeToHigh), closeToLow);
         }
 
         private List<decimal> MovingAverageWild(List<decimal> valuesSeries, List<decimal> moving, int length, int index)
@@ -109,9 +96,9 @@ namespace OsEngine.Indicators
             }
             else
             {
-                while (moving.Count < index)
+                while(moving.Count < index)
                 {
-                    moving.Add(moving[moving.Count - 1]);
+                    moving.Add(moving[moving.Count-1]);
                 }
 
                 decimal lastValueSeries = Math.Round(valuesSeries[index], 9);
@@ -121,7 +108,7 @@ namespace OsEngine.Indicators
                 {
                     moving.Add(0);
                 }
-                moving[index] = Math.Round((lastValueMoving * (_length.ValueInt - 1) + lastValueSeries) / _length.ValueInt, 9);
+                moving[index] = Math.Round((lastValueMoving * (_lenght.ValueInt - 1) + lastValueSeries) / _lenght.ValueInt, 9);
             }
 
             return moving;

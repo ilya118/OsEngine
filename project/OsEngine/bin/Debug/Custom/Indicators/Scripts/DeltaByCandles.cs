@@ -1,20 +1,16 @@
 using OsEngine.Entity;
+using OsEngine.Indicators;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("DeltaByCandles")]
     public class DeltaByCandles : Aindicator
     {
         private IndicatorDataSeries _seriesSmaDelta;
-
         private IndicatorDataSeries _seriesTrade;
-
         private IndicatorDataSeries _seriesBuy;
-
         private IndicatorDataSeries _seriesSell;
-
         private IndicatorDataSeries _seriesDelta;
 
         private IndicatorParameterInt _lengthSmaDelta;

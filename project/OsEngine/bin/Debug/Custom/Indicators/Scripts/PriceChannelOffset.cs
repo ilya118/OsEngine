@@ -1,22 +1,19 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
 namespace OsEngine.Indicators
 {
-    [Indicator("PriceChannelOffset")]
-    public class PriceChannelOffset : Aindicator
+    internal class PriceChannelOffset : Aindicator
     {
         private IndicatorParameterInt _length;
-
         private IndicatorParameterDecimal _offset;
 
         private IndicatorDataSeries _seriesUpBorder;
-
         private IndicatorDataSeries _seriesDownBorder;
 
         private IndicatorDataSeries _seriesUp;
-
         private IndicatorDataSeries _seriesDown;
 
         public override void OnStateChange(IndicatorState state)
