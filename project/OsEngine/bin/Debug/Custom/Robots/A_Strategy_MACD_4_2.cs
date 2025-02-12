@@ -182,7 +182,7 @@ namespace OsEngine.Robots.AO
                 "\r\n" + "Cумма сделки: " + Math.Round(position.EntryPrice * position.MaxVolume * position.Lots, 2) +
                 "\r\n" + "Комиссия: " + Math.Round(position.ComissionValue * position.EntryPrice * position.MaxVolume * position.Lots / 100, 2);
 
-                SendTelegramMessageAsync(message);
+                ServerTelegram.GetServer().SendMessageAsync(message);
             }
         }
 
@@ -214,7 +214,7 @@ namespace OsEngine.Robots.AO
                 "\r\n" + "Total Профит: " + Math.Round(position.ProfitOperationPunkt * position.MaxVolume * position.Lots - position.ComissionValue * (position.EntryPrice + position.ClosePrice) * position.MaxVolume * position.Lots / 100, 2) + " " + emotion +
                 "\r\n" + "Total Комиссия: " + Math.Round(position.ComissionValue * (position.EntryPrice + position.ClosePrice) * position.MaxVolume * position.Lots / 100, 2);
 
-                SendTelegramMessageAsync(message);
+                ServerTelegram.GetServer().SendMessageAsync(message);
             }
         }
 
@@ -513,23 +513,6 @@ namespace OsEngine.Robots.AO
             return volume;
         }
 
-        // Method sending message to Telegram
-        private async void SendTelegramMessageAsync(string message)
-        {
-            // Collecting query string
-            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=-1002450626729&text=" + message;
-
-            try
-            {
-                WebRequest request = WebRequest.Create(reqStr);
-                using (await request.GetResponseAsync()) { }
-            }
-            catch (Exception ex)
-            {
-                SendNewLogMessage("Check that Telegram ID and Bot Token are entered correctly", LogMessageType.Error);
-            }
-        }
-
         // Method of checking connection to server
         private void CheckConnect()
         {
@@ -549,7 +532,7 @@ namespace OsEngine.Robots.AO
                     if (_tab.ServerStatus == Market.Servers.ServerConnectStatus.Disconnect && _isConnect == true)
                     {
                         string message = "Connection to server is lost (" + _tab.NameStrategy + ")!";
-                        SendTelegramMessageAsync(message);
+                        ServerTelegram.GetServer().SendMessageAsync(message);
                         // Attention - it will spam every 10 seconds until you connect (process it additionally or turn it off)
                     }
                 }

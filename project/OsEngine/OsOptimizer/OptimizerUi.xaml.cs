@@ -654,7 +654,7 @@ namespace OsEngine.OsOptimizer
                     return;
                 }
             }*/
-            SendTelegramMessageAsync("Оптимизация началась");
+            ServerTelegram.GetServer().SendMessageAsync("Оптимизация началась");
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9 
                 && _master.Start())
             {
@@ -675,14 +675,6 @@ namespace OsEngine.OsOptimizer
                 _master.Stop();
                 ButtonGo.Content = OsLocalization.Optimizer.Label9;
             }
-        }
-        private async void SendTelegramMessageAsync(string message)
-        {
-            // Collecting query string
-            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=130972649&text=" + message;
-
-            WebRequest request = WebRequest.Create(reqStr);
-            using (await request.GetResponseAsync()) { }
         }
         void TextBoxPercentFiltration_TextChanged(object sender, TextChangedEventArgs e)
         {

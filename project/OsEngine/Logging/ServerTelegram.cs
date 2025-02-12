@@ -62,7 +62,7 @@ namespace OsEngine.Logging
 
         //constructor - конструктор
 
-        public ServerTelegram()
+        private ServerTelegram()
         {
             Load();
 

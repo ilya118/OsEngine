@@ -17,6 +17,7 @@ using System.IO;
 using System.Threading.Tasks;
 using System.Net;
 using System.Text;
+using System.Net.Http;
 
 namespace OsEngine.OsOptimizer
 {
@@ -27,12 +28,6 @@ namespace OsEngine.OsOptimizer
     {
         public OptimizerReportUi(OptimizerMaster master)
         {
-            // Получаем экземпляр сервера Telegram
-            ServerTelegram telegramServer = ServerTelegram.GetServer();
-            
-            // Загружаем настройки (токен бота, ID чата и т.д.)
-            telegramServer.Load();
-
             InitializeComponent();
             OsEngine.Layout.StickyBorders.Listen(this);
             _master = master;
@@ -158,7 +153,7 @@ namespace OsEngine.OsOptimizer
             if (_reports != null && _reports.Count > 0)
             {
                 AutoSaveReport();
-                telegramServer.SendMessageAsync("Оптимизация asdfasdfasdf.");
+                ServerTelegram.GetServer().SendMessageAsync("Оптимизация закончилась");
             }
         }
 
