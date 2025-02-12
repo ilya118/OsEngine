@@ -4,7 +4,6 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # User-specific files
-telegramSet.txt
 *.suo
 *.user
 *.userosscache
@@ -26,6 +25,7 @@ bld/
 
 # Block Logs and Temp files in Debug directory
 [Ee]ngine/
+[Ññ]ustom/Robot/A**.cs
 [Aa]stsBridge/
 Plaza/Log/
 Data/
