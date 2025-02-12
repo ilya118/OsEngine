@@ -25,7 +25,7 @@ bld/
 
 # Block Logs and Temp files in Debug directory
 [Ee]ngine/
-[Ññ]ustom/Robot/A**.cs
+[Ññ]ustom/Robot/A_**.cs
 [Aa]stsBridge/
 Plaza/Log/
 Data/
