@@ -8,7 +8,7 @@
 *.user
 *.userosscache
 *.sln.docstates
-A_**.cs
+A_Strategy_MACD*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
