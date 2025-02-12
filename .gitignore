@@ -8,6 +8,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+A_**.cs
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -25,7 +26,6 @@ bld/
 
 # Block Logs and Temp files in Debug directory
 [Ee]ngine/
-[Ññ]ustom/Robot/A_**.cs
 [Aa]stsBridge/
 Plaza/Log/
 Data/
