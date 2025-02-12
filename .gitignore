@@ -31,6 +31,7 @@ Plaza/Log/
 Data/
 lua/logs/
 Custom/Indicators/bin/
+Custom/Indicators/Robots/A_Strategy_MACD*
 **/Atp_Router/Files/
 **/[Dd]ebug/**.xml
 **/[Dd]ebug/**.con
