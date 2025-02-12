@@ -27,6 +27,12 @@ namespace OsEngine.OsOptimizer
     {
         public OptimizerReportUi(OptimizerMaster master)
         {
+            // Получаем экземпляр сервера Telegram
+            ServerTelegram telegramServer = ServerTelegram.GetServer();
+            
+            // Загружаем настройки (токен бота, ID чата и т.д.)
+            telegramServer.Load();
+
             InitializeComponent();
             OsEngine.Layout.StickyBorders.Listen(this);
             _master = master;
@@ -132,15 +138,6 @@ namespace OsEngine.OsOptimizer
                 _master.SendLogMessage($"Ошибка при автоматическом сохранении отчета: {error}", LogMessageType.Error);
             }
         }
-        private async void SendTelegramMessageAsync(string message)
-        {
-            // Collecting query string
-            string reqStr = "https://api.telegram.org/bot1664476800:AAFJovxrCNORSDjOWhtAOcHt92G6xXTCb7k/sendMessage?chat_id=130972649&text=" + message;
-
-            WebRequest request = WebRequest.Create(reqStr);
-            using (await request.GetResponseAsync()) { }
-        }
-
         public void Paint(List<OptimazerFazeReport> reports)
         {
             if (reports == null)
@@ -161,7 +158,7 @@ namespace OsEngine.OsOptimizer
             if (_reports != null && _reports.Count > 0)
             {
                 AutoSaveReport();
-                SendTelegramMessageAsync("Оптимизация завершена");
+                telegramServer.SendMessageAsync("Оптимизация asdfasdfasdf.");
             }
         }
 
