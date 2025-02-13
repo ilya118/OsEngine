@@ -22,7 +22,7 @@ Exit: channel center.
  */
 
 
-namespace OsEngine.Robots.MyBot
+namespace OsEngine.Robots.AO
 {
     [Bot("CountertrendTwoChannelLR")] // We create an attribute so that we don't write anything to the BotFactory
     public class CountertrendTwoChannelLR : BotPanel
@@ -79,7 +79,7 @@ namespace OsEngine.Robots.MyBot
             DownDeviationGlob = CreateParameter("DownDeviationGlob", 3.0m, 1, 50, 1, "Indicator");
 
             // Create indicator LinearRegressionChannel
-            ChannelLRLoc = IndicatorsFactory.CreateIndicatorByName("LinearRegressionChannel", name + "LinearRegressionLoc", false);
+            ChannelLRLoc = IndicatorsFactory.CreateIndicatorByName("LinearRegressionChannel", name + "LinearRegressionChannel", false);
             ChannelLRLoc = (Aindicator)_tab.CreateCandleIndicator(ChannelLRLoc, "Prime");
             ((IndicatorParameterInt)ChannelLRLoc.Parameters[0]).ValueInt = PeriodLR.ValueInt;
             ((IndicatorParameterDecimal)ChannelLRLoc.Parameters[2]).ValueDecimal = UpDeviationLoc.ValueDecimal;
@@ -87,7 +87,7 @@ namespace OsEngine.Robots.MyBot
             ChannelLRLoc.Save();
 
             // Create indicator LinearRegressionChannel
-            ChannelLRGlob = IndicatorsFactory.CreateIndicatorByName("LinearRegressionChannel", name + "LinearRegressionGlob", false);
+            ChannelLRGlob = IndicatorsFactory.CreateIndicatorByName("LinearRegressionChannel", name + "LinearRegressionChannel", false);
             ChannelLRGlob = (Aindicator)_tab.CreateCandleIndicator(ChannelLRGlob, "Prime");
             ((IndicatorParameterInt)ChannelLRGlob.Parameters[0]).ValueInt = PeriodLR.ValueInt;
             ((IndicatorParameterDecimal)ChannelLRGlob.Parameters[2]).ValueDecimal = UpDeviationGlob.ValueDecimal;
@@ -142,7 +142,9 @@ namespace OsEngine.Robots.MyBot
             }
 
             // If there are not enough candles to build an indicator, we exit
-            if (candles.Count < PeriodLR.ValueInt)
+            if (candles.Count < DownDeviationLoc.ValueDecimal ||
+                candles.Count < UpDeviationLoc.ValueDecimal ||
+                candles.Count < PeriodLR.ValueInt)
             {
                 return;
             }
@@ -219,11 +221,15 @@ namespace OsEngine.Robots.MyBot
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
+            Position pos = openPositions[0];
 
             decimal _slippage = Slippage.ValueDecimal * _tab.Securiti.PriceStep;
 
             // The last value of the indicator
             _lastCenterLineLoc = ChannelLRLoc.DataSeries[1].Last;
+
+            // The prev value of the indicator
+            _prevCenterLineLoc = ChannelLRLoc.DataSeries[1].Values[ChannelLRLoc.DataSeries[1].Values.Count - 2];
 
             decimal lastPrice = candles[candles.Count - 1].Close;
 
@@ -236,16 +242,16 @@ namespace OsEngine.Robots.MyBot
 
                 if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
-                    if (_lastCenterLineLoc < lastPrice)
+                    if (_lastCenterLineLoc > lastPrice && _prevCenterLineLoc < lastPrice || _lastCenterLineLoc < lastPrice && _prevCenterLineLoc > lastPrice)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
-                    if (_lastCenterLineLoc > lastPrice)
+                    if (_lastCenterLineLoc > lastPrice && _prevCenterLineLoc < lastPrice || _lastCenterLineLoc < lastPrice && _prevCenterLineLoc > lastPrice)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
             }

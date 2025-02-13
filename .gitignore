@@ -8,6 +8,7 @@
 *.user
 *.userosscache
 *.sln.docstates
+A_Strategy_MACD*
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -30,6 +31,7 @@ Plaza/Log/
 Data/
 lua/logs/
 Custom/Indicators/bin/
+Custom/Indicators/Robots/A_Strategy_MACD*
 **/Atp_Router/Files/
 **/[Dd]ebug/**.xml
 **/[Dd]ebug/**.con

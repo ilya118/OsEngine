@@ -225,9 +225,10 @@ namespace OsEngine.Robots.MyBots
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
+                Position positions = openPositions[i];
                 decimal lastPrice = candles[candles.Count - 1].Close;
 
-                if (openPositions[i].State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
@@ -236,14 +237,14 @@ namespace OsEngine.Robots.MyBots
                 {
                     if (lastEmaFast < lastEmaSlow)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice - _slippage, openPositions[0].OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (lastEmaFast > lastEmaSlow)
                     {
-                        _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
+                        _tab.CloseAtLimit(openPositions[0], lastPrice + _slippage, openPositions[0].OpenVolume);
                     }
                 }
             }

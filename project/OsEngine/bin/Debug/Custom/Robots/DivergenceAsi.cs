@@ -206,7 +206,8 @@ namespace OsEngine.Robots.MyBots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+            Position pos = openPositions[0];
+
             decimal _slippage = Slippage.ValueDecimal * _tab.Securiti.PriceStep;
 
             decimal profitActivation;
@@ -214,17 +215,15 @@ namespace OsEngine.Robots.MyBots
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position pos = openPositions[i];
-
-                if (pos.State != PositionStateType.Open)
+                if (openPositions[i].State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (pos.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
 
-                    decimal stopActivation = GetPriceStop(pos.TimeCreate, Side.Buy, candles, candles.Count - 1);
+                    decimal stopActivation = GetPriceStop(openPositions[i].TimeCreate, Side.Buy, candles, candles.Count - 1);
 
                     if (stopActivation == 0)
                     {
@@ -239,7 +238,7 @@ namespace OsEngine.Robots.MyBots
                 }
                 else // If the direction of the position is sale
                 {
-                    decimal stopActivation = GetPriceStop(pos.TimeCreate, Side.Sell, candles, candles.Count - 1);
+                    decimal stopActivation = GetPriceStop(openPositions[i].TimeCreate, Side.Sell, candles, candles.Count - 1);
 
                     if (stopActivation == 0)
                     {

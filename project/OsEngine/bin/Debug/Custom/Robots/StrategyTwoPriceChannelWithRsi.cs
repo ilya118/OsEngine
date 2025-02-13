@@ -226,7 +226,8 @@ namespace OsEngine.Robots.AO
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+            Position pos = openPositions[0];
+
             // The prev value of the indicator
             _prevUpPcLocal = _PcLocal.DataSeries[0].Values[_PcLocal.DataSeries[0].Values.Count - 2];
             _prevDownPcLocal = _PcLocal.DataSeries[1].Values[_PcLocal.DataSeries[1].Values.Count - 2];
@@ -237,25 +238,25 @@ namespace OsEngine.Robots.AO
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position position = openPositions[i];
+                Position positions = openPositions[i];
 
-                if (position.State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (position.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (lastPrice < _prevDownPcLocal)
                     {
-                        _tab.CloseAtLimit(position, lastPrice - _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(pos, lastPrice - _slippage, pos.OpenVolume);
                     }
                 }
                 else // If the direction of the position is sale
                 {
                     if (lastPrice > _prevUpPcLocal)
                     {
-                        _tab.CloseAtLimit(position, lastPrice + _slippage, position.OpenVolume);
+                        _tab.CloseAtLimit(pos, lastPrice + _slippage, pos.OpenVolume);
                     }
                 }
             }

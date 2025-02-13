@@ -300,16 +300,15 @@ namespace OsEngine.Robots.AO
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+            Position pos = openPositions[0];
+
             decimal _slippage = Slippage.ValueDecimal * _tab.Securiti.PriceStep;
 
             decimal lastPrice = candles[candles.Count - 1].Close;
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position pos = openPositions[i];
-
-                if (pos.State != PositionStateType.Open)
+                if (openPositions[i].State != PositionStateType.Open)
                 {
                     continue;
                 }
@@ -317,7 +316,7 @@ namespace OsEngine.Robots.AO
                 // Stop Price
                 decimal stopPrice;
 
-                if (pos.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     decimal lov = candles[candles.Count - 1].Low;
                     stopPrice = lov - lov * TrailingValue.ValueDecimal / 100;

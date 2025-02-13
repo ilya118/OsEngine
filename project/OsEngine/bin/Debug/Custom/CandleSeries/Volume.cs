@@ -10,6 +10,7 @@ using System.Collections.Generic;
 
 namespace OsEngine.Candles.Series
 {
+    [Candle("Volume")]
     public class Volume : ACandlesSeriesRealization
     {
         public CandlesParameterDecimal VolumeToCloseCandle;

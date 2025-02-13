@@ -2,54 +2,49 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("MACD")]
     public class MACD : Aindicator
     {
-        private IndicatorParameterInt _lengthFastLine;
-
-        private IndicatorParameterInt _lengthSlowLine;
-
-        private IndicatorParameterInt _lengthSignalLine;
+        private IndicatorParameterInt _lenghtFastLine;
+        private IndicatorParameterInt _lenghtSlowLine;
+        private IndicatorParameterInt _lenghtSignalLine;
 
         private IndicatorDataSeries _seriesMacd;
-
         private IndicatorDataSeries _seriesSignalLine;
-
-        private IndicatorDataSeries _seriesMacdHistogram;
+        private IndicatorDataSeries _seriesMacdHistogramm;
 
         private Aindicator _emaSlow;
-
         private Aindicator _emaFast;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _lengthFastLine = CreateParameterInt("Fast line length", 12);
-                _lengthSlowLine = CreateParameterInt("Slow line length", 26);
-                _lengthSignalLine = CreateParameterInt("Signal line length", 9);
+                _lenghtFastLine = CreateParameterInt("Fast line length", 12);
+                _lenghtSlowLine = CreateParameterInt("Slow line length", 26);
+                _lenghtSignalLine = CreateParameterInt("Signal line length", 9);
 
-                _seriesMacdHistogram = CreateSeries("MACD Histogram", Color.DodgerBlue, IndicatorChartPaintType.Column, true);
-                _seriesMacd = CreateSeries("MACD", Color.DarkGreen, IndicatorChartPaintType.Line, false);
+                _seriesMacdHistogramm = CreateSeries("MACD Histogramm", Color.DarkGreen, IndicatorChartPaintType.Column, true);
+                _seriesMacd = CreateSeries("MACD", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
                 _seriesSignalLine = CreateSeries("Signal line", Color.DarkRed, IndicatorChartPaintType.Line, true);
 
                 _emaFast = IndicatorsFactory.CreateIndicatorByName("Ema", Name + "Ema fast", false);
-                _emaFast.Parameters[0].Bind(_lengthFastLine);
+                _emaFast.Parameters[0].Bind(_lenghtFastLine);
                 ProcessIndicator("Ema fast", _emaFast);
 
                 _emaSlow = IndicatorsFactory.CreateIndicatorByName("Ema", Name + "Ema slow", false);
-                _emaSlow.Parameters[0].Bind(_lengthSlowLine);
+                _emaSlow.Parameters[0].Bind(_lenghtSlowLine);
                 ProcessIndicator("Ema slow", _emaSlow);
             }
         }
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index < _lengthFastLine.ValueInt ||
-                index < _lengthSlowLine.ValueInt)
+            if (index < _lenghtFastLine.ValueInt ||
+                index < _lenghtSlowLine.ValueInt)
             {
                 return;
             }
@@ -58,28 +53,28 @@ namespace OsEngine.Indicators
 
             ProcessSignalLine(_seriesMacd.Values, index);
 
-            _seriesMacdHistogram.Values[index] = _seriesMacd.Values[index] - _seriesSignalLine.Values[index];
+            _seriesMacdHistogramm.Values[index] = _seriesMacd.Values[index] - _seriesSignalLine.Values[index];
         }
 
         private void ProcessSignalLine(List<decimal> values, int index)
         {
             decimal result = 0;
 
-            if (index == _lengthSignalLine.ValueInt)
+            if (index == _lenghtSignalLine.ValueInt)
             {
                 decimal lastMoving = 0;
 
-                for (int i = index - _lengthSignalLine.ValueInt + 1; i < index + 1; i++)
+                for (int i = index - _lenghtSignalLine.ValueInt + 1; i < index + 1; i++)
                 {
                     lastMoving += values[i];
                 }
 
-                lastMoving = lastMoving / _lengthSignalLine.ValueInt;
+                lastMoving = lastMoving / _lenghtSignalLine.ValueInt;
                 result = lastMoving;
             }
-            else if (index > _lengthSignalLine.ValueInt)
+            else if (index > _lenghtSignalLine.ValueInt)
             {
-                decimal a = Math.Round(2.0m / (_lengthSignalLine.ValueInt + 1), 8);
+                decimal a = Math.Round(2.0m / (_lenghtSignalLine.ValueInt + 1), 8);
                 decimal emaLast = _seriesSignalLine.Values[index - 1];
                 decimal p = values[index];
                 result = emaLast + (a * (p - emaLast));

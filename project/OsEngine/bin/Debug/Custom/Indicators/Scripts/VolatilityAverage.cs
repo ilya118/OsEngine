@@ -1,11 +1,11 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolatilityAverage")]
     public class VolatilityAverage : Aindicator
     {
         private IndicatorParameterString _typeVolatilityPeriod;
@@ -158,7 +158,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSma.Values[i] = Math.Round(valueSma, 5);
+                _seriesSma.Values[i] = valueSma;
             }
 
 
@@ -270,7 +270,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSma.Values[i] = Math.Round(valueSma, 5);
+                _seriesSma.Values[i] = valueSma;
             }
         }
 
@@ -306,7 +306,7 @@ namespace OsEngine.Indicators
 
             decimal valueSma = summValue / countChangeVola;
 
-            _seriesSma.Values[index] = Math.Round(valueSma, 5);
+            _seriesSma.Values[index] = valueSma;
 
         }
     }

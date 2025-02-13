@@ -23,6 +23,7 @@ using OsEngine.Layout;
 using System.IO;
 using System.Windows.Markup;
 using System.Globalization;
+using System.Net;
 
 namespace OsEngine.OsOptimizer
 {
@@ -622,7 +623,7 @@ namespace OsEngine.OsOptimizer
 
             _testIsEnd = false;
 
-            int botsCount = _master.GetMaxBotsCount();
+            /*int botsCount = _master.GetMaxBotsCount();
 
             if (botsCount > 100000)
             {
@@ -652,8 +653,8 @@ namespace OsEngine.OsOptimizer
                 {
                     return;
                 }
-            }
-
+            }*/
+            ServerTelegram.GetServer().SendMessageAsync("Оптимизация началась");
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9 
                 && _master.Start())
             {
@@ -675,7 +676,6 @@ namespace OsEngine.OsOptimizer
                 ButtonGo.Content = OsLocalization.Optimizer.Label9;
             }
         }
-
         void TextBoxPercentFiltration_TextChanged(object sender, TextChangedEventArgs e)
         {
             try

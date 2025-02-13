@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("StdDev")]
     public class StdDev: Aindicator
     {
         private IndicatorDataSeries _series;
-
         private IndicatorParameterInt _period;
-
         private IndicatorParameterString _candlePoint;
 
         public override void OnStateChange(IndicatorState state)
@@ -38,8 +36,8 @@ namespace OsEngine.Indicators
 
             decimal sd = 0;
 
-            int length2;
-            if (index - _period.ValueInt <= _period.ValueInt) length2 = index - _period.ValueInt; else length2 = _period.ValueInt;
+            int lenght2;
+            if (index - _period.ValueInt <= _period.ValueInt) lenght2 = index - _period.ValueInt; else lenght2 = _period.ValueInt;
 
             decimal sum = 0;
             for (int j = index; j > index - _period.ValueInt; j--)
@@ -49,13 +47,13 @@ namespace OsEngine.Indicators
 
             var m = sum / _period.ValueInt;
 
-            for (int i = index; i > index - length2; i--)
+            for (int i = index; i > index - lenght2; i--)
             {
                 decimal x = GetPoint(candles, i) - m;  //Difference between values for period and average/разница между значениями за период и средней
                 double g = Math.Pow((double)x, 2.0);   // difference square/ квадрат зницы
                 sd += (decimal)g;   //square footage/ сумма квадратов
             }
-            sd = (decimal)Math.Sqrt((double)sd / length2);  //find the root of sum/period // находим корень из суммы/период 
+            sd = (decimal)Math.Sqrt((double)sd / lenght2);  //find the root of sum/period // находим корень из суммы/период 
 
             return Math.Round(sd, 5);
         }

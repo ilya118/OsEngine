@@ -1,10 +1,10 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VWMA")]
     public class VWMA:Aindicator
     {
         private IndicatorParameterInt _length;
@@ -39,11 +39,8 @@ namespace OsEngine.Indicators
                 weights += candles[i].Volume;
             }
 
-            if(weights != 0)
-            {
-                average = average / weights;
-            }
-            
+            average = average/weights;
+
             _series.Values[index] = average;
         }
     }

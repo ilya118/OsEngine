@@ -2,14 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("EaseOfMovement")]
     public class EaseOfMovement : Aindicator
     {
         private IndicatorDataSeries _seriesLine;
-
         private IndicatorDataSeries _seriesEomRaw;
 
         private IndicatorParameterInt _period;
@@ -88,19 +87,19 @@ namespace OsEngine.Indicators
             return result;
         }
 
-        private decimal GetSma(List<decimal> values, int length, int index)
+        private decimal GetSma(List<decimal> values, int lenght, int index)
         {
             decimal result = 0;
 
-            int lengthReal = 0;
+            int lenghtReal = 0;
 
-            for (int i = index; i > 0 && i > index - length; i--)
+            for (int i = index; i > 0 && i > index - lenght; i--)
             {
                 result += values[i];
-                lengthReal++;
+                lenghtReal++;
             }
 
-            return result / lengthReal; ;
+            return result / lenghtReal; ;
         }
     }
 }

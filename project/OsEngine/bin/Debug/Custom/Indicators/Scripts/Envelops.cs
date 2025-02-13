@@ -2,20 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("Envelops")]
     public class Envelops : Aindicator
     {
-        private IndicatorParameterInt _length;
-
+        private IndicatorParameterInt _lenght;
         private IndicatorParameterDecimal _deviation;
 
         private IndicatorDataSeries _seriesUp;
-
         private IndicatorDataSeries _seriesDown;
-
         private IndicatorDataSeries _seriesCenter;
 
         private Aindicator _sma;
@@ -24,7 +21,7 @@ namespace OsEngine.Indicators
         {
             if (state == IndicatorState.Configure)
             {
-                _length = CreateParameterInt("Length", 21);
+                _lenght = CreateParameterInt("Length", 21);
                 _deviation = CreateParameterDecimal("Deviation", 2);
 
                 _seriesUp = CreateSeries("Up line", Color.Green, IndicatorChartPaintType.Line, true);
@@ -32,14 +29,14 @@ namespace OsEngine.Indicators
                 _seriesDown = CreateSeries("Down line", Color.Green, IndicatorChartPaintType.Line, true);
 
                 _sma = IndicatorsFactory.CreateIndicatorByName("Sma", Name + "Sma", false);
-                _sma.Parameters[0].Bind(_length);
+                _sma.Parameters[0].Bind(_lenght);
                 ProcessIndicator("Central SMA", _sma);
             }
         }
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index <= _length.ValueInt)
+            if (index <= _lenght.ValueInt)
             {
                 return;
             }

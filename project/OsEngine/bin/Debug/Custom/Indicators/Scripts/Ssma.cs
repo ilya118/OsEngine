@@ -1,13 +1,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("Ssma")]
     public class Ssma : Aindicator
     {
-        private IndicatorParameterInt _length;
+        private IndicatorParameterInt _lenght;
 
         private IndicatorParameterString _candlePoint;
 
@@ -15,7 +15,7 @@ namespace OsEngine.Indicators
 
         public override void OnStateChange(IndicatorState state)
         {
-            _length = CreateParameterInt("Length", 14);
+            _lenght = CreateParameterInt("Length", 14);
             _candlePoint = CreateParameterStringCollection("Candle Point", "Close", Entity.CandlePointsArray);
             _series = CreateSeries("Ma", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
         }
@@ -24,26 +24,26 @@ namespace OsEngine.Indicators
         {
             decimal result = 0;
 
-            if (index == _length.ValueInt)
+            if (index == _lenght.ValueInt)
             {
                 decimal lastMoving = 0;
 
-                for (int i = index - _length.ValueInt + 1; i < index + 1; i++)
+                for (int i = index - _lenght.ValueInt + 1; i < index + 1; i++)
                 {
                     lastMoving += candles[i].GetPoint(_candlePoint.ValueString);
                 }
 
-                lastMoving = lastMoving / _length.ValueInt;
+                lastMoving = lastMoving / _lenght.ValueInt;
 
                 result = lastMoving;
             }
-            else if (index > _length.ValueInt)
+            else if (index > _lenght.ValueInt)
             {
-                decimal ssmaLast = _series.Values[index - 1];
+                decimal emaLast = _series.Values[index - 1];
 
                 decimal p = candles[index].GetPoint(_candlePoint.ValueString);
 
-                result = (ssmaLast * (_length.ValueInt - 1) + p) / _length.ValueInt;
+                result = (emaLast * (_lenght.ValueInt - 1) + p) / _lenght.ValueInt;
             }
 
             _series.Values[index] = result;

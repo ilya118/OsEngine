@@ -1,34 +1,39 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace OsEngine.Charts.CandleChart.Indicators.Indicator
 {
-    [Indicator("DPO_Detrended_Price_Oscillator")]
-    public class DPO_Detrended_Price_Oscillator : Aindicator
+    //[IndicatorAttribute("DPO_Detrended_Price_Oscillator")]
+    internal class DPO_Detrended_Price_Oscillator : Aindicator
     {
-        private IndicatorParameterInt _lengthSma;
-
+        ///period for which the indicator is calculated
+        /// </summary>
+        private IndicatorParameterInt _lenghtSma;
+        /// <summary>
+        /// Type close price
+        /// </summary>
         private IndicatorParameterString _candlePoint;
-
+        /// <summary>
+        /// indicator data series
+        /// </summary>
         private IndicatorDataSeries _series;
-
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _lengthSma = CreateParameterInt("Length Sma", 14);
+                _lenghtSma = CreateParameterInt("Length Sma", 14);
                 _candlePoint = CreateParameterStringCollection("Candle Point", "Close", OsEngine.Indicators.Entity.CandlePointsArray);
                 _series = CreateSeries("Ma", Color.DodgerBlue, IndicatorChartPaintType.Line, true);
             }
         }
-
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index < _lengthSma.ValueInt)
+            if (index < _lenghtSma.ValueInt)
                 return;
 
-            decimal X_PrevPeriod = candles[index - (_lengthSma.ValueInt / 2) + 1].GetPoint(_candlePoint.ValueString);
+            decimal X_PrevPeriod = candles[index - (_lenghtSma.ValueInt / 2) + 1].GetPoint(_candlePoint.ValueString);
             decimal sma = CalcSMA(candles, index);
             decimal DPO = X_PrevPeriod - sma;
 
@@ -39,12 +44,12 @@ namespace OsEngine.Indicators
         {
             decimal SMA = 0;
 
-            if (_lengthSma.ValueInt > index)
+            if (_lenghtSma.ValueInt > index)
             {
                 SMA = 0;
             }
             else
-                SMA = candles.Summ(index - _lengthSma.ValueInt, index, _candlePoint.ValueString) / _lengthSma.ValueInt;
+                SMA = candles.Summ(index - _lenghtSma.ValueInt, index, _candlePoint.ValueString) / _lenghtSma.ValueInt;
 
             return SMA;
         }

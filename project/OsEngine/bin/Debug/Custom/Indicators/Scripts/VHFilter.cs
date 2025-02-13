@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VHFilter")]
     public class VHFilter: Aindicator
     {
         private IndicatorDataSeries _series;
-
         private IndicatorParameterInt _period;
 
         public override void OnStateChange(IndicatorState state)
@@ -30,11 +29,11 @@ namespace OsEngine.Indicators
         {
             if (index == 0)
             {
-                _highLow.Clear();
+                _highlow.Clear();
             }
-            while(index >= _highLow.Count)
+            while(index >= _highlow.Count)
             {
-                _highLow.Add(GetHighLow(candles,index));
+                _highlow.Add(GetHighLow(candles,index));
             }
 
             if (index < _period.ValueInt)
@@ -55,7 +54,7 @@ namespace OsEngine.Indicators
             }
             else
             {
-                value = _highLow[index] / sum;
+                value = _highlow[index] / sum;
             }
 
             return Math.Round(value, 2);
@@ -88,6 +87,6 @@ namespace OsEngine.Indicators
             return (maxhigh - maxlow);
         }
 
-        private List<decimal> _highLow = new List<decimal>();
+        private List<decimal> _highlow = new List<decimal>();
     }
 }

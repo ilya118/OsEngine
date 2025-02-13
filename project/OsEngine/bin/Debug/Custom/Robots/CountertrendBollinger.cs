@@ -202,7 +202,8 @@ namespace OsEngine.Robots.AO
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+            Position pos = openPositions[0];
+
             // The last value of the indicator
             _lastCenterLine = _Bollinger.DataSeries[2].Last;
 
@@ -212,14 +213,14 @@ namespace OsEngine.Robots.AO
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
-                Position pos = openPositions[i];
+                Position positions = openPositions[i];
 
-                if (pos.State != PositionStateType.Open)
+                if (positions.State != PositionStateType.Open)
                 {
                     continue;
                 }
 
-                if (pos.Direction == Side.Buy) // If the direction of the position is purchase
+                if (openPositions[i].Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     if (lastPrice > _lastCenterLine)
                     {

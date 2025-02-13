@@ -2,20 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("Bollinger")]
     public class Bollinger : Aindicator
     {
-        private IndicatorParameterInt _length;
-
+        private IndicatorParameterInt _lenght;
         private IndicatorParameterDecimal _deviation;
 
         private IndicatorDataSeries _seriesUp;
-
         private IndicatorDataSeries _seriesDown;
-
         private IndicatorDataSeries _seriesCenter;
 
         private Aindicator _sma;
@@ -24,7 +21,7 @@ namespace OsEngine.Indicators
         {
             if (state == IndicatorState.Configure)
             {
-                _length = CreateParameterInt("Length", 21);
+                _lenght = CreateParameterInt("Length", 21);
                 _deviation = CreateParameterDecimal("Deviation", 2);
 
                 _seriesUp = CreateSeries("Up line", Color.Green, IndicatorChartPaintType.Line, true);
@@ -33,14 +30,14 @@ namespace OsEngine.Indicators
                 _seriesCenter = CreateSeries("Centre line", Color.Green, IndicatorChartPaintType.Line, true);
 
                 _sma = IndicatorsFactory.CreateIndicatorByName("Sma", Name + "Sma", false);
-                _sma.Parameters[0].Bind(_length);
+                _sma.Parameters[0].Bind(_lenght);
                 ProcessIndicator("Central SMA", _sma);
             }
         }
 
         public override void OnProcess(List<Candle> candles, int index)
         {
-            if (index <= _length.ValueInt)
+            if (index <= _lenght.ValueInt)
             {
                 return;
             }
@@ -49,9 +46,9 @@ namespace OsEngine.Indicators
 
             _seriesCenter.Values[index] = _sma.DataSeries[0].Values[index];
 
-            decimal[] valueDev = new decimal[_length.ValueInt];
+            decimal[] valueDev = new decimal[_lenght.ValueInt];
 
-            for (int i = index - _length.ValueInt + 1, i2 = 0; i < index + 1; i++, i2++)
+            for (int i = index - _lenght.ValueInt + 1, i2 = 0; i < index + 1; i++, i2++)
             {
                 valueDev[i2] = candles[i].Close - valueSma;
             }
@@ -68,13 +65,13 @@ namespace OsEngine.Indicators
                 summ += Convert.ToDouble(valueDev[i]);
             }
 
-            if (_length.ValueInt > 30)
+            if (_lenght.ValueInt > 30)
             {
-                summ = summ / (_length.ValueInt - 1);
+                summ = summ / (_lenght.ValueInt - 1);
             }
             else
             {
-                summ = summ / _length.ValueInt;
+                summ = summ / _lenght.ValueInt;
             }
 
             summ = Math.Sqrt(summ);

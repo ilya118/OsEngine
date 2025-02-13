@@ -1,11 +1,11 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolatilityBase")]
     public class VolatilityBase : Aindicator
     {
         private IndicatorParameterString _typeVolatilityPeriod;

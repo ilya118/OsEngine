@@ -1,48 +1,43 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-   [Indicator("LinearRegressionChannel")]
     public class LinearRegressionChannel : Aindicator
     {
         private IndicatorParameterInt _period;
-
         private IndicatorParameterDecimal _upDeviation;
-
         private IndicatorParameterDecimal _downDeviation;
 
         private IndicatorDataSeries _seriesCentralLine;
-
-        private IndicatorDataSeries _seriesUpperBand;
-
-        private IndicatorDataSeries _seriesLowerBand;
-
+        private IndicatorDataSeries _seriesUpperband;
+        private IndicatorDataSeries _seriesLowerband;
         private IndicatorParameterString _candlePoint;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _period = CreateParameterInt("Length", 100);
-                _candlePoint = CreateParameterStringCollection("Candle Point", "Close", OsEngine.Indicators.Entity.CandlePointsArray);
+                _period = CreateParameterInt("Lenght", 100);
+                _candlePoint = CreateParameterStringCollection("Candle Point", "Close", Entity.CandlePointsArray);
 
                 _upDeviation = CreateParameterDecimal("Up channel deviation", 2);
-                _downDeviation = CreateParameterDecimal("Down channel deviation", 2);
+                _downDeviation = CreateParameterDecimal("Down channel deviation", -2);
 
-                _seriesUpperBand = CreateSeries("Up channel", Color.Aqua,
+                _seriesUpperband = CreateSeries("Up channel", Color.Aqua,
                     IndicatorChartPaintType.Line, true);
-                _seriesUpperBand.CanReBuildHistoricalValues = true;
+                _seriesUpperband.CanReBuildHistoricalValues = true;
 
                 _seriesCentralLine = CreateSeries("Regression Line ", Color.Gold,
                     IndicatorChartPaintType.Line, true);
                 _seriesCentralLine.CanReBuildHistoricalValues = true;
 
-                _seriesLowerBand = CreateSeries("Down channel", Color.OrangeRed,
+                _seriesLowerband = CreateSeries("Down channel", Color.OrangeRed,
                     IndicatorChartPaintType.Line, true);
-                _seriesLowerBand.CanReBuildHistoricalValues = true;
+                _seriesLowerband.CanReBuildHistoricalValues = true;
             }
         }
 
@@ -101,22 +96,21 @@ namespace OsEngine.Indicators
 
             decimal standartError = 0;
             for (int i = index - _period.ValueInt + 1; i < index + 1; i++)
-            // We need to find out the distance from all points to the regression line over the length of the period
-            //Add the found distance and divide by the length of the period
+            // Нужно узнать расстояние от всех точек до линии регрессии за длину периода
+            //Найденное расстояние сложить и поделить на длину периода
             {
-                if (i < 0 ||
-                    i >= candles.Count)
-                {
-                    continue;
-                }
-                //Finding the point (closing point of the candle)
+
+                //Находим точку(точку закрытия свечи)
                 decimal point = candles[i].GetPoint(_candlePoint.ValueString);
 
-                //Finding a point on the line
+
+                //Находим точку на линии
                 decimal pointLine = _seriesCentralLine.Values[i];
 
-                //Finding the distance between points
+
+                //Находим дистанцию между точками
                 decimal distance = Math.Abs(point - pointLine);
+
 
                 standartError = standartError + distance;
 
@@ -126,10 +120,10 @@ namespace OsEngine.Indicators
 
             for (int i = index - _period.ValueInt + 1; i < index + 1; i++)
             {
-                _seriesUpperBand.Values[i] = _seriesCentralLine.Values[i] +
+                _seriesUpperband.Values[i] = _seriesCentralLine.Values[i] +
                                              (standartError * _upDeviation.ValueDecimal);
 
-                _seriesLowerBand.Values[i] = _seriesCentralLine.Values[i] -
+                _seriesLowerband.Values[i] = _seriesCentralLine.Values[i] -
                                              (standartError * _downDeviation.ValueDecimal);
             }
         }
@@ -141,14 +135,15 @@ namespace OsEngine.Indicators
                 _seriesCentralLine.Values[i] = 0;
             }
 
-            for (int i = index - _period.ValueInt + 1; i < _seriesUpperBand.Values.Count; i++)
+            for (int i = index - _period.ValueInt + 1; i < _seriesUpperband.Values.Count; i++)
             {
-                _seriesUpperBand.Values[i] = 0;
+                _seriesUpperband.Values[i] = 0;
             }
 
-            for (int i = index - _period.ValueInt + 1; i < _seriesLowerBand.Values.Count; i++)
+
+            for (int i = index - _period.ValueInt + 1; i < _seriesLowerband.Values.Count; i++)
             {
-                _seriesLowerBand.Values[i] = 0;
+                _seriesLowerband.Values[i] = 0;
             }
         }
     }

@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("CMO")]
     public class CMO:Aindicator
     {
         private IndicatorDataSeries _series;
-
         private IndicatorParameterInt _period;
+        
 
         public override void OnStateChange(IndicatorState state)
         {
@@ -123,10 +124,10 @@ namespace OsEngine.Indicators
             return cmo2;
 
         }
-
         private List<decimal> _cmo1 = new List<decimal>();
 
         private List<decimal> _cmo2 = new List<decimal>();
 
+       
     }
 }

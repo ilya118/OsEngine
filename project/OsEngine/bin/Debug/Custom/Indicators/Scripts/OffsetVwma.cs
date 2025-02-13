@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("OffsetVwma")]
     public class OffsetVwma : Aindicator
     {
         private IndicatorParameterInt _lengthVwma;
@@ -14,6 +15,7 @@ namespace OsEngine.Indicators
         private IndicatorDataSeries _series;
 
         private Aindicator _OffsetVwma;
+
 
         public override void OnStateChange(IndicatorState state)
         {

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("WilliamsRange")]
     public class WilliamsRange : Aindicator
     {
         private IndicatorParameterInt _period;
-
         private IndicatorDataSeries _series;
 
         public override void OnStateChange(IndicatorState state)
@@ -25,11 +24,12 @@ namespace OsEngine.Indicators
 
         private List<decimal> _low = new List<decimal>();
 
+        public List<decimal> Values;
+
         public override void OnProcess(List<Candle> candles, int index)
         {
             _series.Values[index] = GetValue(candles, index);
         }
-
         private decimal GetValue(List<Candle> candles, int index)
         {
             if (index < _period.ValueInt)
@@ -53,7 +53,6 @@ namespace OsEngine.Indicators
             return Math.Round(-100 * (_high[index] - candles[index].Close) / (_high[index] - _low[index]), 2);
 
         }
-
         private decimal GetHigh(List<Candle> candles, int index)
         {
             if (index < _period.ValueInt)

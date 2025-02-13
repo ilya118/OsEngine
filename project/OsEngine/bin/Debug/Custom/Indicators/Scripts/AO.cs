@@ -2,41 +2,38 @@
 using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Entity;
+using OsEngine.Indicators;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("AO")]
     public class AO:Aindicator
     {
-        private IndicatorParameterInt _lengthFastLine;
-
-        private IndicatorParameterInt _lengthSlowLine;
-
+        private IndicatorParameterInt _lenghtFastLine;
+        private IndicatorParameterInt _lenghtSlowLine;
         public IndicatorParameterString _candlePoint;
 
         private IndicatorDataSeries _series;
 
         private Aindicator _emaSlow;
-
         private Aindicator _emaFast;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _lengthFastLine = CreateParameterInt("Fast line length", 5);
-                _lengthSlowLine = CreateParameterInt("Slow line length", 32);
+                _lenghtFastLine = CreateParameterInt("Fast line length", 5);
+                _lenghtSlowLine = CreateParameterInt("Slow line length", 32);
                 _candlePoint = CreateParameterStringCollection("Candle point", "Typical", Entity.CandlePointsArray);
 
                 _series = CreateSeries("AO", Color.DarkGreen, IndicatorChartPaintType.Column, true);
 
                 _emaFast = IndicatorsFactory.CreateIndicatorByName("Ema", Name + "Ema fast", false);
-                _emaFast.Parameters[0].Bind(_lengthFastLine);
+                _emaFast.Parameters[0].Bind(_lenghtFastLine);
                 _emaFast.Parameters[1].Bind(_candlePoint);
                 ProcessIndicator("Ema fast", _emaFast);
 
                 _emaSlow = IndicatorsFactory.CreateIndicatorByName("Ema", Name + "Ema slow", false);
-                _emaSlow.Parameters[0].Bind(_lengthSlowLine);
+                _emaSlow.Parameters[0].Bind(_lenghtSlowLine);
                 _emaSlow.Parameters[1].Bind(_candlePoint);
                 ProcessIndicator("Ema slow", _emaSlow);
             }
@@ -49,8 +46,8 @@ namespace OsEngine.Indicators
 
         private decimal GetValue(List<Candle> candles, int index)
         {
-            if (index - _lengthSlowLine.ValueInt <= 0 ||
-                index - _lengthFastLine.ValueInt <= 0)
+            if (index - _lenghtSlowLine.ValueInt <= 0 ||
+                index - _lenghtFastLine.ValueInt <= 0)
             {
                 return 0;
             }

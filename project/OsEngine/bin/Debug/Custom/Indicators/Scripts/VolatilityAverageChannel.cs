@@ -1,11 +1,11 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace CustomIndicators.Scripts
 {
-    [Indicator("VolatilityAverageChannel")]
     public class VolatilityAverageChannel : Aindicator
     {
         private IndicatorParameterString _typeVolatilityPeriod;
@@ -179,7 +179,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaFast.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaFast.Values[i] = valueSma;
             }
 
             // SMA Slow / Channel
@@ -215,7 +215,7 @@ namespace OsEngine.Indicators
                     break;
                 }
 
-                _seriesSmaSlow.Values[i] = Math.Round(valueSma, 5);
+                _seriesSmaSlow.Values[i] = valueSma;
                 _seriesUpChannel.Values[i] = Math.Round(valueSma + valueSma * _channelDeviation.ValueDecimal,5);
                 _seriesDownChannel.Values[i] = Math.Round(valueSma - valueSma * _channelDeviation.ValueDecimal, 5);
             }

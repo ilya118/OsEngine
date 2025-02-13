@@ -6,7 +6,7 @@ using System.Drawing;
 
 namespace CustomIndicators.Scripts
 {
-    public class VolatilityStagesAW : Aindicator
+    public class VolatilityStagesAW3 : Aindicator
     {
         private IndicatorParameterString _volatilityStagesRegime;
 
@@ -38,7 +38,7 @@ namespace CustomIndicators.Scripts
             {
                 _volatilityStagesRegime = CreateParameterStringCollection(
                     "Volatility stages regime",
-                    "2",
+                    "3",
                     new List<string> { "2", "3", "4" });
 
                 _typeVolatilityPeriod = CreateParameterStringCollection(

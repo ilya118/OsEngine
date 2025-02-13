@@ -1,40 +1,35 @@
 ﻿using OsEngine.Entity;
+using OsEngine.Indicators;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 
-namespace OsEngine.Indicators
+namespace OsEngine.Charts.CandleChart.Indicators.Indicator
 {
-    [Indicator("Mass_Index_MI")]
-    public class Mass_Index_MI : Aindicator
+    //[IndicatorAttribute("Mass_Index_MI")]
+    internal class Mass_Index_MI : Aindicator
     {
-        private IndicatorParameterInt _lengthEma;
-
+        private IndicatorParameterInt _lenghtEma;
         private IndicatorParameterInt _periodSum;
 
-        private IndicatorParameterDecimal _paramSeriesUp;
-
-        private IndicatorParameterDecimal _paramSeriesDown;
+        private IndicatorParameterDecimal _paramSeries27;
+        private IndicatorParameterDecimal _paramSeries26_5;
 
         private IndicatorDataSeries _series1;
-
         private IndicatorDataSeries _series2;
-
         private IndicatorDataSeries _seriesMI;
-
         private IndicatorDataSeries _series27;
-
         private IndicatorDataSeries _series26_5;
 
         public override void OnStateChange(IndicatorState state)
         {
             if (state == IndicatorState.Configure)
             {
-                _lengthEma = CreateParameterInt("Length EMA", 9);
+                _lenghtEma = CreateParameterInt("Length EMA", 9);
                 _periodSum = CreateParameterInt("Summing period EMA", 25);
 
-                _paramSeriesUp = CreateParameterDecimal("Parameter line up", 27);
-                _paramSeriesDown = CreateParameterDecimal("Parameter line down", 26.5m);
+                _paramSeries27 = CreateParameterDecimal("Parameter line up", 27);
+                _paramSeries26_5 = CreateParameterDecimal("Parameter line down", 26.5m);
 
                 _series1 = CreateSeries("Ema1", Color.Red, IndicatorChartPaintType.Line, false);
                 _series2 = CreateSeries("Ema2", Color.Red, IndicatorChartPaintType.Line, false);
@@ -43,13 +38,17 @@ namespace OsEngine.Indicators
                 _series26_5 = CreateSeries("Line 26.5 series", Color.LightBlue, IndicatorChartPaintType.Line, true);
             }
         }
-
+        /// <summary>
+        /// an iterator method to fill the indicator 
+        /// </summary>
+        /// <param name="candles">collection candles</param>
+        /// <param name="index">index to use in the collection of candles</param>
         public override void OnProcess(List<Candle> candles, int index)
         {
-            _series27.Values[index] = _paramSeriesUp.ValueDecimal;
-            _series26_5.Values[index] = _paramSeriesDown.ValueDecimal;
+            _series27.Values[index] = _paramSeries27.ValueDecimal;
+            _series26_5.Values[index] = _paramSeries26_5.ValueDecimal;
 
-            if (index < _lengthEma.ValueInt || index < _periodSum.ValueInt)
+            if (index < _lenghtEma.ValueInt || index < _periodSum.ValueInt)
                 return;
 
             CalcFirstEMA(candles, index);
@@ -66,26 +65,25 @@ namespace OsEngine.Indicators
 
             _seriesMI.Values[index] = Math.Round(MI, 3);
         }
-
         public void CalcFirstEMA(List<Candle> candles, int index)
         {
             decimal result = 0;
 
-            if (index == _lengthEma.ValueInt)
+            if (index == _lenghtEma.ValueInt)
             {
                 decimal lastMoving = 0;
 
-                for (int i = index - _lengthEma.ValueInt + 1; i < index + 1; i++)
+                for (int i = index - _lenghtEma.ValueInt + 1; i < index + 1; i++)
                 {
                     lastMoving += candles[i].High - candles[i].Low;
                 }
-                lastMoving = lastMoving / _lengthEma.ValueInt;
+                lastMoving = lastMoving / _lenghtEma.ValueInt;
                 result = lastMoving;
                 _series1.Values[index] = lastMoving;
             }
-            else if (index > _lengthEma.ValueInt)
+            else if (index > _lenghtEma.ValueInt)
             {
-                decimal a = Math.Round(2.0m / (_lengthEma.ValueInt + 1), 8);
+                decimal a = Math.Round(2.0m / (_lenghtEma.ValueInt + 1), 8);
                 decimal emaLast = _series1.Values[index - 1];
                 decimal p = candles[index].High - candles[index].Low;
                 result = emaLast + (a * (p - emaLast));
@@ -100,21 +98,21 @@ namespace OsEngine.Indicators
         {
             decimal result = 0;
 
-            if (index == _lengthEma.ValueInt)
+            if (index == _lenghtEma.ValueInt)
             {
                 decimal lastMoving = 0;
 
-                for (int i = index - _lengthEma.ValueInt + 1; i < index + 1; i++)
+                for (int i = index - _lenghtEma.ValueInt + 1; i < index + 1; i++)
                 {
                     lastMoving += values[i];
                 }
-                lastMoving = lastMoving / _lengthEma.ValueInt;
+                lastMoving = lastMoving / _lenghtEma.ValueInt;
                 result = lastMoving;
                 _series2.Values[index] = lastMoving;
             }
-            else if (index > _lengthEma.ValueInt)
+            else if (index > _lenghtEma.ValueInt)
             {
-                decimal a = Math.Round(2.0m / (_lengthEma.ValueInt + 1), 8);
+                decimal a = Math.Round(2.0m / (_lenghtEma.ValueInt + 1), 8);
                 decimal emaLast = _series2.Values[index - 1];
                 decimal p = values[index];
                 result = emaLast + (a * (p - emaLast));
@@ -124,7 +122,6 @@ namespace OsEngine.Indicators
 
             _series2.Values[index] = result;
         }
-
         public decimal SumEma(List<decimal> ema1, List<decimal> ema2, int index)
         {
             decimal result = 0;
