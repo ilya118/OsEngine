@@ -654,7 +654,9 @@ namespace OsEngine.OsOptimizer
                     return;
                 }
             }*/
+
             ServerTelegram.GetServer().SendMessageAsync("Оптимизация началась");
+            
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9 
                 && _master.Start())
             {
