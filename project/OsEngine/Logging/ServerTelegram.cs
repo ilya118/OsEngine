@@ -11,7 +11,7 @@ namespace OsEngine.Logging
 {
     public class ServerTelegram
     {
-        public static ServerTelegram _server;
+        private static ServerTelegram _server;
 
         private readonly HttpClient _httpClient;
 
@@ -86,7 +86,7 @@ namespace OsEngine.Logging
         /// - Отправка сообщения в телеграм
         /// </summary>
         /// <param name="messageText"></param>
-        public void SendMessageAsync(string messageText)
+        private void SendMessageAsync(string messageText)
         {
             try
             {
