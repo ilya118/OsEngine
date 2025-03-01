@@ -337,7 +337,7 @@ namespace OsEngine.OsOptimizer
 
                 Position[] posesArray = positions.ToArray();
 
-                tab.SecurityName = bot.tabsSimple[i].Security.Name;
+                tab.SecurityName = bot.TabsSimple[i].Security.Name;
                 tab.PositionsCount = positions.Count;
                 tab.TotalProfit = PositionStatisticGenerator.GetAllProfitInAbsolute(posesArray);
                 //tab.TotalProfitPercent = PositionStatisticGenerator.GetAllProfitPercent(posesArray);

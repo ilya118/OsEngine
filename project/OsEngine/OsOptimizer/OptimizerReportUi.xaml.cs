@@ -14,6 +14,7 @@ using OsEngine.Logging;
 using MessageBox = System.Windows.MessageBox;
 using OsEngine.OsOptimizer.OptEntity;
 using System.IO;
+using System.Text;
 
 namespace OsEngine.OsOptimizer
 {
