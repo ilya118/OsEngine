@@ -873,7 +873,7 @@ namespace OsEngine.OsOptimizer
 
         public bool IsAcceptedByFilter(OptimizerReport report)
         {
-            if (report == null)
+            /*if(report == null)
             {
                 return false;
             }
@@ -901,9 +901,10 @@ namespace OsEngine.OsOptimizer
             if (FilterDealsCountIsOn && report.PositionsCount < FilterDealsCountValue)
             {
                 return false;
-            }
+            }*/
 
-            return true;
+            //return true;
+            return false;
         }
 
         public List<OptimizerFaze> Fazes;

@@ -58,7 +58,7 @@ namespace OsEngine.OsOptimizer
             LabelAverageProfitPersent.Content = OsLocalization.Optimizer.Label56;
 
             Title += "   " + master.StrategyName;
-
+            
             this.Activate();
             this.Focus();
         }
@@ -78,6 +78,8 @@ namespace OsEngine.OsOptimizer
             }
 
             RepaintResults();
+            AutoSaveReport();
+            ServerTelegram.GetServer().SendMessageAsync("Оптимизация 4 закончилась");
         }
 
         OptimizerMaster _master;
@@ -175,6 +177,20 @@ namespace OsEngine.OsOptimizer
                 SaveFileDialog myDialog = new SaveFileDialog();
 
                 string saveFileName = _master.StrategyName;
+
+                // Получаем текущую дату и время
+                DateTime now = DateTime.Now;
+
+                // Форматируем дату и время в строку (например, "yyyyMMdd_HHmmss")
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+
+                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
+                {
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString;
+                }
 
                 IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
 
@@ -276,7 +292,7 @@ namespace OsEngine.OsOptimizer
 
         private void CreateTableFazes()
         {
-            _gridFazesEnd = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.FullRowSelect,
+            _gridFazesEnd = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.FullRowSelect, 
                 DataGridViewAutoSizeRowsMode.AllCells, true);
 
             _gridFazesEnd.ScrollBars = ScrollBars.Vertical;
@@ -393,7 +409,7 @@ namespace OsEngine.OsOptimizer
 
         private void CreateTableResults()
         {
-            _gridResults = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect,
+            _gridResults = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect, 
                 DataGridViewAutoSizeRowsMode.None, true);
 
             _gridResults.ScrollBars = ScrollBars.Vertical;
@@ -488,7 +504,7 @@ namespace OsEngine.OsOptimizer
 
             DataGridViewButtonColumn column12 = new DataGridViewButtonColumn();
             column12.CellTemplate = new DataGridViewButtonCell();
-            // column12.HeaderText = OsLocalization.Optimizer.Message42;
+           // column12.HeaderText = OsLocalization.Optimizer.Message42;
             column12.ReadOnly = true;
             column12.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             _gridResults.Columns.Add(column12);
@@ -701,7 +717,7 @@ namespace OsEngine.OsOptimizer
         }
 
         private void _gridResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-        {
+            {
             if (e.RowIndex < 0)
             {
                 return;
@@ -790,6 +806,66 @@ namespace OsEngine.OsOptimizer
 
         private SortBotsType _sortBotsType;
 
+        private void AutoSaveReport()
+        {
+            try
+            {
+                // Генерация имени файла с текущей датой и временем
+                string saveFileName = _master.StrategyName;
+
+                // Удаляем ".txt" из saveFileName, если оно есть
+                if (saveFileName.EndsWith(".txt"))
+                {
+                    saveFileName = saveFileName.Substring(0, saveFileName.Length - 4);
+                }
+
+                DateTime now = DateTime.Now;
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+                // Проверка на null для _master.TabsSimpleNamesAndTimeFrames
+                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
+                {
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString; // Добавляем ".txt" только в конце
+                }
+                saveFileName = saveFileName.Replace(".txt", "");
+                // Указанный путь для сохранения файла
+                string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
+
+                // Проверка существования директории. Если её нет, создаём.
+                if (!Directory.Exists(saveDirectory))
+                {
+                    Directory.CreateDirectory(saveDirectory);
+                }
+
+                // Полный путь к файлу
+                string savePath = Path.Combine(saveDirectory, saveFileName);
+                savePath = savePath + ".txt";
+
+                // Формирование строки для сохранения
+                StringBuilder saveStr = new StringBuilder();
+
+                foreach (var report in _reports)
+                {
+                    if (report != null)
+                    {
+                        saveStr.AppendLine(report.GetSaveString());
+                    }
+                }
+
+                // Сохранение в файл
+                File.WriteAllText(savePath, saveStr.ToString());
+
+                // Логирование успешного сохранения
+                _master.SendLogMessage($"Отчет успешно сохранен в файл: {savePath}", LogMessageType.System);
+            }
+            catch (Exception error)
+            {
+                // Логирование ошибки
+                _master.SendLogMessage($"Ошибка при автоматическом сохранении отчета: {error}", LogMessageType.Error);
+            }
+        }
         #endregion
 
     }

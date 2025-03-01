@@ -111,7 +111,7 @@ namespace OsEngine.OsOptimizer
                 }
                 else
                 {
-
+                    /*
                     SendLogMessage("ReportsCount" + ReportsToFazes[ReportsToFazes.Count - 1].Reports.Count.ToString(), LogMessageType.System);
 
                     OptimizerFazeReport reportFiltred = new OptimizerFazeReport();
@@ -125,6 +125,7 @@ namespace OsEngine.OsOptimizer
                     StartAsuncBotFactoryOutOfSample(reportFiltred, _master.StrategyName, _master.IsScript, "OutOfSample");
 
                     StartOptimizeFazeOutOfSample(report, reportFiltred);
+                    */
                 }
             }
 
@@ -195,7 +196,7 @@ namespace OsEngine.OsOptimizer
                 if (allParam[i].Type == StrategyParameterType.DecimalCheckBox)
                 {
                     ((StrategyParameterDecimalCheckBox)allParam[i]).ValueDecimal = ((StrategyParameterDecimalCheckBox)allParam[i]).ValueDecimalStart;
-                }
+                }				
             }
 
             List<bool> allOptimezedParam = parametersOn;
@@ -313,7 +314,7 @@ namespace OsEngine.OsOptimizer
                             countBots++;
                             break;
                         }
-                    }
+                    }					
                 }
 
                 if (isAndOfFaze)
@@ -433,7 +434,7 @@ namespace OsEngine.OsOptimizer
                             }
                             break;
                         }
-                    }
+                    }				
                 }
 
                 if (isAndOfFaze)
@@ -557,11 +558,11 @@ namespace OsEngine.OsOptimizer
             {
                 ((StrategyParameterDecimal)parameters).ValueDecimal = ((StrategyParameterDecimal)parameters).ValueDecimalStart;
             }
-
+			
             if (parameters.Type == StrategyParameterType.DecimalCheckBox)
             {
                 ((StrategyParameterDecimalCheckBox)parameters).ValueDecimal = ((StrategyParameterDecimalCheckBox)parameters).ValueDecimalStart;
-            }
+            }			
         }
 
         private List<IIStrategyParameter> CopyParameters(List<IIStrategyParameter> parametersToCopy)
@@ -609,7 +610,7 @@ namespace OsEngine.OsOptimizer
                         Convert.ToBoolean(((StrategyParameterDecimalCheckBox)parametersToCopy[i]).CheckState));
                     ((StrategyParameterDecimalCheckBox)newParam).ValueDecimal = ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalStart;
                 }
-
+				
                 newParameters.Add(newParam);
 
             }
@@ -729,7 +730,7 @@ namespace OsEngine.OsOptimizer
             {
                 server.TestingEndEvent += server_TestingEndEvent;
             }
-
+            
             server.TypeTesterData = _master.Storage.TypeTesterData;
             server.TestingProgressChangeEvent += server_TestingProgressChangeEvent;
 
@@ -741,18 +742,18 @@ namespace OsEngine.OsOptimizer
                 {// BotTabSimple
                     BotTabSimple simple = (BotTabSimple)sources[i];
 
-                    Security secToStart =
+                Security secToStart =
                     _master.Storage.Securities.Find(s => s.Name == simple.Connector.SecurityName);
 
                     server.GetDataToSecurity(secToStart, simple.Connector.TimeFrame, report.Faze.TimeStart,
-                        report.Faze.TimeEnd);
-                }
+                    report.Faze.TimeEnd);
+            }
                 else if (sources[i].TabType == BotTabType.Index)
                 {// BotTabIndex
                     BotTabIndex index = (BotTabIndex)sources[i];
 
                     for (int i2 = 0; i2 < index.Tabs.Count; i2++)
-                    {
+            {
                         Security secToStart =
                           _master.Storage.Securities.Find(s => s.Name == index.Tabs[i2].SecurityName);
 
@@ -765,14 +766,14 @@ namespace OsEngine.OsOptimizer
                     BotTabScreener screener = (BotTabScreener)sources[i];
 
                     for (int i2 = 0; i2 < screener.Tabs.Count; i2++)
-                    {
-                        Security secToStart =
+                {
+                    Security secToStart =
                           _master.Storage.Securities.Find(s => s.Name == screener.Tabs[i2].Connector.SecurityName);
 
                         server.GetDataToSecurity(secToStart, screener.Tabs[i2].Connector.TimeFrame, report.Faze.TimeStart,
-                            report.Faze.TimeEnd);
-                    }
+                        report.Faze.TimeEnd);
                 }
+            }
             }
 
             return server;
@@ -784,7 +785,7 @@ namespace OsEngine.OsOptimizer
             OptimizerServer server, StartProgram regime)
         {
             BotPanel bot = null;
-
+            
             try
             {
                 bot = _asyncBotFactory.GetBot(_master.StrategyName, botName);
@@ -880,7 +881,7 @@ namespace OsEngine.OsOptimizer
                 SendLogMessage(ex.ToString(), LogMessageType.Error);
                 return null;
             }
-
+           
             try
             {
                 // настраиваем источники
@@ -889,7 +890,7 @@ namespace OsEngine.OsOptimizer
                 List<IIBotTab> sourcesTo = bot.GetTabs();
 
                 for (int i = 0; i < sourcesFrom.Count; i++)
-                {
+                    {
                     if (sourcesFrom[i].TabType == BotTabType.Simple)
                     {// BotTabSimple
                         BotTabSimple simpleFrom = (BotTabSimple)sourcesFrom[i];
@@ -902,7 +903,7 @@ namespace OsEngine.OsOptimizer
                         BotTabIndex indexTo = (BotTabIndex)sourcesTo[i];
 
                         for (int i2 = 0; i2 < indexFrom.Tabs.Count; i2++)
-                        {
+                    {
                             indexTo.CreateNewSecurityConnector();
 
                             ConnectorCandles indexConnectorFrom = indexFrom.Tabs[i2];
@@ -964,11 +965,11 @@ namespace OsEngine.OsOptimizer
             {
                 ActivatedSecurity sec = from.SecuritiesNames[i];
                 to.SecuritiesNames.Add(sec);
-            }
+                }
         }
 
         private void CopySettingsInConnectorCandlesSource(ConnectorCandles from, ConnectorCandles to, OptimizerServer server)
-        {
+                {
             to.ServerType = ServerType.Optimizer;
             to.PortfolioName = server.Portfolios[0].Number;
             to.SecurityName = from.SecurityName;
@@ -980,16 +981,16 @@ namespace OsEngine.OsOptimizer
             to.TimeFrameBuilder.CandleSeriesRealization.SetSaveString(
                  from.TimeFrameBuilder.CandleSeriesRealization.GetSaveString());
 
-            if (server.TypeTesterData == TesterDataType.Candle)
-            {
+                        if (server.TypeTesterData == TesterDataType.Candle)
+                        {
                 to.CandleMarketDataType = CandleMarketDataType.Tick;
-            }
-            else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
-                     server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
-            {
+                        }
+                        else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
+                                 server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
+                        {
                 to.CandleMarketDataType = CandleMarketDataType.MarketDepth;
-            }
-        }
+                        }
+                    }
 
         private void CopySettingsInBotTabSimpleSource(BotTabSimple from, BotTabSimple to, OptimizerServer server)
         {
@@ -1115,7 +1116,7 @@ namespace OsEngine.OsOptimizer
 
             while (bot.TimeServer < reportFaze.Faze.TimeEnd)
             {
-
+                
                 Thread.Sleep(1000);
                 if (timeStartWaiting.AddSeconds(300) < DateTime.Now)
                 {
@@ -1180,7 +1181,7 @@ namespace OsEngine.OsOptimizer
                     if (curBot != null
                         && curBot.TabsSimple != null
                         && curBot.TabsSimple.Count > 0
-                        && curBot.TabsSimple[0].Connector != null
+                        && curBot.TabsSimple[0].Connector != null 
                         && curBot.TabsSimple[0].Connector.ServerUid == serverNum)
                     {
                         bot = curBot;
@@ -1195,7 +1196,7 @@ namespace OsEngine.OsOptimizer
                         bot = curBot;
                         _botsInTest.RemoveAt(i);
                         break;
-                    }
+                }
                 }
 
                 if (bot != null)
@@ -1224,7 +1225,7 @@ namespace OsEngine.OsOptimizer
                     for (int i = 0; i < _testBotsTime.Count; i++)
                     {
                         allTime = TimeSpan.FromMilliseconds(allTime.TotalMilliseconds + _testBotsTime[i].TotalMilliseconds);
-                    }
+            }
 
                     int secondsOnOneTest = Convert.ToInt32(allTime.TotalSeconds / _testBotsTime.Count);
 

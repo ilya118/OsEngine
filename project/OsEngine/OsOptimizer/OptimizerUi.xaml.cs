@@ -601,7 +601,7 @@ namespace OsEngine.OsOptimizer
 
             _testIsEnd = false;
 
-            int botsCount = _master.GetMaxBotsCount();
+            /*int botsCount = _master.GetMaxBotsCount();
 
             if (botsCount > 100000)
             {
@@ -631,8 +631,10 @@ namespace OsEngine.OsOptimizer
                 {
                     return;
                 }
-            }
+            }*/
 
+            ServerTelegram.GetServer().SendMessageAsync("Оптимизация 4 началась");
+            
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9
                 && _master.Start())
             {
