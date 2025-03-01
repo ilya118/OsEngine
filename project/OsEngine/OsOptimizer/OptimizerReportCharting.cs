@@ -1,9 +1,12 @@
-﻿using System;
+﻿/*
+ * Your rights to use code governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
+ * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
-using System.Reflection;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Windows.Forms.Integration;
@@ -11,28 +14,26 @@ using OsEngine.Charts;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
-using OsEngine.OsOptimizer.OptEntity;
 
 namespace OsEngine.OsOptimizer
 {
     public class OptimizerReportCharting
     {
         public OptimizerReportCharting(
-            WindowsFormsHost hostStepsOfOptimization, 
+            WindowsFormsHost hostStepsOfOptimization,
             WindowsFormsHost hostRobustness,
-            System.Windows.Controls.ComboBox boxTypeSort, 
+            System.Windows.Controls.ComboBox boxTypeSort,
             System.Windows.Controls.Label labelRobustnessMetricValue,
             System.Windows.Controls.ComboBox boxTypeSortBotNum)
         {
             _sortBotsType = SortBotsType.TotalProfit;
-            _currentCulture = OsLocalization.CurCulture;
             _hostStepsOfOptimization = hostStepsOfOptimization;
             _hostRobustness = hostRobustness;
             _labelRobustnessMetricValue = labelRobustnessMetricValue;
 
             boxTypeSort.Items.Add(SortBotsType.PositionCount.ToString());
             boxTypeSort.Items.Add(SortBotsType.TotalProfit.ToString());
-            boxTypeSort.Items.Add(SortBotsType.MaxDrowDawn.ToString());
+            boxTypeSort.Items.Add(SortBotsType.MaxDrawDawn.ToString());
             boxTypeSort.Items.Add(SortBotsType.AverageProfit.ToString());
             boxTypeSort.Items.Add(SortBotsType.AverageProfitPercent.ToString());
             boxTypeSort.Items.Add(SortBotsType.ProfitFactor.ToString());
@@ -47,7 +48,7 @@ namespace OsEngine.OsOptimizer
 
             _boxTypeSortBotNum = boxTypeSortBotNum;
 
-            for(int i = 0;i < 99;i++)
+            for (int i = 0; i < 99; i++)
             {
                 _boxTypeSortBotNum.Items.Add(i.ToString());
             }
@@ -58,8 +59,6 @@ namespace OsEngine.OsOptimizer
             CreateStepsOfOptimization();
             CreateRobustnessChart();
         }
-
-        private CultureInfo _currentCulture;
 
         private System.Windows.Controls.ComboBox _boxTypeSort;
 
@@ -84,7 +83,7 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        void _gridResults_SelectionChanged(object sender, EventArgs e)
+        private void _gridResults_SelectionChanged(object sender, EventArgs e)
         {
 
             if (_boxTypeSort.Items.Count == 0)
@@ -104,7 +103,7 @@ namespace OsEngine.OsOptimizer
             }
             else if (columnSelect == 2)
             {
-                _sortBotsType = SortBotsType.MaxDrowDawn;
+                _sortBotsType = SortBotsType.MaxDrawDawn;
             }
             else if (columnSelect == 3)
             {
@@ -141,13 +140,13 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        public void ReLoad(List<OptimazerFazeReport> reports)
+        public void ReLoad(List<OptimizerFazeReport> reports)
         {
             try
             {
                 _reports = reports;
 
-                if (_reports == null 
+                if (_reports == null
                     || _reports.Count <= 1)
                 {
                     return;
@@ -155,7 +154,7 @@ namespace OsEngine.OsOptimizer
 
                 for (int i = 0; i < reports.Count; i++)
                 {
-                    OptimazerFazeReport.SortResults(reports[i].Reports, _sortBotsType);
+                    OptimizerFazeReport.SortResults(reports[i].Reports, _sortBotsType);
                 }
 
                 GetBestBotNum(reports[0].Reports);
@@ -174,7 +173,7 @@ namespace OsEngine.OsOptimizer
 
         private void GetBestBotNum(List<OptimizerReport> reports)
         {
-            if(_sortBotPercent == 0)
+            if (_sortBotPercent == 0)
             {
                 _sortBotNumber = 0;
                 return;
@@ -186,7 +185,7 @@ namespace OsEngine.OsOptimizer
 
             _sortBotNumber = Convert.ToInt32(result);
 
-            if(_sortBotNumber > reports.Count)
+            if (_sortBotNumber > reports.Count)
             {
                 _sortBotNumber = reports.Count - 1;
             }
@@ -198,17 +197,18 @@ namespace OsEngine.OsOptimizer
 
         private int _sortBotNumber = 0;
 
-        private List<OptimazerFazeReport> _reports;
+        private List<OptimizerFazeReport> _reports;
 
-        // fazes in table
+        #region Fazes in table
 
         private WindowsFormsHost _hostStepsOfOptimization;
+
         private DataGridView _gridStepsOfOptimization;
 
         private void CreateStepsOfOptimization()
         {
-            _gridStepsOfOptimization = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect, 
-                DataGridViewAutoSizeRowsMode.None,true);
+            _gridStepsOfOptimization = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect,
+                DataGridViewAutoSizeRowsMode.None, true);
 
             _gridStepsOfOptimization.ScrollBars = ScrollBars.Vertical;
 
@@ -325,7 +325,7 @@ namespace OsEngine.OsOptimizer
 
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    OptimazerFazeReport curReport = _reports[i];
+                    OptimizerFazeReport curReport = _reports[i];
 
                     if (curReport == null ||
                         curReport.Reports == null ||
@@ -379,7 +379,7 @@ namespace OsEngine.OsOptimizer
                     row.Cells.Add(cell4);
 
                     DataGridViewTextBoxCell cell5 = new DataGridViewTextBoxCell();
-                    cell5.Value = reportToPaint.GetParamsToDataTable();
+                    cell5.Value = reportToPaint.GetParametersToDataTable();
                     row.Cells.Add(cell5);
 
                     DataGridViewTextBoxCell cell6 = new DataGridViewTextBoxCell();
@@ -421,13 +421,15 @@ namespace OsEngine.OsOptimizer
                     _gridStepsOfOptimization.Rows.Add(row);
                 }
             }
-            catch (Exception ex) 
+            catch (Exception ex)
             {
                 SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
-        // Robustness
+        #endregion
+
+        #region Robustness
 
         private WindowsFormsHost _hostRobustness;
 
@@ -509,7 +511,7 @@ namespace OsEngine.OsOptimizer
 
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    OptimazerFazeReport curReport = _reports[i];
+                    OptimizerFazeReport curReport = _reports[i];
 
                     if (curReport == null ||
                         curReport.Reports == null ||
@@ -538,7 +540,7 @@ namespace OsEngine.OsOptimizer
                                 {
                                     countBestTwenty += 1;
 
-                                    if(countBestTwenty > max)
+                                    if (countBestTwenty > max)
                                     {
                                         max = countBestTwenty;
                                     }
@@ -643,11 +645,13 @@ namespace OsEngine.OsOptimizer
             }
             catch (Exception ex)
             {
-                SendLogMessage(ex.ToString(),LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
-        // total profit
+        #endregion
+
+        #region Total profit
 
         System.Windows.Controls.ComboBox _comboBoxTotalProfitEquityType;
 
@@ -668,10 +672,10 @@ namespace OsEngine.OsOptimizer
 
             UpdateTotalProfitChart();
 
-            _comboBoxTotalProfitEquityType.SelectionChanged += _comboBoxprofitType_SelectionChanged;
+            _comboBoxTotalProfitEquityType.SelectionChanged += _comboBoxProfitType_SelectionChanged;
         }
 
-        private void _comboBoxprofitType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        private void _comboBoxProfitType_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             UpdateTotalProfitChart();
         }
@@ -712,7 +716,7 @@ namespace OsEngine.OsOptimizer
 
         private void UpdateTotalProfitChart()
         {
-            if(_chartTotalProfit == null)
+            if (_chartTotalProfit == null)
             {
                 return;
             }
@@ -744,11 +748,11 @@ namespace OsEngine.OsOptimizer
 
                 OptimizerReport inSampleReport = null;
 
-                List<OptimazerFazeReport> outOfSampleReports = new List<OptimazerFazeReport>();
+                List<OptimizerFazeReport> outOfSampleReports = new List<OptimizerFazeReport>();
 
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    OptimazerFazeReport curReport = _reports[i];
+                    OptimizerFazeReport curReport = _reports[i];
 
                     if (curReport == null ||
                         curReport.Reports == null ||
@@ -788,14 +792,14 @@ namespace OsEngine.OsOptimizer
                                 }
                                 else if (profitType == "Persent")
                                 {
-                                    profit.Add(curReport.Reports[i2].TotalProfitPersent);
+                                    profit.Add(curReport.Reports[i2].TotalProfitPercent);
                                     if (profitsSumm.Count == 0)
                                     {
-                                        profitsSumm.Add(curReport.Reports[i2].TotalProfitPersent);
+                                        profitsSumm.Add(curReport.Reports[i2].TotalProfitPercent);
                                     }
                                     else
                                     {
-                                        profitsSumm.Add(profitsSumm[profitsSumm.Count - 1] + curReport.Reports[i2].TotalProfitPersent);
+                                        profitsSumm.Add(profitsSumm[profitsSumm.Count - 1] + curReport.Reports[i2].TotalProfitPercent);
                                     }
                                 }
 
@@ -830,11 +834,11 @@ namespace OsEngine.OsOptimizer
                     }
                     close = profitsSumm[i];
 
-                    if(close > max)
+                    if (close > max)
                     {
                         max = close;
                     }
-                    if(close < min)
+                    if (close < min)
                     {
                         min = close;
                     }
@@ -882,13 +886,13 @@ namespace OsEngine.OsOptimizer
 
                 }
 
-                if(max != decimal.MinValue &&
+                if (max != decimal.MinValue &&
                     min != decimal.MaxValue)
                 {
                     max = Math.Round(max + max * 0.2m, 4);
                     min = Math.Round(min, 4);
 
-                    if(max > min)
+                    if (max > min)
                     {
                         _chartTotalProfit.ChartAreas[0].AxisY.Maximum = Convert.ToDouble(max);
                         _chartTotalProfit.ChartAreas[0].AxisY.Minimum = Convert.ToDouble(min);
@@ -901,18 +905,20 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        // average profit
+        #endregion
 
-        WindowsFormsHost _hostAverageProfitChart;
+        #region Average profit
+
+        private WindowsFormsHost _hostAverageProfitChart;
 
         private Chart _chartAverageProfit;
 
         public void ActivateAverageProfitChart(WindowsFormsHost hostAverageProfit)
         {
             _hostAverageProfitChart = hostAverageProfit;
-            
+
             CreateAverageProfitChart();
-             
+
             ReLoad(_reports);
         }
 
@@ -979,7 +985,7 @@ namespace OsEngine.OsOptimizer
 
                 decimal averageProfitPercent = 0;
 
-                List<OptimazerFazeReport> outOfSampleReports = new List<OptimazerFazeReport>();
+                List<OptimizerFazeReport> outOfSampleReports = new List<OptimizerFazeReport>();
 
                 for (int i = 0; i < _reports.Count; i += 2)
                 {
@@ -1118,15 +1124,17 @@ namespace OsEngine.OsOptimizer
             }
             catch (Exception ex)
             {
-                SendLogMessage(ex.ToString(),LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
 
 
         }
 
-        // profit factor
+        #endregion
 
-        WindowsFormsHost _hostProfitFactor;
+        #region Profit factor
+
+        private WindowsFormsHost _hostProfitFactor;
 
         private Chart _chartProfitFactor;
 
@@ -1202,7 +1210,7 @@ namespace OsEngine.OsOptimizer
 
                 decimal averageProfitFactor = 0;
 
-                List<OptimazerFazeReport> outOfSampleReports = new List<OptimazerFazeReport>();
+                List<OptimizerFazeReport> outOfSampleReports = new List<OptimizerFazeReport>();
 
                 for (int i = 0; i < _reports.Count; i += 2)
                 {
@@ -1269,7 +1277,7 @@ namespace OsEngine.OsOptimizer
                 decimal max = decimal.MinValue;
                 decimal min = decimal.MaxValue;
 
-                    for (int i = 0; i < values.Count; i++)
+                for (int i = 0; i < values.Count; i++)
                 {
                     seriesOosValues.Points.AddXY(i + 1, values[i]);
 
@@ -1344,14 +1352,10 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        // logging/логирование
+        #endregion
 
-        /// <summary>
-        /// send up a new message
-        /// выслать наверх новое сообщение
-        /// </summary>
-        /// <param name="message">Message text/текст сообщения</param>
-        /// <param name="type">message type/тип сообщения</param>
+        #region Log
+
         private void SendLogMessage(string message, LogMessageType type)
         {
             if (LogMessageEvent != null)
@@ -1360,11 +1364,9 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        /// <summary>
-        /// event: new message for log
-        /// событие: новое сообщение для лога
-        /// </summary>
         public event Action<string, LogMessageType> LogMessageEvent;
+
+        #endregion
 
     }
 }
