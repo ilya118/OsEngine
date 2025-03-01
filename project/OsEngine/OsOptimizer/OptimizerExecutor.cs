@@ -13,16 +13,18 @@ using OsEngine.Market;
 using OsEngine.Market.Servers.Optimizer;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.OsTrader.Panels;
+using OsEngine.Robots;
 using OsEngine.OsOptimizer.OptimizerEntity;
-using OsEngine.OsTrader.Panels.Tab;
-using OsEngine.Market.Connectors;
 
 namespace OsEngine.OsOptimizer
 {
+
+    /// <summary>
+    /// optimization class
+    /// класс проводящий оптимизацию
+    /// </summary>
     public class OptimizerExecutor
     {
-        #region Service
-
         public OptimizerExecutor(OptimizerMaster master)
         {
             _master = master;
@@ -31,10 +33,21 @@ namespace OsEngine.OsOptimizer
             _asyncBotFactory.LogMessageEvent += SendLogMessage;
         }
 
+        /// <summary>
+        /// object providing data for settings
+        /// объект предоставляющий данные для настроек
+        /// </summary>
         private OptimizerMaster _master;
 
         private AsyncBotFactory _asyncBotFactory;
 
+        /// <summary>
+        /// start the optimization process
+        /// запустить процесс оптимизации
+        /// </summary>
+        /// <param name="parametersOn">the list of included parameters/список включенных в перебор параметров</param>
+        /// <param name="parameters">all strategy parameters/все параметры стратегии</param>
+        /// <returns>true if optimization start is successful/true если старт оптимизации закончился успешно</returns>
         public bool Start(List<bool> parametersOn, List<IIStrategyParameter> parameters)
         {
             if (_primeThreadWorker != null)
@@ -47,11 +60,10 @@ namespace OsEngine.OsOptimizer
 
             SendLogMessage(OsLocalization.Optimizer.Message2, LogMessageType.System);
 
-            _needToStop = false;
+            _neadToStop = false;
             _servers = new List<OptimizerServer>();
             _countAllServersMax = 0;
-            _serverNum = 1;
-            _testBotsTime.Clear();
+            _serverNum = 0;
 
             _primeThreadWorker = new Thread(PrimeThreadWorkerPlace);
             _primeThreadWorker.Name = "OptimizerExecutorThread";
@@ -61,27 +73,53 @@ namespace OsEngine.OsOptimizer
             return true;
         }
 
+        /// <summary>
+        /// the list of included parameters. If true, then the parameter with this number must be iterated.
+        /// список включенных в перебор параметров. Если true, то параметр с таким номером нужно перебирать
+        /// </summary>
+        private List<bool> _parametersOn;
+
+        /// <summary>
+        /// strategy parameters
+        /// параметры стратегии
+        /// </summary>
+        public List<IIStrategyParameter> _parameters;
+
+        /// <summary>
+        /// stop the optimization process
+        /// остановить процесс оптимизации
+        /// </summary>
         public void Stop()
         {
-            _needToStop = true;
+            _neadToStop = true;
             SendLogMessage(OsLocalization.Optimizer.Message3, LogMessageType.System);
         }
 
-        private bool _needToStop;
+        /// <summary>
+        /// variable telling the thread to the optimization manager
+        /// on whether to continue launching new bots or
+        /// user requested to stop the process
+        /// переменная сообщающая потоку управляющему процессом оптимизации 
+        /// о том, нужно ли продолжать запускать новых ботов или 
+        /// пользователь запросил остановку процесса
+        /// </summary>
+        private bool _neadToStop;
 
-        #endregion
+        // алгоритм оптимизации 
 
-        #region Optimization algorithm
-
+        /// <summary>
+        /// place of work flow responsible for optimization
+        /// место работы потока отвечающего за оптимизацию
+        /// </summary>
         private async void PrimeThreadWorkerPlace()
         {
-            ReportsToFazes = new List<OptimizerFazeReport>();
+            ReportsToFazes = new List<OptimazerFazeReport>();
 
-            int countBots = BotCountOneFaze(_parameters, _parametersOn);
+            int countBots = BotCountOneFaze(_parameters,_parametersOn);
 
             _countAllServersMax = countBots * (_master.IterationCount * 2);
 
-            if (_master.LastInSample)
+            if(_master.LastInSample)
             {
                 _countAllServersMax = _countAllServersMax - countBots;
             }
@@ -92,7 +130,7 @@ namespace OsEngine.OsOptimizer
 
             for (int i = 0; i < _master.Fazes.Count; i++)
             {
-                if (_needToStop)
+                if (_neadToStop)
                 {
                     _primeThreadWorker = null;
                     TestReadyEvent?.Invoke(ReportsToFazes);
@@ -101,30 +139,31 @@ namespace OsEngine.OsOptimizer
 
                 if (_master.Fazes[i].TypeFaze == OptimizerFazeType.InSample)
                 {
-                    OptimizerFazeReport report = new OptimizerFazeReport();
+                    OptimazerFazeReport report = new OptimazerFazeReport();
                     report.Faze = _master.Fazes[i];
 
                     ReportsToFazes.Add(report);
 
                     StartAsuncBotFactoryInSample(countBots, _master.StrategyName, _master.IsScript, "InSample");
-                    StartOptimizeFazeInSample(_master.Fazes[i], report, _parameters, _parametersOn);
+                    StartOptimazeFazeInSample(_master.Fazes[i], report, _parameters, _parametersOn);
                 }
                 else
                 {
-
+                    /*
                     SendLogMessage("ReportsCount" + ReportsToFazes[ReportsToFazes.Count - 1].Reports.Count.ToString(), LogMessageType.System);
 
-                    OptimizerFazeReport reportFiltred = new OptimizerFazeReport();
+                    OptimazerFazeReport reportFiltred = new OptimazerFazeReport();
                     EndOfFazeFiltration(ReportsToFazes[ReportsToFazes.Count - 1], reportFiltred);
 
-                    OptimizerFazeReport report = new OptimizerFazeReport();
+                    OptimazerFazeReport report = new OptimazerFazeReport();
                     report.Faze = _master.Fazes[i];
 
                     ReportsToFazes.Add(report);
 
                     StartAsuncBotFactoryOutOfSample(reportFiltred, _master.StrategyName, _master.IsScript, "OutOfSample");
 
-                    StartOptimizeFazeOutOfSample(report, reportFiltred);
+                    StartOptimazeFazeOutOfSample(report, reportFiltred);
+                    */
                 }
             }
 
@@ -153,34 +192,38 @@ namespace OsEngine.OsOptimizer
                 botNames.Add(botName);
             }
 
-            _asyncBotFactory.CreateNewBots(botNames, botType, isScript, StartProgram.IsOsOptimizer);
+            _asyncBotFactory.CreateNewBots(botNames, botType, isScript,StartProgram.IsOsOptimizer);
         }
 
-        private void StartAsuncBotFactoryOutOfSample(OptimizerFazeReport reportFiltered, string botType, bool isScript, string faze)
+        private void StartAsuncBotFactoryOutOfSample(OptimazerFazeReport reportFiltred, string botType, bool isScript, string faze)
         {
             List<string> botNames = new List<string>();
 
-            for (int i = 0; i < reportFiltered.Reports.Count; i++)
+            for (int i = 0; i < reportFiltred.Reports.Count; i++)
             {
-                if (reportFiltered.Reports[i] == null)
+                if(reportFiltred.Reports[i] == null)
                 {
-                    reportFiltered.Reports.RemoveAt(i);
+                    reportFiltred.Reports.RemoveAt(i);
                     i--;
                     continue;
                 }
 
-                string botName = reportFiltered.Reports[i].BotName.Replace(" InSample", "") + " OutOfSample";
+                string botName = reportFiltred.Reports[i].BotName.Replace(" InSample", "") + " OutOfSample";
                 botNames.Add(botName);
             }
 
-            _asyncBotFactory.CreateNewBots(botNames, botType, isScript, StartProgram.IsOsOptimizer);
+            _asyncBotFactory.CreateNewBots(botNames, botType, isScript,StartProgram.IsOsOptimizer);
         }
 
+        /// <summary>
+        /// main stream responsible for optimization
+        /// основной поток отвечающий за оптимизацию
+        /// </summary>
         private Thread _primeThreadWorker;
 
-        public int BotCountOneFaze(List<IIStrategyParameter> parameters, List<bool> parametersOn)
+        public int BotCountOneFaze(List<IIStrategyParameter> param,List<bool> paramsOn)
         {
-            List<IIStrategyParameter> allParam = parameters;
+            List<IIStrategyParameter> allParam = param; 
 
             for (int i = 0; i < allParam.Count; i++)
             {
@@ -195,10 +238,10 @@ namespace OsEngine.OsOptimizer
                 if (allParam[i].Type == StrategyParameterType.DecimalCheckBox)
                 {
                     ((StrategyParameterDecimalCheckBox)allParam[i]).ValueDecimal = ((StrategyParameterDecimalCheckBox)allParam[i]).ValueDecimalStart;
-                }
+                }				
             }
 
-            List<bool> allOptimezedParam = parametersOn;
+            List<bool> allOptimezedParam = paramsOn;
 
 
             // 1 consider how many passes we need to do in the first phase/
@@ -313,7 +356,7 @@ namespace OsEngine.OsOptimizer
                             countBots++;
                             break;
                         }
-                    }
+                    }					
                 }
 
                 if (isAndOfFaze)
@@ -325,26 +368,26 @@ namespace OsEngine.OsOptimizer
             return countBots;
         }
 
-        public List<OptimizerFazeReport> ReportsToFazes = new List<OptimizerFazeReport>();
+        public List<OptimazerFazeReport> ReportsToFazes = new List<OptimazerFazeReport>();
 
-        private async void StartOptimizeFazeInSample(OptimizerFaze faze, OptimizerFazeReport report,
+        private async void StartOptimazeFazeInSample(OptimizerFaze faze, OptimazerFazeReport report,
             List<IIStrategyParameter> allParameters, List<bool> parametersToOptimization)
         {
             ReloadAllParam(allParameters);
 
             // 2 проходим первую фазу, когда нужно обойти все варианты
 
-            List<IIStrategyParameter> optimizedParametersStart = new List<IIStrategyParameter>();
+            List<IIStrategyParameter> optimizedParamStart = new List<IIStrategyParameter>();
 
             for (int i = 0; i < allParameters.Count; i++)
             {
                 if (parametersToOptimization[i])
                 {
-                    optimizedParametersStart.Add(allParameters[i]);
+                    optimizedParamStart.Add(allParameters[i]);
                 }
             }
 
-            List<IIStrategyParameter> optimizeParamCurrent = CopyParameters(optimizedParametersStart);
+            List<IIStrategyParameter> optimizeParamCurrent = CopyParameters(optimizedParamStart);
 
             ReloadAllParam(optimizeParamCurrent);
 
@@ -433,7 +476,7 @@ namespace OsEngine.OsOptimizer
                             }
                             break;
                         }
-                    }
+                    }				
                 }
 
                 if (isAndOfFaze)
@@ -446,7 +489,7 @@ namespace OsEngine.OsOptimizer
                     Thread.Sleep(50);
                 }
 
-                if (_needToStop)
+                if (_neadToStop)
                 {
                     while (true)
                     {
@@ -485,7 +528,7 @@ namespace OsEngine.OsOptimizer
             SendLogMessage(OsLocalization.Optimizer.Message5, LogMessageType.System);
         }
 
-        private void StartOptimizeFazeOutOfSample(OptimizerFazeReport report, OptimizerFazeReport reportInSample)
+        private void StartOptimazeFazeOutOfSample(OptimazerFazeReport report, OptimazerFazeReport reportInSample)
         {
             SendLogMessage(OsLocalization.Optimizer.Message6, LogMessageType.System);
 
@@ -496,7 +539,7 @@ namespace OsEngine.OsOptimizer
                     Thread.Sleep(50);
                 }
 
-                if (_needToStop)
+                if (_neadToStop)
                 {
                     while (true)
                     {
@@ -534,10 +577,9 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        private List<bool> _parametersOn;
-
-        public List<IIStrategyParameter> _parameters;
-
+        /// <summary>
+        /// сбросить все параметры на дефолтные значения
+        /// </summary>
         private void ReloadAllParam(List<IIStrategyParameter> parameters)
         {
             for (int i = 0; i < parameters.Count; i++)
@@ -546,77 +588,89 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        private void ReloadParam(IIStrategyParameter parameters)
+        /// <summary>
+        /// сбросить параметр на начальные значения
+        /// </summary>
+        /// <param name="param">the parameter to be reset/параметр который нужно привести в исходное состояние</param>
+        private void ReloadParam(IIStrategyParameter param)
         {
-            if (parameters.Type == StrategyParameterType.Int)
+            if (param.Type == StrategyParameterType.Int)
             {
-                ((StrategyParameterInt)parameters).ValueInt = ((StrategyParameterInt)parameters).ValueIntStart;
+                ((StrategyParameterInt)param).ValueInt = ((StrategyParameterInt)param).ValueIntStart;
             }
 
-            if (parameters.Type == StrategyParameterType.Decimal)
+            if (param.Type == StrategyParameterType.Decimal)
             {
-                ((StrategyParameterDecimal)parameters).ValueDecimal = ((StrategyParameterDecimal)parameters).ValueDecimalStart;
+                ((StrategyParameterDecimal)param).ValueDecimal = ((StrategyParameterDecimal)param).ValueDecimalStart;
             }
-
-            if (parameters.Type == StrategyParameterType.DecimalCheckBox)
+			
+            if (param.Type == StrategyParameterType.DecimalCheckBox)
             {
-                ((StrategyParameterDecimalCheckBox)parameters).ValueDecimal = ((StrategyParameterDecimalCheckBox)parameters).ValueDecimalStart;
-            }
+                ((StrategyParameterDecimalCheckBox)param).ValueDecimal = ((StrategyParameterDecimalCheckBox)param).ValueDecimalStart;
+            }			
         }
 
-        private List<IIStrategyParameter> CopyParameters(List<IIStrategyParameter> parametersToCopy)
+        /// <summary>
+        /// copy parameter list
+        /// копировать список параметров
+        /// </summary>
+        private List<IIStrategyParameter> CopyParameters(List<IIStrategyParameter> paramsToCopy)
         {
             List<IIStrategyParameter> newParameters = new List<IIStrategyParameter>();
 
-            for (int i = 0; i < parametersToCopy.Count; i++)
+            for (int i = 0; i < paramsToCopy.Count; i++)
             {
                 IIStrategyParameter newParam = null;
 
-                if (parametersToCopy[i].Type == StrategyParameterType.Bool)
+                if (paramsToCopy[i].Type == StrategyParameterType.Bool)
                 {
-                    newParam = new StrategyParameterBool(parametersToCopy[i].Name, ((StrategyParameterBool)parametersToCopy[i]).ValueBool);
+                    newParam = new StrategyParameterBool(paramsToCopy[i].Name, ((StrategyParameterBool)paramsToCopy[i]).ValueBool);
                 }
-                else if (parametersToCopy[i].Type == StrategyParameterType.String)
+                else if (paramsToCopy[i].Type == StrategyParameterType.String)
                 {
-                    newParam = new StrategyParameterString(parametersToCopy[i].Name, ((StrategyParameterString)parametersToCopy[i]).ValueString,
-                        ((StrategyParameterString)parametersToCopy[i]).ValuesString);
+                    newParam = new StrategyParameterString(paramsToCopy[i].Name, ((StrategyParameterString)paramsToCopy[i]).ValueString,
+                        ((StrategyParameterString)paramsToCopy[i]).ValuesString);
                 }
-                else if (parametersToCopy[i].Type == StrategyParameterType.Int)
+                else if (paramsToCopy[i].Type == StrategyParameterType.Int)
                 {
-                    newParam = new StrategyParameterInt(parametersToCopy[i].Name,
-                        ((StrategyParameterInt)parametersToCopy[i]).ValueIntDefolt,
-                        ((StrategyParameterInt)parametersToCopy[i]).ValueIntStart,
-                        ((StrategyParameterInt)parametersToCopy[i]).ValueIntStop,
-                        ((StrategyParameterInt)parametersToCopy[i]).ValueIntStep);
-                    ((StrategyParameterInt)newParam).ValueInt = ((StrategyParameterInt)parametersToCopy[i]).ValueIntStart;
+                    newParam = new StrategyParameterInt(paramsToCopy[i].Name,
+                        ((StrategyParameterInt)paramsToCopy[i]).ValueIntDefolt,
+                        ((StrategyParameterInt)paramsToCopy[i]).ValueIntStart,
+                        ((StrategyParameterInt)paramsToCopy[i]).ValueIntStop,
+                        ((StrategyParameterInt)paramsToCopy[i]).ValueIntStep);
+                    ((StrategyParameterInt)newParam).ValueInt = ((StrategyParameterInt)paramsToCopy[i]).ValueIntStart;
                 }
-                else if (parametersToCopy[i].Type == StrategyParameterType.Decimal)
+                else if (paramsToCopy[i].Type == StrategyParameterType.Decimal)
                 {
-                    newParam = new StrategyParameterDecimal(parametersToCopy[i].Name,
-                        ((StrategyParameterDecimal)parametersToCopy[i]).ValueDecimalDefolt,
-                        ((StrategyParameterDecimal)parametersToCopy[i]).ValueDecimalStart,
-                        ((StrategyParameterDecimal)parametersToCopy[i]).ValueDecimalStop,
-                        ((StrategyParameterDecimal)parametersToCopy[i]).ValueDecimalStep);
-                    ((StrategyParameterDecimal)newParam).ValueDecimal = ((StrategyParameterDecimal)parametersToCopy[i]).ValueDecimalStart;
+                    newParam = new StrategyParameterDecimal(paramsToCopy[i].Name,
+                        ((StrategyParameterDecimal)paramsToCopy[i]).ValueDecimalDefolt,
+                        ((StrategyParameterDecimal)paramsToCopy[i]).ValueDecimalStart,
+                        ((StrategyParameterDecimal)paramsToCopy[i]).ValueDecimalStop,
+                        ((StrategyParameterDecimal)paramsToCopy[i]).ValueDecimalStep);
+                    ((StrategyParameterDecimal)newParam).ValueDecimal = ((StrategyParameterDecimal)paramsToCopy[i]).ValueDecimalStart;
                 }
-                else if (parametersToCopy[i].Type == StrategyParameterType.DecimalCheckBox)
+                else if (paramsToCopy[i].Type == StrategyParameterType.DecimalCheckBox)
                 {
-                    newParam = new StrategyParameterDecimalCheckBox(parametersToCopy[i].Name,
-                        ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalDefolt,
-                        ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalStart,
-                        ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalStop,
-                        ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalStep,
-                        Convert.ToBoolean(((StrategyParameterDecimalCheckBox)parametersToCopy[i]).CheckState));
-                    ((StrategyParameterDecimalCheckBox)newParam).ValueDecimal = ((StrategyParameterDecimalCheckBox)parametersToCopy[i]).ValueDecimalStart;
+                    newParam = new StrategyParameterDecimalCheckBox(paramsToCopy[i].Name,
+                        ((StrategyParameterDecimalCheckBox)paramsToCopy[i]).ValueDecimalDefolt,
+                        ((StrategyParameterDecimalCheckBox)paramsToCopy[i]).ValueDecimalStart,
+                        ((StrategyParameterDecimalCheckBox)paramsToCopy[i]).ValueDecimalStop,
+                        ((StrategyParameterDecimalCheckBox)paramsToCopy[i]).ValueDecimalStep,
+                        Convert.ToBoolean(((StrategyParameterDecimalCheckBox)paramsToCopy[i]).CheckState));
+                    ((StrategyParameterDecimalCheckBox)newParam).ValueDecimal = ((StrategyParameterDecimalCheckBox)paramsToCopy[i]).ValueDecimalStart;
                 }
-
+				
                 newParameters.Add(newParam);
 
             }
             return newParameters;
         }
 
-        private void EndOfFazeFiltration(OptimizerFazeReport bots, OptimizerFazeReport botsToOutOfSample)
+        /// <summary>
+        /// filtering results at the end of the current phase
+        /// фильтрация результатов в конце текущей фазы
+        /// </summary>
+        private void EndOfFazeFiltration(OptimazerFazeReport bots, OptimazerFazeReport botsToOutOfSample)
         {
             try
             {
@@ -640,23 +694,32 @@ namespace OsEngine.OsOptimizer
                 {
                     /* SendLogMessage(OsLocalization.Optimizer.Message8, LogMessageType.System);
                      MessageBox.Show(OsLocalization.Optimizer.Message8);
-                     NeedToMoveUiToEvent(NeedToMoveUiTo.TabsAndTimeFrames);*/
+                     NeadToMoveUiToEvent(NeadToMoveUiTo.TabsAndTimeFrames);*/
                 }
                 else if (startCount != botsToOutOfSample.Reports.Count)
                 {
                     SendLogMessage(OsLocalization.Optimizer.Message9 + (startCount - botsToOutOfSample.Reports.Count), LogMessageType.System);
                 }
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                SendLogMessage(ex.ToString(), LogMessageType.Error);
+                SendLogMessage(ex.ToString(),LogMessageType.Error);
             }
         }
 
-        private void StartNewBot(List<IIStrategyParameter> parameters, List<IIStrategyParameter> parametersOptimized,
-            OptimizerFazeReport report, string botName)
+        /// <summary>
+        /// launch another robot as part of optimization
+        /// запустить ещё одного робота, в рамках оптимизации
+        /// </summary>
+        /// <param name="parametrs">list of all parameters/список всех параметров</param>
+        /// <param name="paramOptimized">brute force options/параметры по которым осуществляется перебор</param>
+        /// <param name="report">current optimization phase/текущая фаза оптимизации</param>
+        /// <param name="botsInFaze">list of bots already running in the current phase/список ботов уже запущенный в текущей фазе</param>
+        /// <param name="botName">the name of the created robot/имя создаваемого робота</param>
+        private void StartNewBot(List<IIStrategyParameter> parametrs, List<IIStrategyParameter> paramOptimized,
+            OptimazerFazeReport report, string botName)
         {
-            OptimizerServer server = CreateNewServer(report, true);
+            OptimizerServer server = CreateNewServer(report,true);
 
             try
             {
@@ -667,9 +730,9 @@ namespace OsEngine.OsOptimizer
                 botName = server.NumberServer + botName;
             }
 
-            BotPanel bot = CreateNewBot(botName, parameters, parametersOptimized, server, StartProgram.IsOsOptimizer);
+            BotPanel bot = CreateNewBot(botName, parametrs, paramOptimized, server, StartProgram.IsOsOptimizer);
 
-            if (bot == null)
+            if(bot == null)
             {
                 SendLogMessage("Critical Optimizer Error. Robot cannot be created", LogMessageType.Error);
                 return;
@@ -699,79 +762,56 @@ namespace OsEngine.OsOptimizer
                 _botsInTest.Add(bot);
             }
 
-            Thread.Sleep(200);
-
             server.TestingStart();
         }
 
         private List<BotPanel> _botsInTest = new List<BotPanel>();
 
-        private OptimizerServer CreateNewServer(OptimizerFazeReport report, bool needToDelete)
+        private OptimizerServer CreateNewServer(OptimazerFazeReport report,bool neadToDelete)
         {
             // 1. Create a new server for optimization. And one thread respectively
             // 1. создаём новый сервер для оптимизации. И один поток соответственно
             OptimizerServer server = ServerMaster.CreateNextOptimizerServer(_master.Storage, _serverNum,
-                _master.StartDeposit);
+                _master.StartDepozit);
 
-            server.OrderExecutionType = _master.OrderExecutionType;
-            server.SlippageToSimpleOrder = _master.SlippageToSimpleOrder;
-            server.SlippageToStopOrder = _master.SlippageToStopOrder;
-            server.ClearingTimes = _master.ClearingTimes;
-            server.NonTradePeriods = _master.NonTradePeriods;
-
-            lock (_serverRemoveLocker)
+            lock(_serverRemoveLocker)
             {
                 _serverNum++;
                 _servers.Add(server);
             }
 
-            if (needToDelete)
+            if(neadToDelete)
             {
                 server.TestingEndEvent += server_TestingEndEvent;
             }
-
+            
             server.TypeTesterData = _master.Storage.TypeTesterData;
-            server.TestingProgressChangeEvent += server_TestingProgressChangeEvent;
+            server.TestintProgressChangeEvent += server_TestintProgressChangeEvent;
 
-            List<IIBotTab> sources = _master.BotToTest.GetTabs();
-
-            for (int i = 0; i < sources.Count; i++)
+            for (int i = 0; _master.TabsSimpleNamesAndTimeFrames != null
+                            && i < _master.TabsSimpleNamesAndTimeFrames.Count; i++)
             {
-                if (sources[i].TabType == BotTabType.Simple)
-                {// BotTabSimple
-                    BotTabSimple simple = (BotTabSimple)sources[i];
+                Security secToStart =
+                    _master.Storage.Securities.Find(s => s.Name == _master.TabsSimpleNamesAndTimeFrames[i].NameSecurity);
+
+                server.GetDataToSecurity(secToStart, _master.TabsSimpleNamesAndTimeFrames[i].TimeFrame, report.Faze.TimeStart,
+                    report.Faze.TimeEnd);
+            }
+
+            for (int i = 0; _master.TabsIndexNamesAndTimeFrames != null &&
+                            i < _master.TabsIndexNamesAndTimeFrames.Count; i++)
+            {
+                List<string> secNames = _master.TabsIndexNamesAndTimeFrames[i].NamesSecurity;
+
+                for (int i2 = 0; secNames != null && i2 < secNames.Count; i2++)
+                {
+                    string curSec = secNames[i2];
 
                     Security secToStart =
-                    _master.Storage.Securities.Find(s => s.Name == simple.Connector.SecurityName);
+                        _master.Storage.Securities.Find(s => s.Name == curSec);
 
-                    server.GetDataToSecurity(secToStart, simple.Connector.TimeFrame, report.Faze.TimeStart,
+                    server.GetDataToSecurity(secToStart, _master.TabsIndexNamesAndTimeFrames[i].TimeFrame, report.Faze.TimeStart,
                         report.Faze.TimeEnd);
-                }
-                else if (sources[i].TabType == BotTabType.Index)
-                {// BotTabIndex
-                    BotTabIndex index = (BotTabIndex)sources[i];
-
-                    for (int i2 = 0; i2 < index.Tabs.Count; i2++)
-                    {
-                        Security secToStart =
-                          _master.Storage.Securities.Find(s => s.Name == index.Tabs[i2].SecurityName);
-
-                        server.GetDataToSecurity(secToStart, index.Tabs[i2].TimeFrame, report.Faze.TimeStart,
-                            report.Faze.TimeEnd);
-                    }
-                }
-                else if (sources[i].TabType == BotTabType.Screener)
-                {// BotTabScreener
-                    BotTabScreener screener = (BotTabScreener)sources[i];
-
-                    for (int i2 = 0; i2 < screener.Tabs.Count; i2++)
-                    {
-                        Security secToStart =
-                          _master.Storage.Securities.Find(s => s.Name == screener.Tabs[i2].Connector.SecurityName);
-
-                        server.GetDataToSecurity(secToStart, screener.Tabs[i2].Connector.TimeFrame, report.Faze.TimeStart,
-                            report.Faze.TimeEnd);
-                    }
                 }
             }
 
@@ -779,22 +819,22 @@ namespace OsEngine.OsOptimizer
         }
 
         private BotPanel CreateNewBot(string botName,
-            List<IIStrategyParameter> parameters,
-            List<IIStrategyParameter> parametersOptimized,
+            List<IIStrategyParameter> parametrs,
+            List<IIStrategyParameter> paramOptimized,
             OptimizerServer server, StartProgram regime)
         {
             BotPanel bot = null;
-
+            
             try
             {
                 bot = _asyncBotFactory.GetBot(_master.StrategyName, botName);
 
-                if (bot.Parameters.Count != parameters.Count)
+                if (bot.Parameters.Count != parametrs.Count)
                 {
                     return null;
                 }
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
                 SendLogMessage(ex.ToString(), LogMessageType.Error);
                 return null;
@@ -802,20 +842,20 @@ namespace OsEngine.OsOptimizer
 
             try
             {
-                for (int i = 0; i < parameters.Count; i++)
+                for (int i = 0; i < parametrs.Count; i++)
                 {
                     IIStrategyParameter par = null;
 
-                    if (parametersOptimized != null)
+                    if (paramOptimized != null)
                     {
-                        par = parametersOptimized.Find(p => p.Name == parameters[i].Name);
+                        par = paramOptimized.Find(p => p.Name == parametrs[i].Name);
                     }
-                    bool isInOptimizeParameters = true;
+                    bool isInOptimizeParams = true;
 
                     if (par == null)
                     {
-                        isInOptimizeParameters = false;
-                        par = parameters[i];
+                        isInOptimizeParams = false;
+                        par = parametrs[i];
                     }
 
                     if (par == null)
@@ -840,8 +880,8 @@ namespace OsEngine.OsOptimizer
                         ((StrategyParameterCheckBox)bot.Parameters[i]).CheckState = ((StrategyParameterCheckBox)par).CheckState;
                     }
 
-                    if (isInOptimizeParameters == true
-                        || parametersOptimized == null)
+                    if (isInOptimizeParams == true
+                        || paramOptimized == null)
                     {
                         if (par.Type == StrategyParameterType.Int)
                         {
@@ -857,7 +897,7 @@ namespace OsEngine.OsOptimizer
                             ((StrategyParameterDecimalCheckBox)bot.Parameters[i]).CheckState = ((StrategyParameterDecimalCheckBox)par).CheckState;
                         }
                     }
-                    else //if (isInOptimizeParameters == false)
+                    else //if (isInOptimizeParams == false)
                     {
                         if (par.Type == StrategyParameterType.Int)
                         {
@@ -875,65 +915,102 @@ namespace OsEngine.OsOptimizer
                     }
                 }
             }
-            catch (Exception ex)
+            catch(Exception ex)
             {
-                SendLogMessage(ex.ToString(), LogMessageType.Error);
+                SendLogMessage(ex.ToString(),LogMessageType.Error);
                 return null;
             }
-
+           
             try
             {
-                // настраиваем источники
 
-                List<IIBotTab> sourcesFrom = _master.BotToTest.GetTabs();
-                List<IIBotTab> sourcesTo = bot.GetTabs();
-
-                for (int i = 0; i < sourcesFrom.Count; i++)
+                // custom tabs
+                // настраиваем вкладки
+                for (int i = 0; i < _master.TabsSimpleNamesAndTimeFrames.Count; i++)
                 {
-                    if (sourcesFrom[i].TabType == BotTabType.Simple)
-                    {// BotTabSimple
-                        BotTabSimple simpleFrom = (BotTabSimple)sourcesFrom[i];
-                        BotTabSimple simpleTo = (BotTabSimple)sourcesTo[i];
-                        CopySettingsInBotTabSimpleSource(simpleFrom, simpleTo, server);
+                    bot.TabsSimple[i].Connector.ServerType = ServerType.Optimizer;
+                    bot.TabsSimple[i].Connector.PortfolioName = server.Portfolios[0].Number;
+                    bot.TabsSimple[i].Connector.SecurityName = _master.TabsSimpleNamesAndTimeFrames[i].NameSecurity;
+                    bot.TabsSimple[i].Connector.TimeFrame =
+                        _master.TabsSimpleNamesAndTimeFrames[i].TimeFrame;
+                    bot.TabsSimple[i].Connector.ServerUid = server.NumberServer;
+                    bot.TabsSimple[i].CommissionType = _master.CommissionType;
+                    bot.TabsSimple[i].CommissionValue = _master.CommissionValue;
+
+                    if (server.TypeTesterData == TesterDataType.Candle)
+                    {
+                        bot.TabsSimple[i].Connector.CandleMarketDataType = CandleMarketDataType.Tick;
                     }
-                    else if (sourcesFrom[i].TabType == BotTabType.Index)
-                    {// BotTabIndex
-                        BotTabIndex indexFrom = (BotTabIndex)sourcesFrom[i];
-                        BotTabIndex indexTo = (BotTabIndex)sourcesTo[i];
+                    else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
+                             server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
+                    {
+                        bot.TabsSimple[i].Connector.CandleMarketDataType =
+                            CandleMarketDataType.MarketDepth;
+                    }
 
-                        for (int i2 = 0; i2 < indexFrom.Tabs.Count; i2++)
+                    bot.TabsSimple[i].ManualPositionSupport.DoubleExitIsOn = _master.ManualControl.DoubleExitIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.DoubleExitSlippage = _master.ManualControl.DoubleExitSlippage;
+
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitDistance = _master.ManualControl.ProfitDistance;
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitIsOn = _master.ManualControl.ProfitIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitSlippage = _master.ManualControl.ProfitSlippage;
+
+                    bot.TabsSimple[i].ManualPositionSupport.SecondToCloseIsOn = _master.ManualControl.SecondToCloseIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.SecondToClose = _master.ManualControl.SecondToClose;
+
+                    bot.TabsSimple[i].ManualPositionSupport.SecondToOpenIsOn = _master.ManualControl.SecondToOpenIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.SecondToOpen = _master.ManualControl.SecondToOpen;
+
+                    bot.TabsSimple[i].ManualPositionSupport.SetbackToCloseIsOn = _master.ManualControl.SetbackToCloseIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.SetbackToClosePosition = _master.ManualControl.SetbackToClosePosition;
+
+                    bot.TabsSimple[i].ManualPositionSupport.SetbackToOpenIsOn = _master.ManualControl.SetbackToOpenIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.SetbackToOpenPosition = _master.ManualControl.SetbackToOpenPosition;
+
+                    bot.TabsSimple[i].ManualPositionSupport.StopDistance = _master.ManualControl.StopDistance;
+                    bot.TabsSimple[i].ManualPositionSupport.StopIsOn = _master.ManualControl.StopIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.StopSlippage = _master.ManualControl.StopSlippage;
+
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitDistance = _master.ManualControl.ProfitDistance;
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitIsOn = _master.ManualControl.ProfitIsOn;
+                    bot.TabsSimple[i].ManualPositionSupport.ProfitSlippage = _master.ManualControl.ProfitSlippage;
+
+                    bot.TabsSimple[i].ManualPositionSupport.TypeDoubleExitOrder = _master.ManualControl.TypeDoubleExitOrder;
+                    bot.TabsSimple[i].ManualPositionSupport.ValuesType = _master.ManualControl.ValuesType;
+
+                    bot.TabsSimple[i].ManualPositionSupport.OrderTypeTime = _master.ManualControl.OrderTypeTime;
+                }
+
+                for (int i = 0; _master.TabsIndexNamesAndTimeFrames != null &&
+                                i < _master.TabsIndexNamesAndTimeFrames.Count; i++)
+                {
+                    bot.TabsIndex[i].Tabs.Clear();
+                    for (int i2 = 0; i2 < _master.TabsIndexNamesAndTimeFrames[i].NamesSecurity.Count; i2++)
+                    {
+                        if (i2 >= bot.TabsIndex[i].Tabs.Count)
                         {
-                            indexTo.CreateNewSecurityConnector();
-
-                            ConnectorCandles indexConnectorFrom = indexFrom.Tabs[i2];
-                            ConnectorCandles indexConnectorTo = indexTo.Tabs[i2];
-
-                            CopySettingsInConnectorCandlesSource(indexConnectorFrom, indexConnectorTo, server);
+                            bot.TabsIndex[i].CreateNewSecurityConnector();
                         }
 
-                        indexTo.AutoFormulaBuilder.DayOfWeekToRebuildIndex = indexFrom.AutoFormulaBuilder.DayOfWeekToRebuildIndex;
-                        indexTo.AutoFormulaBuilder.DaysLookBackInBuilding = indexFrom.AutoFormulaBuilder.DaysLookBackInBuilding;
-                        indexTo.AutoFormulaBuilder.HourInDayToRebuildIndex = indexFrom.AutoFormulaBuilder.HourInDayToRebuildIndex;
-                        indexTo.AutoFormulaBuilder.IndexMultType = indexFrom.AutoFormulaBuilder.IndexMultType;
-                        indexTo.AutoFormulaBuilder.IndexSecCount = indexFrom.AutoFormulaBuilder.IndexSecCount;
-                        indexTo.AutoFormulaBuilder.IndexSortType = indexFrom.AutoFormulaBuilder.IndexSortType;
-                        indexTo.AutoFormulaBuilder.Regime = indexFrom.AutoFormulaBuilder.Regime;
-                        indexTo.AutoFormulaBuilder.WriteLogMessageOnRebuild = false;
-                        indexTo.UserFormula = indexFrom.UserFormula;
+                        bot.TabsIndex[i].Tabs[i2].ServerType = ServerType.Optimizer;
+                        bot.TabsIndex[i].Tabs[i2].PortfolioName = server.Portfolios[0].Number;
+                        bot.TabsIndex[i].Tabs[i2].SecurityName = _master.TabsIndexNamesAndTimeFrames[i].NamesSecurity[i2];
+                        bot.TabsIndex[i].Tabs[i2].ServerUid = server.NumberServer;
+                        bot.TabsIndex[i].Tabs[i2].TimeFrame =
+                            _master.TabsIndexNamesAndTimeFrames[i].TimeFrame;
+
+                        if (server.TypeTesterData == TesterDataType.Candle)
+                        {
+                            bot.TabsIndex[i].Tabs[i2].CandleMarketDataType = CandleMarketDataType.Tick;
+                        }
+                        else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
+                                 server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
+                        {
+                            bot.TabsIndex[i].Tabs[i2].CandleMarketDataType =
+                                CandleMarketDataType.MarketDepth;
+                        }
                     }
-                    else if (sourcesFrom[i].TabType == BotTabType.Screener)
-                    {// BotTabScreener
-                        BotTabScreener screenerFrom = (BotTabScreener)sourcesFrom[i];
-                        BotTabScreener screenerTo = (BotTabScreener)sourcesTo[i];
-
-                        CopySettingsInScreenerSource(screenerFrom, screenerTo, server);
-                        screenerTo.TryLoadTabs();
-                        screenerTo.NeedToReloadTabs = true;
-                        screenerTo.TryReLoadTabs();
-                        screenerTo.ReloadIndicatorsOnTabs();
-
-
-                    }
+                    bot.TabsIndex[i].UserFormula = _master.TabsIndexNamesAndTimeFrames[i].Formula;
                 }
 
                 return bot;
@@ -945,123 +1022,25 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        private void CopySettingsInScreenerSource(BotTabScreener from, BotTabScreener to, OptimizerServer server)
-        {
-            to.ServerType = ServerType.Optimizer;
-            to.PortfolioName = server.Portfolios[0].Number;
-            to.TimeFrame = from.TimeFrame;
-            to.ServerUid = server.NumberServer;
-
-            to.SecuritiesClass = from.SecuritiesClass;
-            to.CandleCreateMethodType = from.CandleCreateMethodType;
-            to.CandleMarketDataType = from.CandleMarketDataType;
-            to.CommissionType = _master.CommissionType;
-            to.CommissionValue = _master.CommissionValue;
-            to.SaveTradesInCandles = from.SaveTradesInCandles;
-            to.CandleSeriesRealization.SetSaveString(from.CandleSeriesRealization.GetSaveString());
-
-            for (int i = 0; i < from.SecuritiesNames.Count; i++)
-            {
-                ActivatedSecurity sec = from.SecuritiesNames[i];
-                to.SecuritiesNames.Add(sec);
-            }
-        }
-
-        private void CopySettingsInConnectorCandlesSource(ConnectorCandles from, ConnectorCandles to, OptimizerServer server)
-        {
-            to.ServerType = ServerType.Optimizer;
-            to.PortfolioName = server.Portfolios[0].Number;
-            to.SecurityName = from.SecurityName;
-            to.SecurityClass = from.SecurityClass;
-            to.ServerUid = server.NumberServer;
-            to.CandleCreateMethodType = from.CandleCreateMethodType;
-            to.TimeFrame = from.TimeFrame;
-
-            to.TimeFrameBuilder.CandleSeriesRealization.SetSaveString(
-                 from.TimeFrameBuilder.CandleSeriesRealization.GetSaveString());
-
-            if (server.TypeTesterData == TesterDataType.Candle)
-            {
-                to.CandleMarketDataType = CandleMarketDataType.Tick;
-            }
-            else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
-                     server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
-            {
-                to.CandleMarketDataType = CandleMarketDataType.MarketDepth;
-            }
-        }
-
-        private void CopySettingsInBotTabSimpleSource(BotTabSimple from, BotTabSimple to, OptimizerServer server)
-        {
-            to.Connector.ServerType = ServerType.Optimizer;
-            to.Connector.PortfolioName = server.Portfolios[0].Number;
-            to.Connector.SecurityName = from.Connector.SecurityName;
-            to.Connector.TimeFrame = from.Connector.TimeFrame;
-
-            to.Connector.CandleCreateMethodType = from.Connector.CandleCreateMethodType;
-
-            to.Connector.TimeFrameBuilder.CandleSeriesRealization.SetSaveString(
-                from.Connector.TimeFrameBuilder.CandleSeriesRealization.GetSaveString());
-
-            to.Connector.ServerUid = server.NumberServer;
-            to.CommissionType = _master.CommissionType;
-            to.CommissionValue = _master.CommissionValue;
-
-            if (server.TypeTesterData == TesterDataType.Candle
-                || server.TypeTesterData == TesterDataType.TickAllCandleState
-                || server.TypeTesterData == TesterDataType.TickOnlyReadyCandle)
-            {
-                to.Connector.CandleMarketDataType = CandleMarketDataType.Tick;
-            }
-            else if (server.TypeTesterData == TesterDataType.MarketDepthAllCandleState ||
-                     server.TypeTesterData == TesterDataType.MarketDepthOnlyReadyCandle)
-            {
-                to.Connector.CandleMarketDataType =
-                    CandleMarketDataType.MarketDepth;
-            }
-
-            to.ManualPositionSupport.DoubleExitIsOn = _master.ManualControl.DoubleExitIsOn;
-            to.ManualPositionSupport.DoubleExitSlippage = _master.ManualControl.DoubleExitSlippage;
-
-            to.ManualPositionSupport.ProfitDistance = _master.ManualControl.ProfitDistance;
-            to.ManualPositionSupport.ProfitIsOn = _master.ManualControl.ProfitIsOn;
-            to.ManualPositionSupport.ProfitSlippage = _master.ManualControl.ProfitSlippage;
-
-            to.ManualPositionSupport.SecondToCloseIsOn = _master.ManualControl.SecondToCloseIsOn;
-            to.ManualPositionSupport.SecondToClose = _master.ManualControl.SecondToClose;
-
-            to.ManualPositionSupport.SecondToOpenIsOn = _master.ManualControl.SecondToOpenIsOn;
-            to.ManualPositionSupport.SecondToOpen = _master.ManualControl.SecondToOpen;
-
-            to.ManualPositionSupport.SetbackToCloseIsOn = _master.ManualControl.SetbackToCloseIsOn;
-            to.ManualPositionSupport.SetbackToClosePosition = _master.ManualControl.SetbackToClosePosition;
-
-            to.ManualPositionSupport.SetbackToOpenIsOn = _master.ManualControl.SetbackToOpenIsOn;
-            to.ManualPositionSupport.SetbackToOpenPosition = _master.ManualControl.SetbackToOpenPosition;
-
-            to.ManualPositionSupport.StopDistance = _master.ManualControl.StopDistance;
-            to.ManualPositionSupport.StopIsOn = _master.ManualControl.StopIsOn;
-            to.ManualPositionSupport.StopSlippage = _master.ManualControl.StopSlippage;
-
-            to.ManualPositionSupport.ProfitDistance = _master.ManualControl.ProfitDistance;
-            to.ManualPositionSupport.ProfitIsOn = _master.ManualControl.ProfitIsOn;
-            to.ManualPositionSupport.ProfitSlippage = _master.ManualControl.ProfitSlippage;
-
-            to.ManualPositionSupport.TypeDoubleExitOrder = _master.ManualControl.TypeDoubleExitOrder;
-            to.ManualPositionSupport.ValuesType = _master.ManualControl.ValuesType;
-
-            to.ManualPositionSupport.OrderTypeTime = _master.ManualControl.OrderTypeTime;
-        }
-
+        /// <summary>
+        /// changed the state of progress of optimization
+        /// first parameter: current progressBar value
+        /// second parameter: maximum progressBar value
+        /// изменилось состояние прогресса оптимизации
+        /// первый параметр: текущее значение progressBar
+        /// второй параемтр: максимальное значение progressBar
+        /// </summary>
         public event Action<int, int> PrimeProgressChangeEvent;
 
-        public event Action<NeedToMoveUiTo> NeedToMoveUiToEvent;
+        /// <summary>
+        /// the event that you need to move the interface to a certain place
+        /// событие о том что нужно переместить интерфейс в определённое место
+        /// </summary>
+        public event Action<NeadToMoveUiTo> NeadToMoveUiToEvent;
 
-        #endregion
+        // единичный тест
 
-        #region Single bot test
-
-        public BotPanel TestBot(OptimizerFazeReport reportFaze,
+        public BotPanel TestBot(OptimazerFazeReport reportFaze,
             OptimizerReport reportToBot, StartProgram startProgram, AwaitObject awaitObj)
         {
             if (_primeThreadWorker != null)
@@ -1076,16 +1055,16 @@ namespace OsEngine.OsOptimizer
             List<string> names = new List<string> { botName };
             _asyncBotFactory.CreateNewBots(names, _master.StrategyName, _master.IsScript, startProgram);
 
-            OptimizerServer server = CreateNewServer(reportFaze, false);
+            OptimizerServer server = CreateNewServer(reportFaze,false);
 
             List<IIStrategyParameter> parametrs = reportToBot.GetParameters();
 
             BotPanel bot = CreateNewBot(botName,
                 parametrs, parametrs, server, startProgram);
 
-            if (bot == null)
+            if(bot == null)
             {
-                SendLogMessage("Test over with error. A different robot is selected in the optimizer", LogMessageType.Error);
+                SendLogMessage("Test over whith error. A different robot is selected in the optimizer", LogMessageType.Error);
                 awaitObj.Dispose();
                 return null;
             }
@@ -1113,32 +1092,34 @@ namespace OsEngine.OsOptimizer
 
             timeStartWaiting = DateTime.Now;
 
-            while (bot.TimeServer < reportFaze.Faze.TimeEnd)
+            while (bot.TabsSimple[0].CandlesAll == null
+                   ||
+                   bot.TabsSimple[0].TimeServerCurrent.AddHours(1) < reportFaze.Faze.TimeEnd)
             {
-
+                
                 Thread.Sleep(1000);
                 if (timeStartWaiting.AddSeconds(300) < DateTime.Now)
                 {
                     break;
                 }
 
-                if (timeServerLast == bot.TimeServer)
+                if(timeServerLast == bot.TabsSimple[0].TimeServerCurrent)
                 {
                     countSameTime++;
 
-                    if (countSameTime >= 5)
+                    if(countSameTime >= 5)
                     { // пять раз подряд время сервера не меняется. Тест окончен
                         break;
                     }
                 }
                 else
                 {
-                    timeServerLast = bot.TimeServer;
+                    timeServerLast = bot.TabsSimple[0].TimeServerCurrent;
                     countSameTime = 0;
                 }
             }
 
-            if (startTime.AddSeconds(3) > DateTime.Now)
+            if(startTime.AddSeconds(3) > DateTime.Now)
             {
                 Thread.Sleep(3000);
             }
@@ -1148,21 +1129,38 @@ namespace OsEngine.OsOptimizer
             return bot;
         }
 
-        #endregion
+        // server performing optimization сервера проводящие оптимизацию
 
-        #region Server performing optimization
-
+        /// <summary>
+        /// server optimization
+        /// сервера оптимизации
+        /// </summary>
         private List<OptimizerServer> _servers = new List<OptimizerServer>();
 
-        private int _serverNum = 1;
+        /// <summary>
+        /// current server sequence number
+        /// порядковый номер текущего сервера
+        /// </summary>
+        private int _serverNum;
 
+        /// <summary>
+        /// maximum number of possible detours during the optimization process
+        /// максимальное кол-во обходов возможных за процесс оптимизации
+        /// </summary>
         private int _countAllServersMax;
 
+        /// <summary>
+        /// Object that prevents multi-threaded access in server_TestingEndEvent
+        /// объект препятствующий многопоточному доступу в server_TestingEndEvent
+        /// </summary>
         private object _serverRemoveLocker = new object();
 
-        private List<TimeSpan> _testBotsTime = new List<TimeSpan>();
-
-        private void server_TestingEndEvent(int serverNum, TimeSpan testTime)
+        /// <summary>
+        /// server completed testing
+        /// сервер закончил тестирование
+        /// </summary>
+        /// <param name="serverNum">server number/номер сервера</param>
+        private void server_TestingEndEvent(int serverNum)
         {
             TestingProgressChangeEvent?.Invoke(100, 100, serverNum);
 
@@ -1177,20 +1175,10 @@ namespace OsEngine.OsOptimizer
                 {
                     BotPanel curBot = _botsInTest[i];
 
-                    if (curBot != null
-                        && curBot.TabsSimple != null
-                        && curBot.TabsSimple.Count > 0
-                        && curBot.TabsSimple[0].Connector != null
+                    if(curBot != null 
+                        && curBot.TabsSimple[0] != null 
+                        && curBot.TabsSimple[0].Connector != null 
                         && curBot.TabsSimple[0].Connector.ServerUid == serverNum)
-                    {
-                        bot = curBot;
-                        _botsInTest.RemoveAt(i);
-                        break;
-                    }
-                    else if (curBot != null
-                        && curBot.TabsScreener != null
-                        && curBot.TabsScreener.Count > 0
-                        && curBot.TabsScreener[0].ServerUid == serverNum)
                     {
                         bot = curBot;
                         _botsInTest.RemoveAt(i);
@@ -1208,35 +1196,10 @@ namespace OsEngine.OsOptimizer
                     if (_servers[i].NumberServer == serverNum)
                     {
                         _servers[i].TestingEndEvent -= server_TestingEndEvent;
-                        _servers[i].TestingProgressChangeEvent -= server_TestingProgressChangeEvent;
+                        _servers[i].TestintProgressChangeEvent -= server_TestintProgressChangeEvent;
                         server = _servers[i];
                         _servers.RemoveAt(i);
                         break;
-                    }
-                }
-
-                _testBotsTime.Add(testTime);
-
-                if (_testBotsTime.Count % 20 == 0)
-                {
-                    TimeSpan allTime = TimeSpan.Zero;
-
-                    for (int i = 0; i < _testBotsTime.Count; i++)
-                    {
-                        allTime = TimeSpan.FromMilliseconds(allTime.TotalMilliseconds + _testBotsTime[i].TotalMilliseconds);
-                    }
-
-                    int secondsOnOneTest = Convert.ToInt32(allTime.TotalSeconds / _testBotsTime.Count);
-
-                    int secondsToEndAllTests = (_countAllServersMax - _testBotsTime.Count) * secondsOnOneTest;
-
-                    int secondsToEndDivideThreads = secondsToEndAllTests / _master.ThreadsCount;
-
-                    TimeSpan timeToEnd = TimeSpan.FromSeconds(secondsToEndDivideThreads);
-
-                    if (TimeToEndChangeEvent != null)
-                    {
-                        TimeToEndChangeEvent(timeToEnd);
                     }
                 }
             }
@@ -1248,17 +1211,26 @@ namespace OsEngine.OsOptimizer
                 bot.Delete();
             }
 
-            if (server != null)
+            if(server != null)
             {
                 ServerMaster.RemoveOptimizerServer(server);
             }
         }
 
-        public event Action<TimeSpan> TimeToEndChangeEvent;
+        /// <summary>
+        /// event: optimization is over
+        /// событие: оптимизация окончена
+        /// </summary>
+        public event Action<List<OptimazerFazeReport>> TestReadyEvent;
 
-        public event Action<List<OptimizerFazeReport>> TestReadyEvent;
-
-        private void server_TestingProgressChangeEvent(int curVal, int maxVal, int numServer)
+        /// <summary>
+        /// inbound event: testing progress state changed
+        /// входящее событие: изменилось состояние прогресса тестирования
+        /// </summary>
+        /// <param name="curVal">current value for Progressbar/текущее значение для Прогрессбара</param>
+        /// <param name="maxVal">maximum value for progress bar/максимальное значение для прогрессБара</param>
+        /// <param name="numServer">server number/номер сервера</param>
+        private void server_TestintProgressChangeEvent(int curVal, int maxVal, int numServer)
         {
             if (TestingProgressChangeEvent != null)
             {
@@ -1266,12 +1238,20 @@ namespace OsEngine.OsOptimizer
             }
         }
 
+        /// <summary>
+        /// event: the state of progress has changed
+        /// событие: изменилось состояние прогресса 
+        /// </summary>
         public event Action<int, int, int> TestingProgressChangeEvent;
 
-        #endregion
+        // logging/логирование
 
-        #region Log
-
+        /// <summary>
+        /// send up a new message
+        /// выслать наверх новое сообщение
+        /// </summary>
+        /// <param name="message">Message text/текст сообщения</param>
+        /// <param name="type">message type/тип сообщения</param>
         private void SendLogMessage(string message, LogMessageType type)
         {
             if (LogMessageEvent != null)
@@ -1280,8 +1260,10 @@ namespace OsEngine.OsOptimizer
             }
         }
 
+        /// <summary>
+        /// event: new message for log
+        /// событие: новое сообщение для лога
+        /// </summary>
         public event Action<string, LogMessageType> LogMessageEvent;
-
-        #endregion
     }
 }
