@@ -786,7 +786,7 @@ namespace OsEngine.OsOptimizer
             }
             
             server.TypeTesterData = _master.Storage.TypeTesterData;
-            server.TestintProgressChangeEvent += server_TestintProgressChangeEvent;
+            server.TestingProgressChangeEvent += server_TestingProgressChangeEvent;
 
             for (int i = 0; _master.TabsSimpleNamesAndTimeFrames != null
                             && i < _master.TabsSimpleNamesAndTimeFrames.Count; i++)
@@ -1196,7 +1196,7 @@ namespace OsEngine.OsOptimizer
                     if (_servers[i].NumberServer == serverNum)
                     {
                         _servers[i].TestingEndEvent -= server_TestingEndEvent;
-                        _servers[i].TestintProgressChangeEvent -= server_TestintProgressChangeEvent;
+                        _servers[i].TestingProgressChangeEvent -= server_TestingProgressChangeEvent;
                         server = _servers[i];
                         _servers.RemoveAt(i);
                         break;
@@ -1230,7 +1230,7 @@ namespace OsEngine.OsOptimizer
         /// <param name="curVal">current value for Progressbar/текущее значение для Прогрессбара</param>
         /// <param name="maxVal">maximum value for progress bar/максимальное значение для прогрессБара</param>
         /// <param name="numServer">server number/номер сервера</param>
-        private void server_TestintProgressChangeEvent(int curVal, int maxVal, int numServer)
+        private void server_TestingProgressChangeEvent(int curVal, int maxVal, int numServer)
         {
             if (TestingProgressChangeEvent != null)
             {
