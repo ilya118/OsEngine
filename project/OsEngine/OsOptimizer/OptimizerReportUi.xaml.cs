@@ -14,6 +14,10 @@ using OsEngine.Logging;
 using MessageBox = System.Windows.MessageBox;
 using OsEngine.OsOptimizer.OptEntity;
 using System.IO;
+using System.Threading.Tasks;
+using System.Net;
+using System.Text;
+using System.Net.Http;
 
 namespace OsEngine.OsOptimizer
 {
@@ -58,19 +62,85 @@ namespace OsEngine.OsOptimizer
             LabelAverageProfitPersent.Content = OsLocalization.Optimizer.Label56;
 
             Title += "   " + master.StrategyName;
+            
+            if(master.TabsSimpleNamesAndTimeFrames != null &&
+                master.TabsSimpleNamesAndTimeFrames.Count == 1)
+            {
+                Title += "  " + master.TabsSimpleNamesAndTimeFrames[0].NameSecurity + "  " + master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+            }
 
             this.Activate();
             this.Focus();
         }
 
-        public void Paint(List<OptimizerFazeReport> reports)
+        private void AutoSaveReport()
+        {
+            try
+            {
+                // Генерация имени файла с текущей датой и временем
+                string saveFileName = _master.StrategyName;
+
+                // Удаляем ".txt" из saveFileName, если оно есть
+                if (saveFileName.EndsWith(".txt"))
+                {
+                    saveFileName = saveFileName.Substring(0, saveFileName.Length - 4);
+                }
+
+                DateTime now = DateTime.Now;
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+                // Проверка на null для _master.TabsSimpleNamesAndTimeFrames
+                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
+                {
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString; // Добавляем ".txt" только в конце
+                }
+                saveFileName = saveFileName.Replace(".txt", "");
+                // Указанный путь для сохранения файла
+                string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
+
+                // Проверка существования директории. Если её нет, создаём.
+                if (!Directory.Exists(saveDirectory))
+                {
+                    Directory.CreateDirectory(saveDirectory);
+                }
+             
+                // Полный путь к файлу
+                string savePath = Path.Combine(saveDirectory, saveFileName);
+                savePath = savePath + ".txt";
+
+                // Формирование строки для сохранения
+                StringBuilder saveStr = new StringBuilder();
+
+                foreach (var report in _reports)
+                {
+                    if (report != null)
+                    {
+                        saveStr.AppendLine(report.GetSaveString());
+                    }
+                }
+
+                // Сохранение в файл
+                File.WriteAllText(savePath, saveStr.ToString());
+
+                // Логирование успешного сохранения
+                _master.SendLogMessage($"Отчет успешно сохранен в файл: {savePath}", LogMessageType.System);
+            }
+            catch (Exception error)
+            {
+                // Логирование ошибки
+                _master.SendLogMessage($"Ошибка при автоматическом сохранении отчета: {error}", LogMessageType.Error);
+            }
+        }
+        public void Paint(List<OptimazerFazeReport> reports)
         {
             if (reports == null)
             {
                 return;
             }
 
-            _reports = new List<OptimizerFazeReport>();
+            _reports = new List<OptimazerFazeReport>();
 
             for (int i = 0; i < reports.Count; i++)
             {
@@ -78,11 +148,18 @@ namespace OsEngine.OsOptimizer
             }
 
             RepaintResults();
+
+            // Вызов AutoSaveReport после заполнения _reports
+            if (_reports != null && _reports.Count > 0)
+            {
+                AutoSaveReport();
+                ServerTelegram.GetServer().SendMessageAsync("Оптимизация 4 закончилась");
+            }
         }
 
         OptimizerMaster _master;
 
-        private List<OptimizerFazeReport> _reports;
+        private List<OptimazerFazeReport> _reports;
 
         private OptimizerReportCharting _resultsCharting;
 
@@ -92,7 +169,7 @@ namespace OsEngine.OsOptimizer
             {
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    OptimizerFazeReport.SortResults(_reports[i].Reports, _sortBotsType);
+                    OptimazerFazeReport.SortResults(_reports[i].Reports, _sortBotsType);
                 }
 
                 PaintTableFazes();
@@ -106,177 +183,21 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        private void ShowBotChartDialog(DataGridViewCellMouseEventArgs e)
-        {
-            OptimizerFazeReport fazeReport;
+        // phase table for switching after testing/таблица фаз для переключения после тестирования
 
-            if (_gridFazesEnd.CurrentCell == null ||
-              _gridFazesEnd.CurrentCell.RowIndex == 0)
-            {
-                fazeReport = _reports[0];
-            }
-            else
-            {
-                if (_gridFazesEnd.CurrentCell.RowIndex > _reports.Count)
-                {
-                    return;
-                }
-
-                fazeReport = _reports[_gridFazesEnd.CurrentCell.RowIndex];
-            }
-
-            if (e.RowIndex >= fazeReport.Reports.Count)
-            {
-                return;
-            }
-
-            BotPanel bot = _master.TestBot(fazeReport, fazeReport.Reports[e.RowIndex]);
-
-            if (bot == null)
-            {
-                return;
-            }
-
-            bot.ShowChartDialog();
-        }
-
-        private void ShowParametersDialog(DataGridViewCellMouseEventArgs e)
-        {
-            OptimizerFazeReport fazeReport;
-
-            if (_gridFazesEnd.CurrentCell == null ||
-              _gridFazesEnd.CurrentCell.RowIndex == 0)
-            {
-                fazeReport = _reports[0];
-            }
-            else
-            {
-                if (_gridFazesEnd.CurrentCell.RowIndex > _reports.Count)
-                {
-                    return;
-                }
-
-                fazeReport = _reports[_gridFazesEnd.CurrentCell.RowIndex];
-            }
-
-            if (e.RowIndex >= fazeReport.Reports.Count)
-            {
-                return;
-            }
-
-            OptimizerBotParametersSimpleUi ui = new OptimizerBotParametersSimpleUi(fazeReport.Reports[e.RowIndex], fazeReport, _master.StrategyName);
-            ui.Show();
-        }
-
-        private void ButtonSaveInFile_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                SaveFileDialog myDialog = new SaveFileDialog();
-
-                string saveFileName = _master.StrategyName;
-
-                IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
-
-                if (regime != null)
-                {
-
-                    saveFileName += "_" + ((StrategyParameterString)regime).ValueString;
-                }
-                saveFileName = saveFileName.Replace(".txt", "");
-
-                myDialog.FileName = saveFileName;
-
-                myDialog.Filter = "*.txt|";
-                myDialog.ShowDialog();
-
-                if (string.IsNullOrEmpty(myDialog.FileName))
-                {
-                    System.Windows.Forms.MessageBox.Show(OsLocalization.Journal.Message1);
-                    return;
-                }
-
-                string fileName = myDialog.FileName;
-                if (fileName.Split('.').Length == 1)
-                {
-                    fileName = fileName + ".txt";
-                }
-
-                string saveStr = "";
-
-                for (int i = 0; i < _reports.Count; i++)
-                {
-                    saveStr += _reports[i].GetSaveString() + "\r\n";
-                }
-
-
-                StreamWriter writer = new StreamWriter(fileName);
-                writer.Write(saveStr);
-                writer.Close();
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show(error.ToString());
-            }
-        }
-
-        private void ButtonLoadFromFile_Click(object sender, RoutedEventArgs e)
-        {
-            Title = "Optimizer Report";
-
-            try
-            {
-                OpenFileDialog myDialog = new OpenFileDialog();
-                myDialog.Filter = "*.txt|";
-                myDialog.ShowDialog();
-
-                if (string.IsNullOrEmpty(myDialog.FileName))
-                {
-                    System.Windows.Forms.MessageBox.Show(OsLocalization.Journal.Message2);
-                    return;
-                }
-
-                if (_reports == null)
-                {
-                    _reports = new List<OptimizerFazeReport>();
-                }
-                else
-                {
-                    _reports.Clear();
-                }
-
-                using (StreamReader reader = new StreamReader(myDialog.FileName))
-                {
-                    while (reader.EndOfStream == false)
-                    {
-                        string str = reader.ReadLine();
-
-                        if (string.IsNullOrEmpty(str))
-                        {
-                            continue;
-                        }
-
-                        OptimizerFazeReport newReport = new OptimizerFazeReport();
-                        newReport.LoadFromString(str);
-                        _reports.Add(newReport);
-                    }
-                }
-
-                RepaintResults();
-            }
-            catch (Exception error)
-            {
-                MessageBox.Show(error.ToString());
-            }
-        }
-
-        #region Phase table for switching after testing
-
+        /// <summary>
+        /// table with optimization steps on the totals tab
+        /// таблица с этапами оптимизации на вкладке итогов
+        /// </summary>
         private DataGridView _gridFazesEnd;
 
+        /// <summary>
+        /// create phase table on totals tabs
+        /// создать таблицу фаз на вкладки итогов
+        /// </summary>
         private void CreateTableFazes()
         {
-            _gridFazesEnd = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.FullRowSelect,
+            _gridFazesEnd = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.FullRowSelect, 
                 DataGridViewAutoSizeRowsMode.AllCells, true);
 
             _gridFazesEnd.ScrollBars = ScrollBars.Vertical;
@@ -327,6 +248,10 @@ namespace OsEngine.OsOptimizer
             _gridFazesEnd.CellClick += _gridFazesEnd_CellClick;
         }
 
+        /// <summary>
+        /// draw phase table on totals tab
+        /// прорисовать таблицу фаз на вкладке итогов
+        /// </summary>
         private void PaintTableFazes()
         {
             if (_gridFazesEnd.InvokeRequired)
@@ -380,20 +305,33 @@ namespace OsEngine.OsOptimizer
             }
         }
 
-        private void _gridFazesEnd_CellClick(object sender, DataGridViewCellEventArgs e)
+        /// <summary>
+        /// the user clicked on the phase table in the totals tab
+        /// пользователь кликнул по таблице фаз на вкладке итогов
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        void _gridFazesEnd_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             PaintTableResults();
         }
 
-        #endregion
+        // optimization results table/таблица результатов оптимизации
 
-        #region Optimization results table
 
+        /// <summary>
+        /// table with optimization steps
+        /// таблица с этапами оптимизации
+        /// </summary>
         private DataGridView _gridResults;
 
+        /// <summary>
+        /// create a table of results
+        /// создать таблицу результатов
+        /// </summary>
         private void CreateTableResults()
         {
-            _gridResults = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect,
+            _gridResults = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.ColumnHeaderSelect, 
                 DataGridViewAutoSizeRowsMode.None, true);
 
             _gridResults.ScrollBars = ScrollBars.Vertical;
@@ -474,7 +412,7 @@ namespace OsEngine.OsOptimizer
 
             DataGridViewColumn column9 = new DataGridViewColumn();
             column9.CellTemplate = cell0;
-            column9.HeaderText = "Sharpe Ratio";
+            column9.HeaderText = "Sharp Ratio";
             column9.ReadOnly = false;
             column9.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             _gridResults.Columns.Add(column9);
@@ -488,7 +426,7 @@ namespace OsEngine.OsOptimizer
 
             DataGridViewButtonColumn column12 = new DataGridViewButtonColumn();
             column12.CellTemplate = new DataGridViewButtonCell();
-            // column12.HeaderText = OsLocalization.Optimizer.Message42;
+           // column12.HeaderText = OsLocalization.Optimizer.Message42;
             column12.ReadOnly = true;
             column12.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
             _gridResults.Columns.Add(column12);
@@ -523,7 +461,7 @@ namespace OsEngine.OsOptimizer
             }
 
             _gridResults.Columns[4].HeaderText = "Max Drow Dawn";
-            if (_sortBotsType == SortBotsType.MaxDrawDawn)
+            if (_sortBotsType == SortBotsType.MaxDrowDawn)
             {
                 _gridResults.Columns[4].HeaderText += " vvv";
             }
@@ -558,13 +496,17 @@ namespace OsEngine.OsOptimizer
                 _gridResults.Columns[9].HeaderText += " vvv";
             }
 
-            _gridResults.Columns[10].HeaderText = "Sharpe Ratio";
+            _gridResults.Columns[10].HeaderText = "Sharp Ratio";
             if (_sortBotsType == SortBotsType.SharpRatio)
             {
                 _gridResults.Columns[10].HeaderText += " vvv";
             }
         }
 
+        /// <summary>
+        /// draw a table of results
+        /// прорисовать таблицу результатов
+        /// </summary>
         private void PaintTableResults()
         {
             if (_gridResults == null)
@@ -602,7 +544,7 @@ namespace OsEngine.OsOptimizer
                 return;
             }
 
-            OptimizerFazeReport fazeReport = _reports[num];
+            OptimazerFazeReport fazeReport = _reports[num];
 
             if (fazeReport == null)
             {
@@ -637,7 +579,7 @@ namespace OsEngine.OsOptimizer
                 //}
 
                 DataGridViewTextBoxCell cell2 = new DataGridViewTextBoxCell();
-                cell2.Value = report.GetParametersToDataTable();
+                cell2.Value = report.GetParamsToDataTable();
                 row.Cells.Add(cell2);
 
                 DataGridViewTextBoxCell cell3 = new DataGridViewTextBoxCell();
@@ -645,11 +587,11 @@ namespace OsEngine.OsOptimizer
                 row.Cells.Add(cell3);
 
                 DataGridViewTextBoxCell cell4 = new DataGridViewTextBoxCell();
-                cell4.Value = report.TotalProfit.ToStringWithNoEndZero() + " (" + report.TotalProfitPercent.ToStringWithNoEndZero() + "%)";
+                cell4.Value = report.TotalProfit.ToStringWithNoEndZero() + " (" + report.TotalProfitPersent.ToStringWithNoEndZero() + "%)";
                 row.Cells.Add(cell4);
 
                 DataGridViewTextBoxCell cell5 = new DataGridViewTextBoxCell();
-                cell5.Value = report.MaxDrawDawn.ToStringWithNoEndZero();
+                cell5.Value = report.MaxDrowDawn.ToStringWithNoEndZero();
                 row.Cells.Add(cell5);
 
                 DataGridViewTextBoxCell cell6 = new DataGridViewTextBoxCell();
@@ -700,7 +642,67 @@ namespace OsEngine.OsOptimizer
             _gridResults.CellMouseClick += _gridResults_CellMouseClick;
         }
 
-        private void _gridResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        private DataGridViewRow GetRowResult(OptimizerReportTab report)
+        {
+            DataGridViewRow row = new DataGridViewRow();
+
+            row.Cells.Add(new DataGridViewTextBoxCell());
+            row.Cells[0].Value = report.SecurityName;
+
+
+            DataGridViewTextBoxCell cell2 = new DataGridViewTextBoxCell();
+            row.Cells.Add(cell2);
+
+            DataGridViewTextBoxCell cell3 = new DataGridViewTextBoxCell();
+            cell3.Value = report.PositionsCount;
+            row.Cells.Add(cell3);
+
+            DataGridViewTextBoxCell cell4 = new DataGridViewTextBoxCell();
+            cell4.Value = report.TotalProfit.ToStringWithNoEndZero();
+            row.Cells.Add(cell4);
+
+            DataGridViewTextBoxCell cell5 = new DataGridViewTextBoxCell();
+            cell5.Value = report.MaxDrowDawn.ToStringWithNoEndZero();
+            row.Cells.Add(cell5);
+
+            DataGridViewTextBoxCell cell6 = new DataGridViewTextBoxCell();
+            cell6.Value = report.AverageProfit.ToStringWithNoEndZero();
+            row.Cells.Add(cell6);
+
+            DataGridViewTextBoxCell cell7 = new DataGridViewTextBoxCell();
+            cell7.Value = report.AverageProfitPercentOneContract.ToStringWithNoEndZero();
+            row.Cells.Add(cell7);
+
+            DataGridViewTextBoxCell cell8 = new DataGridViewTextBoxCell();
+            cell8.Value = report.ProfitFactor.ToStringWithNoEndZero();
+            row.Cells.Add(cell8);
+
+            DataGridViewTextBoxCell cell9 = new DataGridViewTextBoxCell();
+            cell9.Value = report.PayOffRatio.ToStringWithNoEndZero();
+            row.Cells.Add(cell9);
+
+            DataGridViewTextBoxCell cell10 = new DataGridViewTextBoxCell();
+            cell10.Value = report.Recovery.ToStringWithNoEndZero();
+            row.Cells.Add(cell10);
+
+            try
+            {
+                row.Cells.Add(null);
+            }
+            catch
+            {
+                // igonre
+            }
+
+            return row;
+
+        }
+
+        /// <summary>
+        /// user clicked a button in the result table
+        /// пользователь нажал на кнопку в таблице результатов
+        /// </summary>
+        void _gridResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
         {
             if (e.RowIndex < 0)
             {
@@ -714,11 +716,77 @@ namespace OsEngine.OsOptimizer
 
             if (e.ColumnIndex == 12)
             {
-                ShowParametersDialog(e);
+                ShowParamsDialog(e);
             }
         }
 
-        private void _gridResults_SelectionChanged(object sender, EventArgs e)
+        private void ShowBotChartDialog(DataGridViewCellMouseEventArgs e)
+        {
+            OptimazerFazeReport fazeReport;
+
+            if (_gridFazesEnd.CurrentCell == null ||
+              _gridFazesEnd.CurrentCell.RowIndex == 0)
+            {
+                fazeReport = _reports[0];
+            }
+            else
+            {
+                if (_gridFazesEnd.CurrentCell.RowIndex > _reports.Count)
+                {
+                    return;
+                }
+
+                fazeReport = _reports[_gridFazesEnd.CurrentCell.RowIndex];
+            }
+
+            if (e.RowIndex >= fazeReport.Reports.Count)
+            {
+                return;
+            }
+
+            BotPanel bot = _master.TestBot(fazeReport, fazeReport.Reports[e.RowIndex]);
+
+            if(bot == null)
+            {
+                return;
+            }
+
+            bot.ShowChartDialog();
+        }
+
+        private void ShowParamsDialog(DataGridViewCellMouseEventArgs e)
+        {
+            OptimazerFazeReport fazeReport;
+
+            if (_gridFazesEnd.CurrentCell == null ||
+              _gridFazesEnd.CurrentCell.RowIndex == 0)
+            {
+                fazeReport = _reports[0];
+            }
+            else
+            {
+                if (_gridFazesEnd.CurrentCell.RowIndex > _reports.Count)
+                {
+                    return;
+                }
+
+                fazeReport = _reports[_gridFazesEnd.CurrentCell.RowIndex];
+            }
+
+            if (e.RowIndex >= fazeReport.Reports.Count)
+            {
+                return;
+            }
+
+            OptimizerBotParametersSimpleUi ui = new OptimizerBotParametersSimpleUi(fazeReport.Reports[e.RowIndex], fazeReport, _master.StrategyName);
+            ui.Show();
+        }
+
+        /// <summary>
+        /// user clicked results table
+        /// пользователь кликнул по таблице результатов
+        /// </summary>
+        void _gridResults_SelectionChanged(object sender, EventArgs e)
         {
             if (_gridResults.SelectedCells.Count == 0)
             {
@@ -741,7 +809,7 @@ namespace OsEngine.OsOptimizer
             }
             else if (columnSelect == 4)
             {
-                _sortBotsType = SortBotsType.MaxDrawDawn;
+                _sortBotsType = SortBotsType.MaxDrowDawn;
             }
             else if (columnSelect == 5)
             {
@@ -776,7 +844,7 @@ namespace OsEngine.OsOptimizer
             {
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    OptimizerFazeReport.SortResults(_reports[i].Reports, _sortBotsType);
+                    OptimazerFazeReport.SortResults(_reports[i].Reports, _sortBotsType);
                 }
 
                 PaintTableResults();
@@ -788,9 +856,127 @@ namespace OsEngine.OsOptimizer
 
         }
 
+        /// <summary>
+        /// robot sorting type in the results table
+        /// тип сортировки роботов в таблице результатов
+        /// </summary>
         private SortBotsType _sortBotsType;
 
-        #endregion
+        private void ButtonSaveInFile_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                SaveFileDialog myDialog = new SaveFileDialog();
+
+                string saveFileName = _master.StrategyName;
+
+                // Получаем текущую дату и время
+                DateTime now = DateTime.Now;
+
+                // Форматируем дату и время в строку (например, "yyyyMMdd_HHmmss")
+                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
+
+
+                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
+                {
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
+                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
+                    saveFileName += "_" + dateTimeString;
+                }
+
+                IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
+
+                if (regime != null)
+                {
+
+                    saveFileName += "_" + ((StrategyParameterString)regime).ValueString;
+                }
+                saveFileName = saveFileName.Replace(".txt", "");
+
+                myDialog.FileName = saveFileName;
+
+                myDialog.Filter = "*.txt|";
+                myDialog.ShowDialog();
+
+                if (string.IsNullOrEmpty(myDialog.FileName))
+                {
+                    System.Windows.Forms.MessageBox.Show(OsLocalization.Journal.Message1);
+                    return;
+                }
+
+                string fileName = myDialog.FileName;
+                if (fileName.Split('.').Length == 1)
+                {
+                    fileName = fileName + ".txt";
+                }
+
+                string saveStr = "";
+
+                for (int i = 0; i < _reports.Count; i++)
+                {
+                    saveStr += _reports[i].GetSaveString() + "\r\n";
+                }
+
+
+                StreamWriter writer = new StreamWriter(fileName);
+                writer.Write(saveStr);
+                writer.Close();
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(error.ToString());
+            }
+        }
+
+        private void ButtonLoadFromFile_Click(object sender, RoutedEventArgs e)
+        {
+            Title = "Optimizer Report";
+
+            try
+            {
+                OpenFileDialog myDialog = new OpenFileDialog();
+                myDialog.Filter = "*.txt|";
+                myDialog.ShowDialog();
+
+                if (string.IsNullOrEmpty(myDialog.FileName))
+                {
+                    System.Windows.Forms.MessageBox.Show(OsLocalization.Journal.Message2);
+                    return;
+                }
+
+                if (_reports == null)
+                {
+                    _reports = new List<OptimazerFazeReport>();
+                }
+                else
+                {
+                    _reports.Clear();
+                }
+
+                using (StreamReader reader = new StreamReader(myDialog.FileName))
+                {
+                    while (reader.EndOfStream == false)
+                    {
+                        string str = reader.ReadLine();
+
+                        if (string.IsNullOrEmpty(str))
+                        {
+                            continue;
+                        }
+
+                        OptimazerFazeReport newReport = new OptimazerFazeReport();
+                        newReport.LoadFromString(str);
+                        _reports.Add(newReport);
+                    }
+                }
+
+                RepaintResults();
+            }
+            catch (Exception error)
+            {
+                MessageBox.Show(error.ToString());
+            }
+        }
 
     }
 }
