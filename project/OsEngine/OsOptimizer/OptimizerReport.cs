@@ -543,14 +543,15 @@ namespace OsEngine.OsOptimizer
             SecurityName = save[1];
             PositionsCount = Convert.ToInt32(save[2]);
             TotalProfit = save[3].ToDecimal();
-            //MaxDrawDawn = save[4].ToDecimal();
-            //AverageProfit = save[5].ToDecimal();
-            //AverageProfitPercentOneContract = save[6].ToDecimal();
-            //ProfitFactor = save[7].ToDecimal();
-            //PayOffRatio = save[8].ToDecimal();
-            //Recovery = save[9].ToDecimal();
-            //TotalProfitPercent = save[10].ToDecimal();
-
+            /*
+            MaxDrawDawn = save[4].ToDecimal();
+            AverageProfit = save[5].ToDecimal();
+            AverageProfitPercentOneContract = save[6].ToDecimal();
+            ProfitFactor = save[7].ToDecimal();
+            PayOffRatio = save[8].ToDecimal();
+            Recovery = save[9].ToDecimal();
+            TotalProfitPercent = save[10].ToDecimal();
+            */
             if (save.Length == 11)
             {
                 return;

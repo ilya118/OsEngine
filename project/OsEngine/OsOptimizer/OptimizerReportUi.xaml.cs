@@ -186,12 +186,15 @@ namespace OsEngine.OsOptimizer
                 string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
 
 
+                /*
                 if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
                 {
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
                     saveFileName += "_" + dateTimeString;
                 }
+                */
+                saveFileName += dateTimeString;
 
                 IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
 
@@ -824,12 +827,15 @@ namespace OsEngine.OsOptimizer
                 string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
 
                 // Проверка на null для _master.TabsSimpleNamesAndTimeFrames
+                /*
                 if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
                 {
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
                     saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
-                    saveFileName += "_" + dateTimeString; // Добавляем ".txt" только в конце
+                    saveFileName += "_" + dateTimeString;
                 }
+                */
+                saveFileName += dateTimeString;
                 saveFileName = saveFileName.Replace(".txt", "");
                 // Указанный путь для сохранения файла
                 string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
