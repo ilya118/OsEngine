@@ -5,8 +5,8 @@ using System.Drawing;
 
 namespace OsEngine.Indicators
 {
-    [Indicator("VolatilityStagesAW")]
-    public class VolatilityStagesAW : Aindicator
+    [Indicator("VolatilityStagesAW3")]
+    public class VolatilityStagesAW3 : Aindicator
     {
         private IndicatorParameterString _volatilityStagesRegime;
 
