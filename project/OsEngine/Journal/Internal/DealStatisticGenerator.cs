@@ -65,6 +65,7 @@ namespace OsEngine.Journal.Internal
 
 
             report.Add(Convert.ToDouble(GetAllProfitInAbsolute(deals)).ToString(new CultureInfo("ru-RU"))); //Net profit
+            report.Add(Convert.ToDouble(GetAllProfitList(deals)).ToString(new CultureInfo("ru-RU"))); //ProfitList
             report.Add(Math.Round(GetAllProfitPercent(deals), 6).ToString(new CultureInfo("ru-RU")));//Net profti %
             report.Add(deals.Length.ToString(new CultureInfo("ru-RU")));// Number of transactions
             report.Add(GetAverageTimeOnPoses(deals));
@@ -119,6 +120,17 @@ namespace OsEngine.Journal.Internal
             }
 
             return Round(profit);
+        }        
+        public static string GetAllProfitList(Position[] deals)
+        {
+            string profitlist = "";
+
+            for (int i = 0; i < deals.Length; i++)
+            {
+                profitlist += deals[i].ProfitPortfolioPunkt * (deals[i].MultToJournal / 100) + ";";
+            }
+
+            return profitlist;
         }
 
         public static decimal GetAllProfitPercent(Position[] deals)
