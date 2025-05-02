@@ -20,8 +20,9 @@ namespace OsEngine.Market.Servers.HTX.Swap
 {
     public class HTXSwapServer : AServer
     {
-        public HTXSwapServer()
+        public HTXSwapServer(int uniqueNumber)
         {
+            ServerNum = uniqueNumber;
             HTXSwapServerRealization realization = new HTXSwapServerRealization();
             ServerRealization = realization;
 
@@ -57,7 +58,7 @@ namespace OsEngine.Market.Servers.HTX.Swap
 
         public DateTime ServerTime { get; set; }
 
-        public void Connect()
+        public void Connect(WebProxy proxy)
         {
             _accessKey = ((ServerParameterString)ServerParameters[0]).Value;
             _secretKey = ((ServerParameterPassword)ServerParameters[1]).Value;
@@ -257,12 +258,22 @@ namespace OsEngine.Market.Servers.HTX.Swap
                     newSecurity.NameId = item.contract_code;
                     newSecurity.SecurityType = SecurityType.Futures;
                     newSecurity.DecimalsVolume = item.contract_size.DecimalsCount();
-                    newSecurity.Lot = item.contract_size.ToDecimal();
+                    newSecurity.Lot = 1;
                     newSecurity.PriceStep = item.price_tick.ToDecimal();
                     newSecurity.Decimals = item.price_tick.DecimalsCount();
                     newSecurity.PriceStepCost = newSecurity.PriceStep;
                     newSecurity.State = SecurityStateType.Activ;
                     newSecurity.MinTradeAmount = item.contract_size.ToDecimal();
+                    newSecurity.MinTradeAmountType = MinTradeAmountType.Contract;
+
+                    if (newSecurity.DecimalsVolume == 0)
+                    {
+                        newSecurity.VolumeStep = 1;
+                    }
+                    else
+                    {
+                        newSecurity.VolumeStep = item.contract_size.ToDecimal();
+                    }
 
                     securities.Add(newSecurity);
                 }
@@ -1436,6 +1447,7 @@ namespace OsEngine.Market.Servers.HTX.Swap
 
                 if (response.status != "ok")
                 {
+                    GetOrderStatus(order);
                     SendLogMessage($"CancelOrder. Http State Code: {responseMessage.Content}", LogMessageType.Error);
                 }
                 else

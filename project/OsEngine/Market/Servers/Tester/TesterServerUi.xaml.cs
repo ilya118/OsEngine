@@ -1168,7 +1168,7 @@ namespace OsEngine.Market.Servers.Tester
 
                         ui.ShowDialog();
 
-                        if (ui.UserAcceptActioin == false)
+                        if (ui.UserAcceptAction == false)
                         {
                             return;
                         }
@@ -1402,7 +1402,7 @@ namespace OsEngine.Market.Servers.Tester
 
                         ui.ShowDialog();
 
-                        if (ui.UserAcceptActioin == false)
+                        if (ui.UserAcceptAction == false)
                         {
                             return;
                         }
@@ -1655,6 +1655,7 @@ namespace OsEngine.Market.Servers.Tester
                     securities[i].TimeFrame = frame;
                 }
             }
+            _server.SaveSetSecuritiesTimeFrameSettings();
         }
 
         private void _myGridView_DoubleClick(object sender, EventArgs e)
@@ -1689,7 +1690,6 @@ namespace OsEngine.Market.Servers.Tester
             if (ui.IsChanged)
             {
                 _server.SaveSecurityDopSettings(security);
-                _server.ReloadSecurities();
             }
         }
 

@@ -361,6 +361,8 @@ namespace OsEngine.Market.Servers.Optimizer
                         securities[i].TimeFrame = frame;
                     }
                 }
+
+                _server.SaveSetSecuritiesTimeFrameSettings();
             }
             catch (Exception ex)
             {
@@ -691,7 +693,7 @@ namespace OsEngine.Market.Servers.Optimizer
 
                         ui.ShowDialog();
 
-                        if (ui.UserAcceptActioin == false)
+                        if (ui.UserAcceptAction == false)
                         {
                             return;
                         }
@@ -925,7 +927,7 @@ namespace OsEngine.Market.Servers.Optimizer
 
                         ui.ShowDialog();
 
-                        if (ui.UserAcceptActioin == false)
+                        if (ui.UserAcceptAction == false)
                         {
                             return;
                         }

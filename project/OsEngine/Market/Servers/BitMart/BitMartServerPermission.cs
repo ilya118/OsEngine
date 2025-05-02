@@ -12,6 +12,8 @@ namespace OsEngine.Market.Servers.BitMart
             get { return ServerType.BitMart; }
         }
 
+        #region DataFeedPermissions
+
         public bool DataFeedTf1SecondCanLoad
         {
             get { return false; }
@@ -107,6 +109,10 @@ namespace OsEngine.Market.Servers.BitMart
             get { return false; }
         }
 
+        #endregion
+
+        #region Trade permission
+
         public bool MarketOrdersIsSupport
         {
             get { return false; }
@@ -192,9 +198,40 @@ namespace OsEngine.Market.Servers.BitMart
             get { return true; }
         }
 
+        #endregion
+
+        #region Other Permissions
+
         public bool IsNewsServer
         {
             get { return false; }
         }
+
+        public bool IsSupports_CheckDataFeedLogic
+        {
+            get { return false; }
+        }
+
+        public string[] CheckDataFeedLogic_ExceptionSecuritiesClass
+        {
+            get { return null; }
+        }
+
+        public int CheckDataFeedLogic_NoDataMinutesToDisconnect
+        {
+            get { return 10; }
+        }
+
+        public bool IsSupports_MultipleInstances
+        {
+            get { return false; }
+        }
+
+        public bool IsSupports_ProxyFor_MultipleInstances
+        {
+            get { return false; }
+        }
+
+        #endregion
     }
 }

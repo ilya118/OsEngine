@@ -1,4 +1,9 @@
-﻿namespace OsEngine.Market.Servers.TraderNet
+﻿/*
+ *Your rights to use the code are governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
+ *Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+namespace OsEngine.Market.Servers.TraderNet
 {
     public class TraderNetServerPermission : IServerPermission
     {
@@ -6,6 +11,8 @@
         {
             get { return ServerType.TraderNet; }
         }
+
+        #region DataFeedPermissions
 
         public bool DataFeedTf1SecondCanLoad
         {
@@ -101,7 +108,11 @@
         {
             get { return false; }
         }
-                
+
+        #endregion
+
+        #region Trade permission
+
         public TimeFramePermission TradeTimeFramePermission
         {
             get { return _tradeTimeFramePermission; }
@@ -201,9 +212,40 @@
             get { return true; }
         }
 
+        #endregion
+
+        #region Other Permissions
+
         public bool IsNewsServer
         {
             get { return false; }
         }
+
+        public bool IsSupports_CheckDataFeedLogic
+        {
+            get { return false; }
+        }
+
+        public string[] CheckDataFeedLogic_ExceptionSecuritiesClass
+        {
+            get { return null; }
+        }
+
+        public int CheckDataFeedLogic_NoDataMinutesToDisconnect
+        {
+            get { return 10; }
+        }
+
+        public bool IsSupports_MultipleInstances
+        {
+            get { return false; }
+        }
+
+        public bool IsSupports_ProxyFor_MultipleInstances
+        {
+            get { return false; }
+        }
+
+        #endregion
     }
 }

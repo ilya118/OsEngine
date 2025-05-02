@@ -50,6 +50,7 @@ namespace OsEngine.OsOptimizer
             _needToStop = false;
             _servers = new List<OptimizerServer>();
             _countAllServersMax = 0;
+            _countAllServersEndTest = 0;
             _serverNum = 1;
             _testBotsTime.Clear();
 
@@ -1159,6 +1160,8 @@ namespace OsEngine.OsOptimizer
 
         private int _countAllServersMax;
 
+        private int _countAllServersEndTest;
+
         private object _serverRemoveLocker = new object();
 
         private List<TimeSpan> _testBotsTime = new List<TimeSpan>();
@@ -1166,8 +1169,8 @@ namespace OsEngine.OsOptimizer
         private void server_TestingEndEvent(int serverNum, TimeSpan testTime)
         {
             TestingProgressChangeEvent?.Invoke(100, 100, serverNum);
-
-            PrimeProgressChangeEvent?.Invoke(serverNum, _countAllServersMax);
+            _countAllServersEndTest++;
+            PrimeProgressChangeEvent?.Invoke(_countAllServersEndTest, _countAllServersMax);
 
             BotPanel bot = null;
             OptimizerServer server = null;
@@ -1224,18 +1227,19 @@ namespace OsEngine.OsOptimizer
 
                     for (int i = 0; i < _testBotsTime.Count; i++)
                     {
-                        allTime = TimeSpan.FromMilliseconds(allTime.TotalMilliseconds + _testBotsTime[i].TotalMilliseconds);
-            }
+                        allTime = TimeSpan.FromMilliseconds(allTime.TotalMilliseconds + _testBotsTime[i].TotalMilliseconds + 1000);
+                    }
 
-                    int secondsOnOneTest = Convert.ToInt32(allTime.TotalSeconds / _testBotsTime.Count);
+                    decimal secondsOnOneTest = Convert.ToDecimal(allTime.TotalSeconds / _testBotsTime.Count);
 
-                    int secondsToEndAllTests = (_countAllServersMax - _testBotsTime.Count) * secondsOnOneTest;
+                    decimal secondsToEndAllTests = (_countAllServersMax - _testBotsTime.Count) * secondsOnOneTest;
 
-                    int secondsToEndDivideThreads = secondsToEndAllTests / _master.ThreadsCount;
+                    decimal secondsToEndDivideThreads = secondsToEndAllTests / _master.ThreadsCount;
 
-                    TimeSpan timeToEnd = TimeSpan.FromSeconds(secondsToEndDivideThreads);
+                    TimeSpan timeToEnd = TimeSpan.FromSeconds(Convert.ToInt32(secondsToEndDivideThreads));
 
-                    if (TimeToEndChangeEvent != null)
+                    if (TimeToEndChangeEvent != null
+                        && timeToEnd.TotalSeconds != 0)
                     {
                         TimeToEndChangeEvent(timeToEnd);
                     }

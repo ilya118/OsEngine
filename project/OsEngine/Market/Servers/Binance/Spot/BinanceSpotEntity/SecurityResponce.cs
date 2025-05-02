@@ -19,6 +19,7 @@ namespace OsEngine.Market.Servers.Binance.Spot.BinanceSpotEntity
         public string maxQty { get; set; }
         public string stepSize { get; set; }
         public string minNotional { get; set; }
+        public string notional { get; set; }
     }
 
     public class Symbol

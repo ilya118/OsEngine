@@ -1164,7 +1164,7 @@ namespace OsEngine.Language
          "Ru:Начальные настройки_");
 
         public string Label316 => OsLocalization.ConvertToLocString(
-         "Eng:Comission settings_" +
+         "Eng:Commission settings_" +
          "Ru:Настроки комиссии_");
 
         public string Label317 => OsLocalization.ConvertToLocString(
@@ -1188,7 +1188,7 @@ namespace OsEngine.Language
          "Ru:Значение_");
 
         public string Label322 => OsLocalization.ConvertToLocString(
-         "Eng:Substract comissions in trading_" +
+         "Eng:Substract commissions in trading_" +
          "Ru:Вычитать комиссию в торговле_");
 
         public string Label323 => OsLocalization.ConvertToLocString(
@@ -1638,5 +1638,13 @@ namespace OsEngine.Language
         public string Label434 => OsLocalization.ConvertToLocString(
          "Eng:News_" +
          "Ru:Новости_");
+
+        public string Label435 => OsLocalization.ConvertToLocString(
+         "Eng:SOURCE IS OFF. NO CANDLES. NO MARKET DEPTHS. NONE._" +
+         "Ru:ИСТОЧНИК ВЫКЛЮЧЕН. НЕТ СВЕЧЕЙ. НЕТ СТАКАНОВ. НИЧЕГО НЕТ_");
+
+        public string Label436 => OsLocalization.ConvertToLocString(
+         "Eng:You need to give the robot a unique name_" +
+         "Ru:Нужно дать роботу уникальное имя_");
     }
 }
