@@ -326,6 +326,7 @@ namespace OsEngine.OsOptimizer
                 tab.SecurityName = bot.TabsSimple[i].Security.Name;
                 tab.PositionsCount = positions.Count;
                 tab.TotalProfit = PositionStatisticGenerator.GetAllProfitInAbsolute(posesArray);
+                tab.TotalProfitList = PositionStatisticGenerator.GetAllProfitList(posesArray);
                 //tab.TotalProfitPercent = PositionStatisticGenerator.GetAllProfitPercent(posesArray);
                 //tab.MaxDrawDawn = PositionStatisticGenerator.GetMaxDownPercent(posesArray);
 
@@ -351,6 +352,7 @@ namespace OsEngine.OsOptimizer
             {
                 PositionsCount = TabsReports[0].PositionsCount;
                 TotalProfit = TabsReports[0].TotalProfit;
+                TotalProfitList = TabsReports[0].TotalProfitList;
                 //TotalProfitPercent = TabsReports[0].TotalProfitPercent;
                 //MaxDrawDawn = TabsReports[0].MaxDrawDawn;
                 //AverageProfit = TabsReports[0].AverageProfit;
@@ -369,6 +371,7 @@ namespace OsEngine.OsOptimizer
 
                 PositionsCount = allPositionsForAllTabs.Count;
                 TotalProfit = PositionStatisticGenerator.GetAllProfitInAbsolute(posesArray);
+                TotalProfitList = PositionStatisticGenerator.GetAllProfitList(posesArray);
                 //TotalProfitPercent = PositionStatisticGenerator.GetAllProfitPercent(posesArray);
                 //MaxDrawDawn = PositionStatisticGenerator.GetMaxDownPercent(posesArray);
                 //AverageProfit = PositionStatisticGenerator.GetMiddleProfitInAbsolute(posesArray);
@@ -383,6 +386,8 @@ namespace OsEngine.OsOptimizer
         public int PositionsCount;
 
         public decimal TotalProfit;
+        
+        public string TotalProfitList;
 
         public decimal TotalProfitPercent;
 
@@ -405,27 +410,32 @@ namespace OsEngine.OsOptimizer
             string result = "";
 
             // Сохраняем основное
-            //result += BotName + "@";
+            /*
+            result += BotName + "@";
+            */
             result += PositionsCount + ";";
             result += TotalProfit + ";";
-            //result += MaxDrawDawn + "@";
-            //result += AverageProfit + "@";
-            //result += AverageProfitPercentOneContract + "@";
-            //result += ProfitFactor + "@";
-            //result += PayOffRatio + "@";
-            //result += Recovery + "@";
-            //result += TotalProfitPercent + "@";
-            //result += SharpRatio + "@";
-
+            /*
+            result += MaxDrawDawn + "@";
+            result += AverageProfit + "@";
+            result += AverageProfitPercentOneContract + "@";
+            result += ProfitFactor + "@";
+            result += PayOffRatio + "@";
+            result += Recovery + "@";
+            result += TotalProfitPercent + "@";
+            result += SharpRatio + "@";
+            */
             // сохраняем параметры в строковом представлении
             string parameters = "";
 
             for (int i = 0; i < StrategyParameters.Count; i++)
             {
-                parameters += StrategyParameters[i] + "&";
+                parameters += StrategyParameters[i] + ";";
             }
-
+            
             result += parameters;
+
+            result += TotalProfitList + ";"; //PositionStatisticGenerator.GetAllProfitList(posesArray);
 
             /*
             // сохраняем отдельные репорты по вкладкам
@@ -448,6 +458,7 @@ namespace OsEngine.OsOptimizer
             BotName = str[0];
             PositionsCount = Convert.ToInt32(str[1]);
             TotalProfit = Convert.ToDecimal(str[2]);
+            TotalProfitList = Convert.ToString(str[3]);
             //MaxDrawDawn = Convert.ToDecimal(str[3]);
             //AverageProfit = Convert.ToDecimal(str[4]);
             //AverageProfitPercentOneContract = Convert.ToDecimal(str[5]);
@@ -484,6 +495,8 @@ namespace OsEngine.OsOptimizer
         public int PositionsCount;
 
         public decimal TotalProfit;
+
+        public string TotalProfitList;
 
         public decimal TotalProfitPercent;
 
@@ -529,6 +542,7 @@ namespace OsEngine.OsOptimizer
             SecurityName = save[1];
             PositionsCount = Convert.ToInt32(save[2]);
             TotalProfit = save[3].ToDecimal();
+            TotalProfitList = save[4].ToString();
             /*
             MaxDrawDawn = save[4].ToDecimal();
             AverageProfit = save[5].ToDecimal();

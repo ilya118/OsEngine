@@ -633,7 +633,7 @@ namespace OsEngine.OsOptimizer
                 }
             }*/
 
-            ServerTelegram.GetServer().SendMessageAsync("Оптимизация 4 началась");
+            ServerTelegram.GetServer().SendMessageAsync("▶️ Оптимизация началась");
             
             if (ButtonGo.Content.ToString() == OsLocalization.Optimizer.Label9
                 && _master.Start())

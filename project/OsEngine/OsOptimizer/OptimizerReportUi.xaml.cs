@@ -80,7 +80,7 @@ namespace OsEngine.OsOptimizer
 
             RepaintResults();
             AutoSaveReport();
-            ServerTelegram.GetServer().SendMessageAsync("Оптимизация 4 закончилась");
+            ServerTelegram.GetServer().SendMessageAsync("🏁 Оптимизация закончилась");
         }
 
         OptimizerMaster _master;
