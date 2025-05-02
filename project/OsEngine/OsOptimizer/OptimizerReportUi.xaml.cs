@@ -18,6 +18,9 @@ using System.Text;
 using System.Windows.Forms.DataVisualization.Charting;
 using System.Drawing;
 using System.Linq;
+using OsEngine.Market.Servers.AE.Json;
+using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Market.Services;
 
 namespace OsEngine.OsOptimizer
 {
@@ -196,23 +199,6 @@ namespace OsEngine.OsOptimizer
                 SaveFileDialog myDialog = new SaveFileDialog();
 
                 string saveFileName = _master.StrategyName;
-
-                // Получаем текущую дату и время
-                DateTime now = DateTime.Now;
-
-                // Форматируем дату и время в строку (например, "yyyyMMdd_HHmmss")
-                string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
-
-
-                /*
-                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
-                {
-                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
-                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
-                    saveFileName += "_" + dateTimeString;
-                }
-                */
-                saveFileName += dateTimeString;
 
                 IIStrategyParameter regime = _master._optimizerExecutor._parameters.Find(p => p.Name == "Regime");
 
@@ -1209,40 +1195,23 @@ namespace OsEngine.OsOptimizer
         {
             try
             {
-                SaveFileDialog myDialog = new SaveFileDialog();
-                
+                string saveFileName = _master.StrategyName + "_" + _master.Storage.SecuritiesTester[0].Security.Name;
+                            
                 // Генерация имени файла с текущей датой и временем
-                string saveFileName = _master.StrategyName;
-
-                // Удаляем ".txt" из saveFileName, если оно есть
-                if (saveFileName.EndsWith(".txt"))
-                {
-                    saveFileName = saveFileName.Substring(0, saveFileName.Length - 4);
-                }
-
+                
                 DateTime now = DateTime.Now;
                 string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
-
-                saveFileName += dateTimeString;
-                saveFileName = saveFileName.Replace(".txt", "");
-                // Указанный путь для сохранения файла
-                string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults";
-
-                // Проверка существования директории. Если её нет, создаём.
-                if (!Directory.Exists(saveDirectory))
-                {
-                    Directory.CreateDirectory(saveDirectory);
-                }
-
-                // Полный путь к файлу
-                string savePath = Path.Combine(saveDirectory, saveFileName);
-                savePath = savePath + ".txt";
                 
-                string fileName = myDialog.FileName;
-                if (fileName.Split('.').Length == 1)
-                {
-                    fileName = fileName + ".txt";
-                }
+                saveFileName += "_" + dateTimeString;
+                saveFileName = saveFileName.Replace(".txt", "");
+
+                // Указанный путь для сохранения файла
+                string saveDirectory = @"C:\Users\Ilya\YandexDisk\3 ТР\6 OS Engine Trading\1 Тестирование\OptimizationResults\";
+
+               // Полный путь к файлу
+                string savePath = Path.Combine(saveDirectory, saveFileName);
+                savePath = savePath + ".csv";
+                
                 // Формирование строки для сохранения
                 StringBuilder saveStr = new StringBuilder();
 

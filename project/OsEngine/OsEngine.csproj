@@ -1267,7 +1267,6 @@
     </Compile>
     <Compile Include="Robots\AutoTestBots\TestBotOpenAndCanselOrders.cs" />
     <Compile Include="Robots\AutoTestBots\TestBotOption.cs" />
-    <Compile Include="Robots\Trend\A_Strategy_MACD_5.cs" />
     <Compile Include="Robots\BotCreateUi2.xaml.cs">
       <DependentUpon>BotCreateUi2.xaml</DependentUpon>
     </Compile>
