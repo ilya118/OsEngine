@@ -15,6 +15,9 @@ using MessageBox = System.Windows.MessageBox;
 using OsEngine.OsOptimizer.OptEntity;
 using System.IO;
 using System.Text;
+using System.Windows.Forms.DataVisualization.Charting;
+using System.Drawing;
+using System.Linq;
 
 namespace OsEngine.OsOptimizer
 {
@@ -45,6 +48,7 @@ namespace OsEngine.OsOptimizer
 
             CreateTableFazes();
             CreateTableResults();
+            CreateChartSeriesResults();
 
             LabelSortBy.Content = OsLocalization.Optimizer.Label39;
             LabelOptimSeries.Content = OsLocalization.Optimizer.Label30;
@@ -57,6 +61,7 @@ namespace OsEngine.OsOptimizer
             LabelTotalProfit.Content = OsLocalization.Optimizer.Label54;
             LabelAverageProfitFactor.Content = OsLocalization.Optimizer.Label55;
             LabelAverageProfitPersent.Content = OsLocalization.Optimizer.Label56;
+            LabelSeriesResultChart.Content = OsLocalization.Optimizer.Label67;
 
             Title += "   " + master.StrategyName;
             
@@ -100,6 +105,7 @@ namespace OsEngine.OsOptimizer
 
                 PaintTableFazes();
                 PaintTableResults();
+                PaintSeriesResultsChart();
 
                 _resultsCharting.ReLoad(_reports);
             }
@@ -140,7 +146,19 @@ namespace OsEngine.OsOptimizer
                 return;
             }
 
-            bot.ShowChartDialog();
+            BotPanelChartUi ui = bot.ShowChartDialog();
+
+            ui.Closed += (sender, e) =>
+            {
+                try
+                {
+                    bot.Delete();
+                }
+                catch(Exception error)
+                {
+                    _master.SendLogMessage(error.ToString(),LogMessageType.Error);
+                }
+            };
         }
 
         private void ShowParametersDialog(DataGridViewCellMouseEventArgs e)
@@ -222,13 +240,12 @@ namespace OsEngine.OsOptimizer
                     fileName = fileName + ".txt";
                 }
 
-                string saveStr = "";
+                StringBuilder saveStr = new StringBuilder();
 
                 for (int i = 0; i < _reports.Count; i++)
                 {
-                    saveStr += _reports[i].GetSaveString() + "\r\n";
+                    saveStr.Append(_reports[i].GetSaveString() + "\r\n");
                 }
-
 
                 StreamWriter writer = new StreamWriter(fileName);
                 writer.Write(saveStr);
@@ -403,6 +420,7 @@ namespace OsEngine.OsOptimizer
         private void _gridFazesEnd_CellClick(object sender, DataGridViewCellEventArgs e)
         {
             PaintTableResults();
+            PaintSeriesResultsChart();
         }
 
         #endregion
@@ -530,9 +548,17 @@ namespace OsEngine.OsOptimizer
 
             _gridResults.Columns[2].HeaderText = "Pos Count";
 
+            Color cellColor = Color.Black;
+
+            for(int i = 0;i < _gridResults.Columns.Count;i++)
+            {
+                _gridResults.Columns[i].HeaderCell.Style.BackColor = _gridResults.Columns[i].HeaderCell.Style.SelectionBackColor;
+            }
+
             if (_sortBotsType == SortBotsType.PositionCount)
             {
                 _gridResults.Columns[2].HeaderText += " vvv";
+                _gridResults.Columns[2].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[3].HeaderText = "Total Profit";
@@ -540,184 +566,199 @@ namespace OsEngine.OsOptimizer
             if (_sortBotsType == SortBotsType.TotalProfit)
             {
                 _gridResults.Columns[3].HeaderText += " vvv";
+                _gridResults.Columns[3].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[4].HeaderText = "Max Drow Dawn";
             if (_sortBotsType == SortBotsType.MaxDrawDawn)
             {
                 _gridResults.Columns[4].HeaderText += " vvv";
+                _gridResults.Columns[4].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[5].HeaderText = "Average Profit";
             if (_sortBotsType == SortBotsType.AverageProfit)
             {
                 _gridResults.Columns[5].HeaderText += " vvv";
+                _gridResults.Columns[5].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[6].HeaderText = "Average Profit %";
             if (_sortBotsType == SortBotsType.AverageProfitPercent)
             {
                 _gridResults.Columns[6].HeaderText += " vvv";
+                _gridResults.Columns[6].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[7].HeaderText = "Profit Factor";
             if (_sortBotsType == SortBotsType.ProfitFactor)
             {
                 _gridResults.Columns[7].HeaderText += " vvv";
+                _gridResults.Columns[7].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[8].HeaderText = "Pay Off Ratio";
             if (_sortBotsType == SortBotsType.PayOffRatio)
             {
                 _gridResults.Columns[8].HeaderText += " vvv";
+                _gridResults.Columns[8].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[9].HeaderText = "Recovery";
             if (_sortBotsType == SortBotsType.Recovery)
             {
                 _gridResults.Columns[9].HeaderText += " vvv";
+                _gridResults.Columns[9].HeaderCell.Style.BackColor = cellColor;
             }
 
             _gridResults.Columns[10].HeaderText = "Sharpe Ratio";
             if (_sortBotsType == SortBotsType.SharpRatio)
             {
                 _gridResults.Columns[10].HeaderText += " vvv";
+                _gridResults.Columns[10].HeaderCell.Style.BackColor = cellColor;
             }
         }
 
         private void PaintTableResults()
         {
-            if (_gridResults == null)
+            try
             {
-                return;
-            }
-
-            if (_gridResults.InvokeRequired)
-            {
-                _gridResults.Invoke(new Action(PaintTableResults));
-                return;
-            }
-            _gridResults.SelectionChanged -= _gridResults_SelectionChanged;
-            _gridResults.CellMouseClick -= _gridResults_CellMouseClick;
-
-            UpdateHeaders();
-
-            _gridResults.Rows.Clear();
-
-            if (_reports == null)
-            {
-                return;
-            }
-
-            if (_gridFazesEnd.CurrentCell == null)
-            {
-                return;
-            }
-
-            int num = 0;
-            num = _gridFazesEnd.CurrentCell.RowIndex;
-
-            if (num >= _reports.Count)
-            {
-                return;
-            }
-
-            OptimizerFazeReport fazeReport = _reports[num];
-
-            if (fazeReport == null)
-            {
-                return;
-            }
-
-            int selectedRow = 0;
-
-            List<DataGridViewRow> rows = new List<DataGridViewRow>();
-
-            for (int i = 0; i < fazeReport.Reports.Count; i++)
-            {
-                OptimizerReport report = fazeReport.Reports[i];
-                if (report == null ||
-                    report.TabsReports.Count == 0 ||
-                    !_master.IsAcceptedByFilter(report))
+                if (_gridResults == null)
                 {
-                    continue;
+                    return;
                 }
 
-                DataGridViewRow row = new DataGridViewRow();
-                row.Height = 30;
-                row.Cells.Add(new DataGridViewTextBoxCell());
+                if (_gridResults.InvokeRequired)
+                {
+                    _gridResults.Invoke(new Action(PaintTableResults));
+                    return;
+                }
+                _gridResults.SelectionChanged -= _gridResults_SelectionChanged;
+                _gridResults.CellMouseClick -= _gridResults_CellMouseClick;
 
-                //if (report.TabsReports.Count == 1)
-                //{
-                row.Cells[0].Value = report.BotName;
-                //}
-                //else
-                //{
-                //    row.Cells[0].Value = "Сводные";
-                //}
+                UpdateHeaders();
 
-                DataGridViewTextBoxCell cell2 = new DataGridViewTextBoxCell();
-                cell2.Value = report.GetParametersToDataTable();
-                row.Cells.Add(cell2);
+                _gridResults.Rows.Clear();
 
-                DataGridViewTextBoxCell cell3 = new DataGridViewTextBoxCell();
-                cell3.Value = report.PositionsCount;
-                row.Cells.Add(cell3);
+                if (_reports == null)
+                {
+                    return;
+                }
 
-                DataGridViewTextBoxCell cell4 = new DataGridViewTextBoxCell();
-                cell4.Value = report.TotalProfit.ToStringWithNoEndZero() + " (" + report.TotalProfitPercent.ToStringWithNoEndZero() + "%)";
-                row.Cells.Add(cell4);
+                if (_gridFazesEnd.CurrentCell == null)
+                {
+                    return;
+                }
 
-                DataGridViewTextBoxCell cell5 = new DataGridViewTextBoxCell();
-                cell5.Value = report.MaxDrawDawn.ToStringWithNoEndZero();
-                row.Cells.Add(cell5);
+                int num = 0;
+                num = _gridFazesEnd.CurrentCell.RowIndex;
 
-                DataGridViewTextBoxCell cell6 = new DataGridViewTextBoxCell();
-                cell6.Value = report.AverageProfit.ToStringWithNoEndZero();
-                row.Cells.Add(cell6);
+                if (num >= _reports.Count)
+                {
+                    return;
+                }
 
-                DataGridViewTextBoxCell cell7 = new DataGridViewTextBoxCell();
-                cell7.Value = report.AverageProfitPercentOneContract.ToStringWithNoEndZero();
-                row.Cells.Add(cell7);
+                OptimizerFazeReport fazeReport = _reports[num];
 
-                DataGridViewTextBoxCell cell8 = new DataGridViewTextBoxCell();
-                cell8.Value = report.ProfitFactor.ToStringWithNoEndZero();
-                row.Cells.Add(cell8);
+                if (fazeReport == null)
+                {
+                    return;
+                }
 
-                DataGridViewTextBoxCell cell9 = new DataGridViewTextBoxCell();
-                cell9.Value = report.PayOffRatio.ToStringWithNoEndZero();
-                row.Cells.Add(cell9);
+                int selectedRow = 0;
 
-                DataGridViewTextBoxCell cell10 = new DataGridViewTextBoxCell();
-                cell10.Value = report.Recovery.ToStringWithNoEndZero();
-                row.Cells.Add(cell10);
+                List<DataGridViewRow> rows = new List<DataGridViewRow>();
 
-                DataGridViewTextBoxCell cell11 = new DataGridViewTextBoxCell();
-                cell11.Value = report.SharpRatio.ToStringWithNoEndZero();
-                row.Cells.Add(cell11);
+                for (int i = 0; i < fazeReport.Reports.Count; i++)
+                {
+                    OptimizerReport report = fazeReport.Reports[i];
+                    if (report == null ||
+                        report.TabsReports.Count == 0 ||
+                        !_master.IsAcceptedByFilter(report))
+                    {
+                        continue;
+                    }
 
-                DataGridViewButtonCell cell12 = new DataGridViewButtonCell();
-                cell12.Value = OsLocalization.Optimizer.Message40;
-                row.Cells.Add(cell12);
+                    DataGridViewRow row = new DataGridViewRow();
+                    row.Height = 30;
+                    row.Cells.Add(new DataGridViewTextBoxCell());
 
-                DataGridViewButtonCell cell13 = new DataGridViewButtonCell();
-                cell13.Value = OsLocalization.Optimizer.Message42;
-                row.Cells.Add(cell13);
+                    //if (report.TabsReports.Count == 1)
+                    //{
+                    row.Cells[0].Value = report.BotName;
+                    //}
+                    //else
+                    //{
+                    //    row.Cells[0].Value = "Сводные";
+                    //}
 
-                rows.Add(row);
+                    DataGridViewTextBoxCell cell2 = new DataGridViewTextBoxCell();
+                    cell2.Value = report.GetParametersToDataTable();
+                    row.Cells.Add(cell2);
+
+                    DataGridViewTextBoxCell cell3 = new DataGridViewTextBoxCell();
+                    cell3.Value = report.PositionsCount;
+                    row.Cells.Add(cell3);
+
+                    DataGridViewTextBoxCell cell4 = new DataGridViewTextBoxCell();
+                    cell4.Value = Math.Round(report.TotalProfit, 5).ToStringWithNoEndZero() + " (" + report.TotalProfitPercent.ToStringWithNoEndZero() + "%)";
+                    row.Cells.Add(cell4);
+
+                    DataGridViewTextBoxCell cell5 = new DataGridViewTextBoxCell();
+                    cell5.Value = Math.Round(report.MaxDrawDawn, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell5);
+
+                    DataGridViewTextBoxCell cell6 = new DataGridViewTextBoxCell();
+                    cell6.Value = Math.Round(report.AverageProfit, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell6);
+
+                    DataGridViewTextBoxCell cell7 = new DataGridViewTextBoxCell();
+                    cell7.Value = Math.Round(report.AverageProfitPercentOneContract, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell7);
+
+                    DataGridViewTextBoxCell cell8 = new DataGridViewTextBoxCell();
+                    cell8.Value = Math.Round(report.ProfitFactor, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell8);
+
+                    DataGridViewTextBoxCell cell9 = new DataGridViewTextBoxCell();
+                    cell9.Value = Math.Round(report.PayOffRatio, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell9);
+
+                    DataGridViewTextBoxCell cell10 = new DataGridViewTextBoxCell();
+                    cell10.Value = Math.Round(report.Recovery, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell10);
+
+                    DataGridViewTextBoxCell cell11 = new DataGridViewTextBoxCell();
+                    cell11.Value = Math.Round(report.SharpRatio, 5).ToStringWithNoEndZero();
+                    row.Cells.Add(cell11);
+
+                    DataGridViewButtonCell cell12 = new DataGridViewButtonCell();
+                    cell12.Value = OsLocalization.Optimizer.Message40;
+                    row.Cells.Add(cell12);
+
+                    DataGridViewButtonCell cell13 = new DataGridViewButtonCell();
+                    cell13.Value = OsLocalization.Optimizer.Message42;
+                    row.Cells.Add(cell13);
+
+                    rows.Add(row);
+                }
+
+                WindowsFormsHostResults.Child = null;
+
+                if (rows.Count > 0)
+                {
+                    _gridResults.Rows.AddRange(rows.ToArray());
+                }
+
+                WindowsFormsHostResults.Child = _gridResults;
+
+                _gridResults.SelectionChanged += _gridResults_SelectionChanged;
+                _gridResults.CellMouseClick += _gridResults_CellMouseClick;
             }
-
-            WindowsFormsHostResults.Child = null;
-
-            if (rows.Count > 0)
+            catch (Exception ex)
             {
-                _gridResults.Rows.AddRange(rows.ToArray());
+                _master.SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
-
-            WindowsFormsHostResults.Child = _gridResults;
-
-            _gridResults.SelectionChanged += _gridResults_SelectionChanged;
-            _gridResults.CellMouseClick += _gridResults_CellMouseClick;
         }
 
         private void _gridResults_CellMouseClick(object sender, DataGridViewCellMouseEventArgs e)
@@ -746,51 +787,66 @@ namespace OsEngine.OsOptimizer
             }
             int columnSelect = _gridResults.SelectedCells[0].ColumnIndex;
 
+            int rowSelect = _gridResults.SelectedCells[0].RowIndex;
+
+            if(rowSelect != 0)
+            {
+                return;
+            }
+
+            SortBotsType currentSelection = SortBotsType.BotName;
 
             if (columnSelect == 0)
             {
-                _sortBotsType = SortBotsType.BotName;
+                return;
             }
             else if (columnSelect == 2)
             {
-                _sortBotsType = SortBotsType.PositionCount;
+                currentSelection = SortBotsType.PositionCount;
             }
             else if (columnSelect == 3)
             {
-                _sortBotsType = SortBotsType.TotalProfit;
+                currentSelection = SortBotsType.TotalProfit;
             }
             else if (columnSelect == 4)
             {
-                _sortBotsType = SortBotsType.MaxDrawDawn;
+                currentSelection = SortBotsType.MaxDrawDawn;
             }
             else if (columnSelect == 5)
             {
-                _sortBotsType = SortBotsType.AverageProfit;
+                currentSelection = SortBotsType.AverageProfit;
             }
             else if (columnSelect == 6)
             {
-                _sortBotsType = SortBotsType.AverageProfitPercent;
+                currentSelection = SortBotsType.AverageProfitPercent;
             }
             else if (columnSelect == 7)
             {
-                _sortBotsType = SortBotsType.ProfitFactor;
+                currentSelection = SortBotsType.ProfitFactor;
             }
             else if (columnSelect == 8)
             {
-                _sortBotsType = SortBotsType.PayOffRatio;
+                currentSelection = SortBotsType.PayOffRatio;
             }
             else if (columnSelect == 9)
             {
-                _sortBotsType = SortBotsType.Recovery;
+                currentSelection = SortBotsType.Recovery;
             }
             else if (columnSelect == 10)
             {
-                _sortBotsType = SortBotsType.SharpRatio;
+                currentSelection = SortBotsType.SharpRatio;
             }
             else
             {
                 return;
             }
+
+            if(currentSelection == _sortBotsType)
+            {
+                return;
+            }
+
+            _sortBotsType = currentSelection;
 
             try
             {
@@ -800,6 +856,7 @@ namespace OsEngine.OsOptimizer
                 }
 
                 PaintTableResults();
+                PaintSeriesResultsChart();
             }
             catch (Exception error)
             {
@@ -810,10 +867,350 @@ namespace OsEngine.OsOptimizer
 
         private SortBotsType _sortBotsType;
 
+        private void PaintBotInTable(string botName)
+        {
+            for(int i2 = 0; i2 < _gridResults.Rows.Count;i2++)
+            {
+                DataGridViewRow row = _gridResults.Rows[i2];
+
+                if (row.Cells[0].Value.ToString() == botName)
+                {
+                    for (int i = 0; i < row.Cells.Count; i++)
+                    {
+                        row.Cells[i].Style.ForeColor = Color.FromArgb(255, 83, 0);
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < row.Cells.Count; i++)
+                    {
+                        row.Cells[i].Style = _gridResults.DefaultCellStyle;
+                    }
+                }
+            }
+        }
+
+        #endregion
+
+        #region Series results chart
+
+        private Chart _chartSeriesResult;
+
+        public void CreateChartSeriesResults()
+        {
+            _chartSeriesResult = new Chart();
+
+            ChartArea area = new ChartArea("Prime");
+
+            _chartSeriesResult.ChartAreas.Clear();
+            _chartSeriesResult.ChartAreas.Add(area);
+            _chartSeriesResult.BackColor = Color.FromArgb(21, 26, 30);
+            _chartSeriesResult.ChartAreas[0].AxisX.TitleForeColor = Color.FromArgb(149, 159, 176);
+
+            for (int i = 0; _chartSeriesResult.ChartAreas != null && i < _chartSeriesResult.ChartAreas.Count; i++)
+            {
+                _chartSeriesResult.ChartAreas[i].BackColor = Color.FromArgb(21, 26, 30);
+                _chartSeriesResult.ChartAreas[i].CursorX.IsUserSelectionEnabled = false;
+                _chartSeriesResult.ChartAreas[i].CursorX.IsUserEnabled = true;
+                _chartSeriesResult.ChartAreas[i].CursorX.LineColor = Color.FromArgb(255, 83, 0);
+                _chartSeriesResult.ChartAreas[i].CursorX.LineWidth = 2;
+                _chartSeriesResult.ChartAreas[i].BorderColor = Color.FromArgb(17, 18, 23);
+                _chartSeriesResult.ChartAreas[i].CursorY.LineColor = Color.FromArgb(149, 159, 176);
+
+                foreach (var axe in _chartSeriesResult.ChartAreas[i].Axes)
+                {
+                    axe.LabelStyle.ForeColor = Color.FromArgb(149, 159, 176);
+                }
+            }
+
+            Series series = new Series();
+            series.ChartType = SeriesChartType.Column;
+            _chartSeriesResult.Series.Clear();
+            _chartSeriesResult.Series.Add(series);
+
+            WindowsFormsHostResultsChart.Child = _chartSeriesResult;
+
+            _chartSeriesResult.SuppressExceptions = true;
+            _chartSeriesResult.Click += _chartSeriesResult_Click;
+        }
+
+        private void _chartSeriesResult_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_chartSeriesResult.ChartAreas[0].CursorX.Position == Double.NaN)
+                {
+                    return;
+                }
+
+                int index = (int)_chartSeriesResult.ChartAreas[0].CursorX.Position;
+
+                index--;
+
+                for (int i = 0; i < _chartSeriesResult.Series[0].Points.Count; i++)
+                {
+                    if (index == i)
+                    {
+                        continue;
+                    }
+                    _chartSeriesResult.Series[0].Points[i].Label = null;
+                    _chartSeriesResult.Series[0].Points[i].LabelForeColor = Color.White;
+                }
+
+                if(index >= _chartSeriesResult.Series[0].Points.Count)
+                {
+                    return;
+                }
+
+                if (_chartSeriesResult.Series[0].Points[index].Label
+                    != _chartSeriesResult.Series[0].Points[index].ToolTip)
+                {
+                    _chartSeriesResult.Series[0].Points[index].Label
+                     = _chartSeriesResult.Series[0].Points[index].ToolTip;
+                    string botName = _chartSeriesResult.Series[0].Points[index].ToolTip.Split('\n')[0];
+                    PaintBotInTable(botName);
+                }
+                else
+                {
+                    _chartSeriesResult.ChartAreas[0].CursorX.Position = Double.NaN;
+                    _chartSeriesResult.Series[0].Points[index].Label = null;
+                    PaintBotInTable(" ");
+                }
+            }
+            catch (Exception ex)
+            {
+                _master.SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private void PaintSeriesResultsChart()
+        {
+            try
+            {
+                if (_chartSeriesResult.InvokeRequired)
+                {
+                    _chartSeriesResult.Invoke(new Action(PaintSeriesResultsChart));
+                    return;
+                }
+
+                _chartSeriesResult.Series[0].Points.Clear();
+
+                if (_reports == null)
+                {
+                    return;
+                }
+
+                if (_gridFazesEnd.CurrentCell == null)
+                {
+                    return;
+                }
+
+                int num = 0;
+                num = _gridFazesEnd.CurrentCell.RowIndex;
+
+                if (num >= _reports.Count)
+                {
+                    return;
+                }
+
+                OptimizerFazeReport fazeReport = _reports[num];
+
+                if (fazeReport == null)
+                {
+                    return;
+                }
+
+                LabelSeriesResultChart.Content
+                 = OsLocalization.Optimizer.Label67 + " "
+                 + (num + 1) + " " + fazeReport.Faze.TypeFaze + ". "
+                 + OsLocalization.Optimizer.Label69 + ": " + _sortBotsType;
+
+
+                List<ChartOptimizationResultValue> values = new List<ChartOptimizationResultValue>();
+
+                for (int i = 0; i < fazeReport.Reports.Count; i++)
+                {
+                    OptimizerReport report = fazeReport.Reports[i];
+
+                    if (report == null ||
+                        report.TabsReports.Count == 0 ||
+                        !_master.IsAcceptedByFilter(report))
+                    {
+                        continue;
+                    }
+
+                    ChartOptimizationResultValue curReport = new ChartOptimizationResultValue();
+                    values.Add(curReport);
+                    curReport.BotName = report.BotName;
+                    curReport.BotNum = report.BotNum;
+                    curReport.Parameters = report.GetParametersToDataTable();
+
+                    if (_sortBotsType == SortBotsType.PositionCount)
+                    {
+                        curReport.Value = report.PositionsCount;
+                    }
+                    else if (_sortBotsType == SortBotsType.TotalProfit)
+                    {
+                        curReport.Value = Math.Round(report.TotalProfitPercent, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.MaxDrawDawn)
+                    {
+                        curReport.Value = Math.Round(report.MaxDrawDawn, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.AverageProfit)
+                    {
+                        curReport.Value = Math.Round(report.AverageProfit, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.AverageProfitPercent)
+                    {
+                        curReport.Value = Math.Round(report.AverageProfitPercentOneContract, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.ProfitFactor)
+                    {
+                        curReport.Value = Math.Round(report.ProfitFactor, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.PayOffRatio)
+                    {
+                        curReport.Value = Math.Round(report.PayOffRatio, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.Recovery)
+                    {
+                        curReport.Value = Math.Round(report.Recovery, 5);
+                    }
+                    else if (_sortBotsType == SortBotsType.SharpRatio)
+                    {
+                        curReport.Value = Math.Round(report.SharpRatio, 5);
+                    }
+                }
+
+                SetColorInOptimizationResultValues(values);
+
+                values = values.OrderBy(x => x.BotNum).ToList();
+
+                _lastValues = values;
+
+                decimal max = decimal.MinValue;
+                decimal min = decimal.MaxValue;
+
+                for (int i = 0; i < values.Count; i++)
+                {
+                    ChartOptimizationResultValue curValue = values[i];
+
+                    if (curValue.Value > max)
+                    {
+                        max = curValue.Value;
+                    }
+                    if (curValue.Value < min)
+                    {
+                        min = curValue.Value;
+                    }
+
+                    double valueToChart = Convert.ToDouble(Math.Round(curValue.Value, 4));
+
+                    DataPoint point1 = new DataPoint(i + 1, valueToChart);
+                    point1.ToolTip = curValue.ToolTip;
+                    point1.Color = curValue.Color;
+
+                    _chartSeriesResult.Series[0].Points.Add(point1);
+                }
+
+                max = Math.Round(max, 4);
+                min = Math.Round(min, 4);
+
+                if (max != decimal.MinValue
+                    && max != 0
+                    && min > 0)
+                {
+                    _chartSeriesResult.ChartAreas[0].AxisY.Maximum = Convert.ToDouble(max);
+                    _chartSeriesResult.ChartAreas[0].AxisY.Minimum = 0;
+                }
+                else if (max != decimal.MinValue &&
+                    min != decimal.MaxValue
+                    && max != min)
+                {
+                    _chartSeriesResult.ChartAreas[0].AxisY.Maximum = Convert.ToDouble(max);
+                    _chartSeriesResult.ChartAreas[0].AxisY.Minimum = Convert.ToDouble(min);
+                }
+
+                // label
+
+                if (_chartSeriesResult.ChartAreas[0].CursorX.Position != Double.NaN)
+                {
+                    for (int i = 0; i < _chartSeriesResult.Series[0].Points.Count; i++)
+                    {
+                        _chartSeriesResult.Series[0].Points[i].Label = null;
+                        _chartSeriesResult.Series[0].Points[i].LabelForeColor = Color.White;
+                    }
+
+                    int index = (int)_chartSeriesResult.ChartAreas[0].CursorX.Position;
+
+                    index--;
+
+                    if(index >= 0 
+                        && index < _chartSeriesResult.Series[0].Points.Count)
+                    {
+                        _chartSeriesResult.Series[0].Points[index].Label
+                      = _chartSeriesResult.Series[0].Points[index].ToolTip;
+
+                        string botName = 
+                            _chartSeriesResult.Series[0].Points[index].ToolTip.Split('\n')[0];
+                        PaintBotInTable(botName);
+                    }
+                }
+            }
+            catch(Exception ex)
+            {
+                _master.SendLogMessage(ex.ToString(),LogMessageType.Error);
+            }
+        }   
+
+        List<ChartOptimizationResultValue> _lastValues;
+
+        private void SetColorInOptimizationResultValues(List<ChartOptimizationResultValue> resultValues)
+        {
+            // 15% green
+            // 15% dark green
+
+            for (int i = 0; i < resultValues.Count; i++)
+            {
+                resultValues[i].Color = Color.Gray;
+            }
+
+            if (resultValues.Count <= 1)
+            {
+                return;
+            }
+
+            List<ChartOptimizationResultValue> sortedValue = new List<ChartOptimizationResultValue>();
+
+            sortedValue = resultValues.OrderBy(x => x.Value).ToList();
+            sortedValue.Reverse();
+
+            int first15PercentMaxNum = Convert.ToInt32(sortedValue.Count * 0.15m);
+            int first30PercentMaxNum = Convert.ToInt32(sortedValue.Count * 0.30m);
+
+            for (int i = 0; i < sortedValue.Count; i++)
+            {
+                if (i < first15PercentMaxNum)
+                {
+                    sortedValue[i].Color = Color.Green;
+                }
+                else if (i < first30PercentMaxNum)
+                {
+                    sortedValue[i].Color = Color.DarkGreen;
+                }
+                else
+                {
+                    resultValues[i].Color = Color.Gray;
+                }
+            }
+        }
         private void AutoSaveReport()
         {
             try
             {
+                SaveFileDialog myDialog = new SaveFileDialog();
+                
                 // Генерация имени файла с текущей датой и временем
                 string saveFileName = _master.StrategyName;
 
@@ -826,15 +1223,6 @@ namespace OsEngine.OsOptimizer
                 DateTime now = DateTime.Now;
                 string dateTimeString = now.ToString("yyyyMMdd_HHmmss");
 
-                // Проверка на null для _master.TabsSimpleNamesAndTimeFrames
-                /*
-                if (_master.TabsSimpleNamesAndTimeFrames != null && _master.TabsSimpleNamesAndTimeFrames.Count != 0)
-                {
-                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].NameSecurity;
-                    saveFileName += "_" + _master.TabsSimpleNamesAndTimeFrames[0].TimeFrame;
-                    saveFileName += "_" + dateTimeString;
-                }
-                */
                 saveFileName += dateTimeString;
                 saveFileName = saveFileName.Replace(".txt", "");
                 // Указанный путь для сохранения файла
@@ -849,31 +1237,56 @@ namespace OsEngine.OsOptimizer
                 // Полный путь к файлу
                 string savePath = Path.Combine(saveDirectory, saveFileName);
                 savePath = savePath + ".txt";
-
+                
+                string fileName = myDialog.FileName;
+                if (fileName.Split('.').Length == 1)
+                {
+                    fileName = fileName + ".txt";
+                }
                 // Формирование строки для сохранения
                 StringBuilder saveStr = new StringBuilder();
 
-                foreach (var report in _reports)
+                for (int i = 0; i < _reports.Count; i++)
                 {
-                    if (report != null)
-                    {
-                        saveStr.AppendLine(report.GetSaveString());
-                    }
+                    saveStr.Append(_reports[i].GetSaveString() + "\r\n");
                 }
-
                 // Сохранение в файл
-                File.WriteAllText(savePath, saveStr.ToString());
+                StreamWriter writer = new StreamWriter(savePath);
+                writer.Write(saveStr);
+                writer.Close();
 
                 // Логирование успешного сохранения
                 _master.SendLogMessage($"Отчет успешно сохранен в файл: {savePath}", LogMessageType.System);
             }
             catch (Exception error)
             {
-                // Логирование ошибки
-                _master.SendLogMessage($"Ошибка при автоматическом сохранении отчета: {error}", LogMessageType.Error);
+                MessageBox.Show(error.ToString());
             }
         }
         #endregion
+    }
 
+    public class ChartOptimizationResultValue
+    {
+        public decimal Value;
+
+        public string BotName;
+
+        public int BotNum;
+
+        public string Parameters;
+
+        public Color Color;
+
+        public string ToolTip
+        {
+            get
+            {
+                string result = BotName + "\n";
+                result += OsLocalization.Optimizer.Label69 + ": " + Value;
+
+                return result;
+            }
+        }
     }
 }

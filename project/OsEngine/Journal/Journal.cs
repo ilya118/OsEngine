@@ -79,13 +79,13 @@ namespace OsEngine.Journal
             _positionController.Save();
         }
 
-        public ComissionType CommissionType
+        public CommissionType CommissionType
         {
             get
             {
                 if (_positionController == null)
                 {
-                    return ComissionType.None;
+                    return CommissionType.None;
                 }
                 return _positionController.CommissionType;
             }
@@ -383,7 +383,7 @@ namespace OsEngine.Journal
 
                 for (int i = 0; i < dealsToDay.Count; i++)
                 {
-                    profit += dealsToDay[i].ProfitOperationPersent;
+                    profit += dealsToDay[i].ProfitOperationPercent;
                 }
                 return profit;
             }
@@ -441,6 +441,36 @@ namespace OsEngine.Journal
 
         public Order IsMyOrder(Order order)
         {
+            // open positions. Look All
+
+            List<Position> positionsOpen = this.OpenPositions;
+
+            if(positionsOpen != null)
+            {
+                for (int i = positionsOpen.Count - 1; i > -1; i--)
+                {
+                    Position positionCurrent = positionsOpen[i];
+
+                    List<Order> openOrders = positionCurrent.OpenOrders;
+
+                    if (openOrders != null
+                        && openOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
+                    {
+                        return openOrders.Find(order1 => order1.NumberUser == order.NumberUser);
+                    }
+
+                    List<Order> closingOrders = positionCurrent.CloseOrders;
+
+                    if (closingOrders != null
+                        && closingOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
+                    {
+                        return closingOrders.Find(order1 => order1.NumberUser == order.NumberUser);
+                    }
+                }
+            }
+
+            // historical positions. Look last 100
+
             List<Position> positions = AllPosition;
 
             if (positions == null)
@@ -448,17 +478,21 @@ namespace OsEngine.Journal
                 return null;
             }
 
-            for (int i = positions.Count - 1; i > -1; i--)
+            for (int i = positions.Count - 1; i > -1 && i > positions.Count - 100; i--)
             {
-                List<Order> openOrders = positions[i].OpenOrders;
+                Position positionCurrent = positions[i];
 
-                if (openOrders != null && openOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
+                List<Order> openOrders = positionCurrent.OpenOrders;
+
+                if (openOrders != null 
+                    && openOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
                 {
                     return openOrders.Find(order1 => order1.NumberUser == order.NumberUser);
                 }
-                List<Order> closingOrders = positions[i].CloseOrders;
+                List<Order> closingOrders = positionCurrent.CloseOrders;
 
-                if (closingOrders != null && closingOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
+                if (closingOrders != null 
+                    && closingOrders.Find(order1 => order1.NumberUser == order.NumberUser) != null)
                 {
                     return closingOrders.Find(order1 => order1.NumberUser == order.NumberUser);
                 }
@@ -530,20 +564,21 @@ namespace OsEngine.Journal
             }
         }
 
-        public void SetNewMyTrade(MyTrade trade)
+        public bool SetNewMyTrade(MyTrade trade)
         {
             try
             {
                 if (_positionController == null)
                 {
-                    return;
+                    return false;
                 }
-                _positionController.SetNewTrade(trade);
+                return _positionController.SetNewTrade(trade);
             }
             catch (Exception error)
             {
                 SendNewLogMessage(error.ToString(), LogMessageType.Error);
             }
+            return false;
         }
 
         public void SetNewBidAsk(decimal bid, decimal ask)

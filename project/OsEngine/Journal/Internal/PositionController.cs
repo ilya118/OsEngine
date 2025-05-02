@@ -106,7 +106,8 @@ namespace OsEngine.Journal.Internal
 
         private void Load()
         {
-            if (_startProgram == StartProgram.IsOsOptimizer)
+            if (_startProgram == StartProgram.IsOsOptimizer
+                || _startProgram == StartProgram.IsTester)
             {
                 return;
             }
@@ -191,13 +192,15 @@ namespace OsEngine.Journal.Internal
         {
             try
             {
-                if (_startProgram == StartProgram.IsOsOptimizer)
+                if (_startProgram == StartProgram.IsOsOptimizer 
+                    || _startProgram == StartProgram.IsTester)
                 {
                     return;
                 }
 
                 _needToSave = false;
                 string dealControllerPath = @"Engine\" + _name + @"DealController.txt";
+
                 if (File.Exists(dealControllerPath))
                 {
                     try
@@ -289,7 +292,7 @@ namespace OsEngine.Journal.Internal
             }
         }
 
-        public ComissionType CommissionType
+        public CommissionType CommissionType
         {
             get { return _commissionType; }
             set
@@ -302,13 +305,13 @@ namespace OsEngine.Journal.Internal
 
                 for (int i = 0; AllPositions != null && i < AllPositions.Count; i++)
                 {
-                    AllPositions[i].ComissionType = _commissionType;
+                    AllPositions[i].CommissionType = _commissionType;
                 }
 
                 _needToSave = true;
             }
         }
-        private ComissionType _commissionType;
+        private CommissionType _commissionType;
 
         public decimal CommissionValue
         {
@@ -324,7 +327,7 @@ namespace OsEngine.Journal.Internal
 
                 for (int i = 0; AllPositions != null && i < AllPositions.Count; i++)
                 {
-                    AllPositions[i].ComissionValue = _commissionValue;
+                    AllPositions[i].CommissionValue = _commissionValue;
                 }
 
                 _needToSave = true;
@@ -343,7 +346,8 @@ namespace OsEngine.Journal.Internal
             }
 
             if (_startProgram == StartProgram.IsOsOptimizer
-                || _startProgram == StartProgram.IsOsMiner)
+                || _startProgram == StartProgram.IsOsMiner
+                || _startProgram == StartProgram.IsTester)
             {
                 return;
             }
@@ -427,8 +431,8 @@ namespace OsEngine.Journal.Internal
             // saving
             // сохраняем
 
-            newPosition.ComissionType = CommissionType;
-            newPosition.ComissionValue = CommissionValue;
+            newPosition.CommissionType = CommissionType;
+            newPosition.CommissionValue = CommissionValue;
 
             if (_deals == null)
             {
@@ -633,12 +637,14 @@ namespace OsEngine.Journal.Internal
             _needToSave = true;
         }
 
-        public void SetNewTrade(MyTrade trade)
+        public bool SetNewTrade(MyTrade trade)
         {
             if (_deals == null)
             {
-                return;
+                return false;
             }
+
+            bool isMyTrade = false;
 
             for (int i = _deals.Count - 1; i > -1; i--)
             {
@@ -651,7 +657,6 @@ namespace OsEngine.Journal.Internal
                     for (int indexCloseOrd = 0; indexCloseOrd < position.CloseOrders.Count; indexCloseOrd++)
                     {
                         if (position.CloseOrders[indexCloseOrd].NumberMarket == trade.NumberOrderParent
-                            //|| position.CloseOrders[indexCloseOrd].NumberUser.ToString() == trade.NumberOrderParent
                             )
                         {
                             isCloseOrder = true;
@@ -678,6 +683,8 @@ namespace OsEngine.Journal.Internal
 
                 if (isOpenOrder || isCloseOrder)
                 {
+                    isMyTrade = true;
+
                     PositionStateType positionState = position.State;
 
                     decimal lastPosVolume = position.OpenVolume;
@@ -709,7 +716,14 @@ namespace OsEngine.Journal.Internal
                     break;
                 }
             }
-            _needToSave = true;
+
+            if(isMyTrade)
+            {
+                _needToSave = true;
+                return true;
+            }
+
+            return false;
         }
 
         public void SetBidAsk(decimal bid, decimal ask)
@@ -735,11 +749,11 @@ namespace OsEngine.Journal.Internal
                         || positions[i].State == PositionStateType.Closing
                         || positions[i].State == PositionStateType.ClosingFail)
                     {
-                        decimal profitOld = positions[i].ProfitOperationPunkt;
+                        decimal profitOld = positions[i].ProfitOperationAbs;
 
                         positions[i].SetBidAsk(bid, ask);
 
-                        if (profitOld != positions[i].ProfitOperationPunkt)
+                        if (profitOld != positions[i].ProfitOperationAbs)
                         {
                             ProcessPosition(positions[i]);
                         }
@@ -1557,7 +1571,7 @@ namespace OsEngine.Journal.Internal
                 nRow.Cells[11].Value = closePrice.ToStringWithNoEndZero();
             }
 
-            decimal profit = Math.Round(position.ProfitPortfolioPunkt, decimalsPrice);
+            decimal profit = Math.Round(position.ProfitPortfolioAbs, decimalsPrice);
 
             if (nRow.Cells[12].Value == null
                 || nRow.Cells[12].Value.ToString() != profit.ToStringWithNoEndZero())
@@ -1757,7 +1771,7 @@ namespace OsEngine.Journal.Internal
                 }
 
                 nRow.Cells.Add(new DataGridViewTextBoxCell());
-                nRow.Cells[12].Value = Math.Round(position.ProfitPortfolioPunkt, decimalsPrice).ToStringWithNoEndZero();
+                nRow.Cells[12].Value = Math.Round(position.ProfitPortfolioAbs, decimalsPrice).ToStringWithNoEndZero();
 
                 nRow.Cells.Add(new DataGridViewTextBoxCell());
                 nRow.Cells[13].Value = Math.Round(position.StopOrderRedLine, decimalsPrice).ToStringWithNoEndZero();
@@ -1912,7 +1926,7 @@ namespace OsEngine.Journal.Internal
                 AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Journal.Message3);
                 ui.ShowDialog();
 
-                if (ui.UserAcceptActioin == false)
+                if (ui.UserAcceptAction == false)
                 {
                     return;
                 }
@@ -1959,7 +1973,7 @@ namespace OsEngine.Journal.Internal
                 AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Journal.Message5);
                 ui.ShowDialog();
 
-                if (ui.UserAcceptActioin == false)
+                if (ui.UserAcceptAction == false)
                 {
                     return;
                 }
@@ -2074,7 +2088,7 @@ namespace OsEngine.Journal.Internal
                 AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Journal.Message3);
                 ui.ShowDialog();
 
-                if (ui.UserAcceptActioin == false)
+                if (ui.UserAcceptAction == false)
                 {
                     return;
                 }

@@ -20,6 +20,7 @@ using System.IO.Compression;
 using System.IO;
 using Newtonsoft.Json;
 using System.Net.Http;
+using System.Net;
 
 namespace OsEngine.Market.Servers.CoinEx.Spot
 {
@@ -65,7 +66,7 @@ namespace OsEngine.Market.Servers.CoinEx.Spot
             worker1.Start();
         }
 
-        public void Connect()
+        public void Connect(WebProxy proxy = null)
         {
             try
             {
@@ -221,15 +222,12 @@ namespace OsEngine.Market.Servers.CoinEx.Spot
                     security.NameId = cexSecurity.market;
                     security.NameFull = cexSecurity.market;
                     security.NameClass = cexSecurity.quote_ccy;
-
                     security.State = SecurityStateType.Activ;
                     security.Decimals = Convert.ToInt32(cexSecurity.quote_ccy_precision);
                     security.MinTradeAmount = cexSecurity.min_amount.ToDecimal();
-                    security.DecimalsVolume = security.MinTradeAmount.ToStringWithNoEndZero().DecimalsCount(); // Число знаков объёма
-
-                    security.PriceStep = CoinExServerRealization.GetPriceStep(security.Decimals);
+                    security.DecimalsVolume = Convert.ToInt32(cexSecurity.base_ccy_precision);
+                    security.PriceStep = security.Decimals.GetValueByDecimals();
                     security.PriceStepCost = security.PriceStep; // FIX Сомнительно! Проверить!
-
                     security.Lot = 1;
                     security.SecurityType = SecurityType.CurrencyPair;
                     security.Exchange = ServerType.CoinExSpot.ToString();
@@ -1652,7 +1650,7 @@ namespace OsEngine.Market.Servers.CoinEx.Spot
             {
                 if (cexOrder.unfilled_amount.ToString().ToDecimal() > 0)
                 {
-                    order.State = cexOrder.amount == cexOrder.unfilled_amount ? OrderStateType.Activ : OrderStateType.Patrial;
+                    order.State = cexOrder.amount == cexOrder.unfilled_amount ? OrderStateType.Active : OrderStateType.Partial;
                 }
             }
 
@@ -1829,23 +1827,6 @@ namespace OsEngine.Market.Servers.CoinEx.Spot
         #endregion
 
         #region 14 Helpers
-
-        public static decimal GetPriceStep(int ScalePrice)
-        {
-            if (ScalePrice == 0)
-            {
-                return 1;
-            }
-            string priceStep = "0,";
-            for (int i = 0; i < ScalePrice - 1; i++)
-            {
-                priceStep += "0";
-            }
-
-            priceStep += "1";
-
-            return priceStep.ToString().ToDecimal();
-        }
 
         private static string Decompress(byte[] data)
         {

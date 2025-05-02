@@ -161,8 +161,8 @@
     <Reference Include="System.Xaml">
       <RequiredTargetFramework>4.0</RequiredTargetFramework>
     </Reference>
-    <Reference Include="TinkoffInvestApi">
-      <HintPath>..\..\related projects\TinkoffInvestmentsApi\bin\Debug\TinkoffInvestApi.dll</HintPath>
+    <Reference Include="TInvestApi">
+      <HintPath>..\..\related projects\TInvestApi\bin\Debug\TInvestApi.dll</HintPath>
     </Reference>
     <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -176,6 +176,28 @@
     <Reference Include="PresentationCore" />
     <Reference Include="PresentationFramework" />
     <Reference Include="WindowsFormsIntegration" />
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <Content Include="bin\Debug\zlibd1.dll">
+      <Link>zlibd1.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Content Include="bin\Release\zlib1.dll">
+      <Link>zlib1.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(Platform)' == 'AnyCPU' ">
+    <Content Include="bin\$(Configuration)\libcrypto-3-x64.dll">
+      <Link>libcrypto-3-x64.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="bin\$(Configuration)\libssl-3-x64.dll">
+      <Link>libssl-3-x64.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <ApplicationDefinition Include="App.xaml">
@@ -450,10 +472,8 @@
     <Compile Include="Entity\HorizontalVolume.cs" />
     <Compile Include="Entity\MarketDepthPainter.cs" />
     <Compile Include="Entity\News.cs" />
-    <Compile Include="Entity\ProxyHolder.cs" />
-    <Compile Include="Entity\ProxyHolderAddUi.xaml.cs">
-      <DependentUpon>ProxyHolderAddUi.xaml</DependentUpon>
-    </Compile>
+    <Compile Include="Market\Proxy\ProxyOsa.cs" />
+    <Compile Include="Indicators\EmptyIndicator.cs" />
     <Compile Include="Indicators\IndicatorDataSeries.cs" />
     <Compile Include="Indicators\Samples\Sample1Blank.cs" />
     <Compile Include="Indicators\Samples\Sample2IndicatorParameters.cs" />
@@ -466,17 +486,67 @@
     <Compile Include="Market\Connectors\ConnectorNewsUi.xaml.cs">
       <DependentUpon>ConnectorNewsUi.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Market\Proxy\ProxyMaster.cs" />
+    <Compile Include="Market\Proxy\ProxyMasterUi.xaml.cs">
+      <DependentUpon>ProxyMasterUi.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Market\Servers\AExchange\AExchangeServer.cs" />
+    <Compile Include="Market\Servers\AExchange\AExchangeServerPermission.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\PlaceOrderMessage.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\CancelOrderMessage.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\Trade.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\PositionUpdate.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\AccountState.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\Accounts.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\InstrumentDefinition.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\Error.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\OrderStatus.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\Quotes.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\SubscribeOnQuoteMessage.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\LoginMessage.cs" />
+    <Compile Include="Market\Servers\AExchange\Json\WebSocketMessageBase.cs" />
+    <Compile Include="Market\Servers\Alor\Json\RequestSocketSubscribe.cs" />
+    <Compile Include="Market\Servers\Alor\Json\SocketMessageBase.cs" />
     <Compile Include="Market\Servers\Atp\AtpServer.cs" />
     <Compile Include="Market\Servers\Atp\AtpServerPermission.cs" />
     <Compile Include="Market\Servers\Atp\SecuritiesAtpUi.xaml.cs">
       <DependentUpon>SecuritiesAtpUi.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Market\Servers\Bitfinex\Json\BitfinexCandle.cs" />
-    <Compile Include="Market\Servers\Bitfinex\Json\BitfinexOrder.cs" />
-    <Compile Include="Market\Servers\Bitfinex\Json\BitfinexWebsocketTrades.cs" />
+    <Compile Include="Market\Servers\Bitfinex\BitfinexSpot\BitfinexSpotServer.cs" />
+    <Compile Include="Market\Servers\Bitfinex\BitfinexSpot\BitfinexSpotServerPermission.cs" />
+    <Compile Include="Market\Servers\Bitfinex\BitfinexSpot\Json\BitfinexCandle.cs" />
+    <Compile Include="Market\Servers\Bitfinex\BitfinexSpot\Json\BitfinexOrder.cs" />
+    <Compile Include="Market\Servers\Bitfinex\BitfinexSpot\Json\BitfinexWebsocketTrades.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexEntity\BitMexAsset.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexEntity\BitMexCandle.cs" />
     <Compile Include="Market\Servers\BitMex\BitMexServerPermission.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\CoinExServerFutures.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\CoinExServerFuturesPermission.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexCandle.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexMarketInfoItem.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexOrder.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexOrderTransaction.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexOrderUpdate.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexPortfolioItem.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexPositionItem.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexRequestsRest.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexRequestsSocket.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexSecurity.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexTransaction.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexWsBalance.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexWsDepthUpdate.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexWsOrderUpdate.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CexWsTransactionUpdate.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CoinExHttpResp.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CoinExRestClient.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\CoinExWsResp.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexFuturesContractType.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexMarketType.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexOrderEvent.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexOrderSide.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexOrderStatus.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexOrderType.cs" />
+    <Compile Include="Market\Servers\CoinEx\Futures\Entity\Enums\CexWsOperation.cs" />
     <Compile Include="Market\Servers\CoinEx\Spot\CoinExServerSpot.cs" />
     <Compile Include="Market\Servers\CoinEx\Spot\CoinExServerSpotPermission.cs" />
     <Compile Include="Market\Servers\CoinEx\Spot\Entity\CexCandle.cs" />
@@ -576,8 +646,6 @@
     <Compile Include="Market\Servers\Alor\Json\MyTradeAlor.cs" />
     <Compile Include="Market\Servers\Alor\Json\OrderAlor.cs" />
     <Compile Include="Market\Servers\Alor\Json\PositionOnBoardAlor.cs" />
-    <Compile Include="Market\Servers\Alor\Json\RequestSocketSubscrible.cs" />
-    <Compile Include="Market\Servers\Alor\Json\SoketBaseMessage.cs" />
     <Compile Include="Market\Servers\Alor\Json\TokenResponse.cs" />
     <Compile Include="Market\Servers\Alor\Json\QuotesAlor.cs" />
     <Compile Include="Market\Servers\Alor\Json\TradesHistoryAlor.cs" />
@@ -620,10 +688,8 @@
     <Compile Include="Market\Servers\BingX\BingXSpot\BingXServerSpot.cs" />
     <Compile Include="Market\Servers\BingX\BingXSpot\BingXSpotServerPermission.cs" />
     <Compile Include="Market\Servers\BingX\BingXSpot\Entity\ListenKeyBingX.cs" />
-    <Compile Include="Market\Servers\BingX\BingXSpot\Entity\ResponceWebSocketBingXMessage.cs" />
+    <Compile Include="Market\Servers\BingX\BingXSpot\Entity\ResponseWebSocketBingXMessage.cs" />
     <Compile Include="Market\Servers\BingX\BingXSpot\Entity\ResponseSpotBingX.cs" />
-    <Compile Include="Market\Servers\Bitfinex\BitfinexServer.cs" />
-    <Compile Include="Market\Servers\Bitfinex\BitFinexServerPermission.cs" />
     <Compile Include="Market\Servers\BitGet\BitGetFutures\BitGetFuturesServerPermission.cs" />
     <Compile Include="Market\Servers\BitGet\BitGetFutures\BitGetServerFutures.cs" />
     <Compile Include="Market\Servers\BitGet\BitGetFutures\Entity\RequestWebsocketAuth.cs" />
@@ -697,7 +763,7 @@
     <Compile Include="Market\Servers\FixProtocolEntities\FixMessage.cs" />
     <Compile Include="Market\Servers\FixProtocolEntities\StandartHeaderSettings.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\BalanceResponse.cs" />
-    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\CancelOrderResponese.cs" />
+    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\CancelOrderResponse.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\CreateOrderRequest.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\CreateOrderResponse.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\DataCandle.cs" />
@@ -708,19 +774,16 @@
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\GfSecurity.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\GfTrades.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\MdResponse.cs" />
-    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\PositionResponceSwap.cs" />
-    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\RestRequestBuilder.cs" />
-    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\Signer.cs" />
+    <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\PositionResponseSwap.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\UserTradeResponse.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\Entities\WsRequestBuilder.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\GateIoServerFutures.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoFutures\GateIoServerFuturesPermission.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoSpot\Entities\ApiEntities.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoSpot\Entities\PortfolioUpdateEvent.cs" />
-    <Compile Include="Market\Servers\GateIo\GateIoSpot\Entities\Singer.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoSpot\GateIoServerSpot.cs" />
     <Compile Include="Market\Servers\GateIo\GateIoSpot\GateIoSpotServerPermission.cs" />
-    <Compile Include="Market\Servers\GateIo\ResponceWebsocketMessage.cs" />
+    <Compile Include="Market\Servers\GateIo\ResponseWebsocketMessage.cs" />
     <Compile Include="Market\Servers\Hitbtc\HitbtcClient.cs" />
     <Compile Include="Market\Servers\Hitbtc\HitbtcEntity.cs" />
     <Compile Include="Market\Servers\Hitbtc\HitbtcServer.cs" />
@@ -840,15 +903,13 @@
     <Compile Include="Market\Servers\Lmax\LmaxFixClient.cs" />
     <Compile Include="Market\Servers\Lmax\LmaxServer.cs" />
     <Compile Include="Market\Servers\Lmax\Tags.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcClient.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcOrdersRest.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcPortfolioRest.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcPortfolioSocket.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcSecurityRest.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcSecuritySocket.cs" />
-    <Compile Include="Market\Servers\Mexc\Entity\MexcSubscribeSocket.cs" />
-    <Compile Include="Market\Servers\Mexc\Mexc.cs" />
-    <Compile Include="Market\Servers\Mexc\MexcPermission.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\Entity\MexcOrdersRest.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\Entity\MexcPortfolioRest.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\Entity\MexcPrivateSocket.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\Entity\MexcSecurityRest.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\Entity\MexcSecuritySocket.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\MexcSpotServer.cs" />
+    <Compile Include="Market\Servers\Mexc\MexcSpot\MexcSpotServerPermission.cs" />
     <Compile Include="Market\Servers\MFD\MfdServer.cs" />
     <Compile Include="Market\Servers\MFD\MfdServerPermission.cs" />
     <Compile Include="Market\Servers\MoexAlgopack\Entity\MoexAlgopackAuth.cs" />
@@ -941,6 +1002,8 @@
     <Compile Include="Market\Servers\Entity\MarshalUTF8.cs" />
     <Compile Include="Market\Servers\Entity\ServerWorkingTimeSettings.cs" />
     <Compile Include="Market\Servers\Entity\TimeManager.cs" />
+    <Compile Include="Market\Servers\SmartLabNews\SmartLabNewsServer.cs" />
+    <Compile Include="Market\Servers\SmartLabNews\SmartLabNewsServerPermission.cs" />
     <Compile Include="Market\Servers\Tester\GoToUi.xaml.cs">
       <DependentUpon>GoToUi.xaml</DependentUpon>
     </Compile>
@@ -995,8 +1058,8 @@
     <Compile Include="Journal\Internal\DealStatisticGenerator.cs" />
     <Compile Include="Market\Servers\Quik\QuikDdeServer.cs" />
     <Compile Include="Market\Servers\Miner\OsMinerServer.cs" />
-    <Compile Include="Market\Servers\TinkoffInvestments\TinkoffServer.cs" />
-    <Compile Include="Market\Servers\TinkoffInvestments\TinkoffServerPermission.cs" />
+    <Compile Include="Market\Servers\TInvest\TInvestServer.cs" />
+    <Compile Include="Market\Servers\TInvest\TInvestServerPermission.cs" />
     <Compile Include="Market\Servers\TraderNet\Entity\RequestCandle.cs" />
     <Compile Include="Market\Servers\TraderNet\Entity\RequestSecurity.cs" />
     <Compile Include="Market\Servers\TraderNet\Entity\ResponseRestMessage.cs" />
@@ -1183,6 +1246,7 @@
     <Compile Include="Robots\AutoTestBots\ServerTests\Data_4_Stress_Candles.cs" />
     <Compile Include="Robots\AutoTestBots\ServerTests\Data_5_Stress_Trades.cs" />
     <Compile Include="Robots\AutoTestBots\ServerTests\Orders_10_RequestLostDoneOrder.cs" />
+    <Compile Include="Robots\AutoTestBots\ServerTests\Orders_11_RequestLostMyTrades.cs" />
     <Compile Include="Robots\AutoTestBots\ServerTests\Orders_1_FakeOrders.cs" />
     <Compile Include="Robots\AutoTestBots\ServerTests\Orders_2_LimitsExecute.cs" />
     <Compile Include="Robots\AutoTestBots\ServerTests\Orders_3_MarketOrders.cs" />
@@ -1203,6 +1267,7 @@
     </Compile>
     <Compile Include="Robots\AutoTestBots\TestBotOpenAndCanselOrders.cs" />
     <Compile Include="Robots\AutoTestBots\TestBotOption.cs" />
+    <Compile Include="Robots\Trend\A_Strategy_MACD_5.cs" />
     <Compile Include="Robots\BotCreateUi2.xaml.cs">
       <DependentUpon>BotCreateUi2.xaml</DependentUpon>
     </Compile>
@@ -1227,6 +1292,7 @@
     <Compile Include="Robots\BotsFromStartLessons\Lesson9Bot5.cs" />
     <Compile Include="Robots\CounterTrend\ClusterCountertrend.cs" />
     <Compile Include="Robots\Engines\NewsEngine.cs" />
+    <Compile Include="Robots\Grids\GridBotClassic.cs" />
     <Compile Include="Robots\PositionsMicromanagement\AlligatorTrendAverage.cs" />
     <Compile Include="Robots\PositionsMicromanagement\CandlesTurnaroundPattern.cs" />
     <Compile Include="Robots\PositionsMicromanagement\CustomIcebergSample.cs" />
@@ -1264,13 +1330,22 @@
     <Compile Include="Robots\PositionsMicromanagement\UnsafeAveragePosition.cs" />
     <Compile Include="Robots\PositionsMicromanagement\UnsafeLimitsClosingSample.cs" />
     <Compile Include="Robots\Screeners\BollingerMomentumScreener.cs" />
+    <Compile Include="Robots\Screeners\LinearRegressionFastScreener.cs" />
+    <Compile Include="Robots\Screeners\PlateDetectorScreener.cs" />
+    <Compile Include="Robots\Screeners\PumpDetectorScreener.cs" />
     <Compile Include="Robots\Screeners\PinBarScreener.cs" />
+    <Compile Include="Robots\Screeners\PinBarVolatilityScreener.cs" />
+    <Compile Include="Robots\Screeners\PriceChannelAdaptiveRsiScreener.cs" />
     <Compile Include="Robots\TechSamples\AllSourcesInOneSample.cs" />
+    <Compile Include="Robots\TechSamples\BlockIndicatorsOnScreenerSample.cs" />
     <Compile Include="Robots\TechSamples\BlockIndicatorsSample.cs" />
     <Compile Include="Robots\TechSamples\CandlesLoggingSample.cs" />
     <Compile Include="Robots\TechSamples\ChangePriceBotExtStopMarket.cs" />
     <Compile Include="Robots\TechSamples\CustomChartInParamWindowSample.cs" />
+    <Compile Include="Robots\TechSamples\CustomDataInIndicatorSample.cs" />
     <Compile Include="Robots\TechSamples\CustomParamsUseBotSample.cs" />
+    <Compile Include="Robots\TechSamples\StopByTradeFeedSample.cs" />
+    <Compile Include="Robots\TechSamples\VisualSettingsParametersExample.cs" />
     <Compile Include="Robots\OnScriptIndicators\FundBalanceDivergenceBot.cs" />
     <Compile Include="Robots\OnScriptIndicators\MacdRevers.cs" />
     <Compile Include="Robots\OnScriptIndicators\MacdTrail.cs" />
@@ -1328,8 +1403,8 @@
     <Compile Include="OsTrader\Panels\Tab\BotTabIndexUi.xaml.cs">
       <DependentUpon>BotTabIndexUi.xaml</DependentUpon>
     </Compile>
-    <Compile Include="Entity\StrategyParemetrsUi.xaml.cs">
-      <DependentUpon>StrategyParemetrsUi.xaml</DependentUpon>
+    <Compile Include="Entity\StrategyParametersUi.xaml.cs">
+      <DependentUpon>StrategyParametersUi.xaml</DependentUpon>
     </Compile>
     <Compile Include="OsTrader\Panels\Tab\BotTabCluster.cs" />
     <Compile Include="OsTrader\RiskManager\RiskManagerUi.xaml.cs">
@@ -1599,10 +1674,6 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Entity\ProxyHolderAddUi.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="Indicators\AIndicatorUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
@@ -1640,6 +1711,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Market\Connectors\MassSourcesCreateUi.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Market\Proxy\ProxyMasterUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -1903,7 +1978,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="Entity\StrategyParemetrsUi.xaml">
+    <Page Include="Entity\StrategyParametersUi.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

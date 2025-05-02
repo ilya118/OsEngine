@@ -118,11 +118,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                     {
                         BotTabScreener curScreener = _screeners[i];
 
-                        if (curScreener.ServerType == ServerType.Optimizer)
-                        {
-                            continue;
-                        }
-
                         if (curScreener._host != null)
                         {
                             for (int i2 = 0; curScreener.Tabs != null &&
@@ -133,8 +128,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                             }
                         }
 
-                        _screeners[i].TryLoadTabs();
-                        _screeners[i].TryReLoadTabs();
+                        if(curScreener.ServerType != ServerType.Optimizer)
+                        {
+                            _screeners[i].TryLoadTabs();
+                            _screeners[i].TryReLoadTabs();
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -267,6 +265,12 @@ namespace OsEngine.OsTrader.Panels.Tab
             if (startProgram == StartProgram.IsTester)
             {
                 ServerType = ServerType.Tester;
+                ServerName = ServerType.Tester.ToString();
+            }
+            else if (startProgram == StartProgram.IsOsOptimizer)
+            {
+                ServerType = ServerType.Optimizer;
+                ServerName = ServerType.Optimizer.ToString();
             }
         }
 
@@ -427,7 +431,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 if (ServerType != ServerType.None)  //AVP so that the server autostart function works
                 {
-                    ServerMaster.SetServerToAutoConnection(ServerType); //AVP
+                    ServerMaster.SetServerToAutoConnection(ServerType, ServerName); //AVP
                 }
             }
 
@@ -493,7 +497,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     writer.WriteLine(PortfolioName);
                     writer.WriteLine(SecuritiesClass);
                     writer.WriteLine(TimeFrame);
-                    writer.WriteLine(ServerType);
+                    writer.WriteLine(ServerType + "&" + ServerName);
                     writer.WriteLine(_emulatorIsOn);
                     writer.WriteLine(CandleMarketDataType);
                     writer.WriteLine(CandleCreateMethodType);
@@ -539,7 +543,19 @@ namespace OsEngine.OsTrader.Panels.Tab
                     SecuritiesClass = reader.ReadLine();
 
                     Enum.TryParse(reader.ReadLine(), out TimeFrame);
-                    Enum.TryParse(reader.ReadLine(), out ServerType);
+
+                    string server = reader.ReadLine();
+
+                    Enum.TryParse(server.Split('&')[0], out ServerType);
+
+                    if (server.Split('&').Length > 1)
+                    {
+                        ServerName = server.Split('&')[1];
+                    }
+                    else
+                    {
+                        ServerName = ServerType.ToString();
+                    }
 
                     _emulatorIsOn = Convert.ToBoolean(reader.ReadLine());
                     Enum.TryParse(reader.ReadLine(), out CandleMarketDataType);
@@ -595,6 +611,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// </summary>
         public void Delete()
         {
+            if (_ui != null)
+            {
+                _ui.Close();
+            }
+
             for (int i = 0; Tabs != null && i < Tabs.Count; i++)
             {
                 Tabs[i].Clear();
@@ -618,6 +639,8 @@ namespace OsEngine.OsTrader.Panels.Tab
 
             if (_positionViewer != null)
             {
+                _positionViewer.UserSelectActionEvent -= _globalController_UserSelectActionEvent;
+                _positionViewer.UserClickOnPositionShowBotInTableEvent -= _globalPositionViewer_UserClickOnPositionShowBotInTableEvent;
                 _positionViewer.Delete();
             }
 
@@ -650,6 +673,34 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
+        /// <summary>
+        /// Whether the connector is connected to download data
+        /// </summary>
+        public bool IsConnected
+        {
+            get
+            {
+                if (Tabs == null ||
+                    Tabs.Count == 0)
+                {
+                    return false;
+                }
+
+                List<BotTabSimple> tabs = Tabs;
+
+                for (int i2 = 0; i2 < tabs.Count; i2++)
+                {
+                    if (tabs[i2] == null
+                        || tabs[i2].IsConnected == false)
+                    {
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+        }
+
         #endregion
 
         #region Working with tabs
@@ -678,6 +729,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// Server type
         /// </summary>
         public ServerType ServerType;
+
+        /// <summary>
+        /// Server name in multi-connect regime
+        /// </summary>
+        public string ServerName;
 
         /// <summary>
         /// Is the emulator enabled
@@ -751,7 +807,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <summary>
         /// Commission type for positions
         /// </summary>
-        public ComissionType CommissionType;
+        public CommissionType CommissionType;
 
         /// <summary>
         /// Commission amount
@@ -900,6 +956,12 @@ namespace OsEngine.OsTrader.Panels.Tab
                 haveNewSettings = true;
             }
 
+            if (tab.Connector.ServerFullName != ServerName)
+            {
+                tab.Connector.ServerFullName = ServerName;
+                haveNewSettings = true;
+            }
+
             if (tab.Connector.EmulatorIsOn != _emulatorIsOn)
             {
                 tab.Connector.EmulatorIsOn = _emulatorIsOn;
@@ -1007,6 +1069,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             newTab.TimeFrameBuilder.TimeFrame = frame;
             newTab.Connector.PortfolioName = PortfolioName;
             newTab.Connector.ServerType = ServerType;
+            newTab.Connector.ServerFullName = ServerName;
             newTab.Connector.EmulatorIsOn = _emulatorIsOn;
             newTab.Connector.CandleMarketDataType = CandleMarketDataType;
             newTab.Connector.CandleCreateMethodType = CandleCreateMethodType;
@@ -1028,8 +1091,26 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// </summary>
         private bool TabIsAlive(List<ActivatedSecurity> securities, TimeFrame frame, BotTabSimple tab)
         {
-            ActivatedSecurity sec = securities.Find(s => s.SecurityName == tab.Connector.SecurityName);
+            if(StartProgram == StartProgram.IsOsTrader)
+            {
+                if (tab.Connector.ServerFullName != ServerName)
+                {
+                    return false;
+                }
+            }
 
+            ActivatedSecurity sec = null;
+            
+            for(int i = 0;i < securities.Count;i++)
+            {
+                if (securities[i].SecurityName == tab.Connector.SecurityName 
+                    && securities[i].SecurityClass == tab.Connector.SecurityClass)
+                {
+                    sec = securities[i];
+                    break;
+                }
+            }
+            
             if (sec == null)
             {
                 return false;
@@ -1096,40 +1177,12 @@ namespace OsEngine.OsTrader.Panels.Tab
                 return false;
             }
 
-            if (TimeFrame == TimeFrame.Sec1)
-            {
-                return false;
-            }
-
             if (ServerType == ServerType.None)
             {
                 return false;
             }
 
             return true;
-        }
-
-        /// <summary>
-        /// All tab positions
-        /// </summary>
-        public List<Position> PositionsOpenAll
-        {
-            get
-            {
-                List<Position> positions = new List<Position>();
-
-                for (int i = 0; i < Tabs.Count; i++)
-                {
-                    List<Position> curPoses = Tabs[i].PositionsOpenAll;
-
-                    if (curPoses.Count != 0)
-                    {
-                        positions.AddRange(curPoses);
-                    }
-                }
-
-                return positions;
-            }
         }
 
         /// <summary>
@@ -1182,14 +1235,46 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                 }
 
-                BotTabScreenerUi ui = new BotTabScreenerUi(this);
-                ui.ShowDialog();
+                if(_ui == null)
+                {
+                    _ui = new BotTabScreenerUi(this);
+                    _ui.LogMessageEvent += SendNewLogMessage;
+                    _ui.Closed += _ui_Closed;
+                    _ui.Show();
+                }
+                else
+                {
+                    _ui.Activate();
+                }
             }
             catch (Exception ex)
             {
                 SendNewLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
+
+        private void _ui_Closed(object sender, EventArgs e)
+        {
+            try
+            {
+                _ui.LogMessageEvent -= SendNewLogMessage;
+                _ui.Closed -= _ui_Closed;
+                _ui = null;
+
+                if (DialogClosed != null)
+                {
+                    DialogClosed();
+                }
+            }
+            catch(Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private BotTabScreenerUi _ui;
+
+        public event Action DialogClosed;
 
         /// <summary>
         /// Things to call individual windows by tool
@@ -1323,7 +1408,10 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     if (Tabs[i] != null)
                     {
-                        _positionViewer.SetJournal(Tabs[i].GetJournal());
+                        Journal.Journal journal = Tabs[i].GetJournal();
+
+                        _positionViewer.RemoveJournal(journal);
+                        _positionViewer.SetJournal(journal);
                     }
                 }
             }
@@ -1454,7 +1542,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                         SecuritiesDataGrid.Rows[tabRow].Cells[0].Selected = true;
                     }
 
-                    SecuritiesDataGrid.Rows[_previousActiveRow].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(154, 156, 158);
+                    if(_previousActiveRow < SecuritiesDataGrid.Rows.Count)
+                    {
+                        SecuritiesDataGrid.Rows[_previousActiveRow].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(154, 156, 158);
+                    }
+
                     SecuritiesDataGrid.Rows[tabRow].DefaultCellStyle.ForeColor = System.Drawing.Color.FromArgb(255, 255, 255);
                     _previousActiveRow = tabRow;
                 }
@@ -1549,7 +1641,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             nRow.Cells[0].Value = num;
 
             nRow.Cells.Add(new DataGridViewTextBoxCell());
-            nRow.Cells[1].Value = this.SecuritiesClass;
+            nRow.Cells[1].Value = tab.Connector.SecurityClass;
 
             nRow.Cells.Add(new DataGridViewTextBoxCell());
             nRow.Cells[2].Value = tab.Connector.SecurityName;
@@ -1762,6 +1854,116 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
+        public void UpdateIndicatorsParameters()
+        {
+            try
+            {
+                for (int i1 = 0; i1 < _indicators.Count; i1++)
+                {
+                    IndicatorOnTabs ind = (IndicatorOnTabs)_indicators[i1];
+
+                    for (int i = 0; i < Tabs.Count; i++)
+                    {
+                        Aindicator newIndicator = IndicatorsFactory.CreateIndicatorByName(ind.Type, ind.Num + ind.Type + TabName, false);
+                        newIndicator.CanDelete = ind.CanDelete;
+
+                        try
+                        {
+                            if (ind.Parameters.Count == newIndicator.Parameters.Count)
+                            {
+                                if (ind.Parameters != null && ind.Parameters.Count != 0)
+                                {
+                                    for (int i2 = 0; i2 < ind.Parameters.Count; i2++)
+                                    {
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Int)
+                                        {
+                                            ((IndicatorParameterInt)newIndicator.Parameters[i2]).ValueInt = Convert.ToInt32(ind.Parameters[i2]);
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Decimal)
+                                        {
+                                            ((IndicatorParameterDecimal)newIndicator.Parameters[i2]).ValueDecimal = Convert.ToDecimal(ind.Parameters[i2]);
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Bool)
+                                        {
+                                            ((IndicatorParameterBool)newIndicator.Parameters[i2]).ValueBool = Convert.ToBoolean(ind.Parameters[i2]);
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.String)
+                                        {
+                                            ((IndicatorParameterString)newIndicator.Parameters[i2]).ValueString = ind.Parameters[i2];
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception error)
+                        {
+                            SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                        }
+
+                        newIndicator = (Aindicator)Tabs[i].CreateCandleIndicator(newIndicator, ind.NameArea);
+                        newIndicator.CanDelete = ind.CanDelete;
+
+                        try
+                        {
+                            bool parametersChanged = false;
+
+                            if (ind.Parameters.Count == newIndicator.Parameters.Count)
+                            {
+
+                                if (ind.Parameters != null && ind.Parameters.Count != 0)
+                                {
+                                    for (int i2 = 0; i2 < ind.Parameters.Count; i2++)
+                                    {
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Int
+                                            && ((IndicatorParameterInt)newIndicator.Parameters[i2]).ValueInt != Convert.ToInt32(ind.Parameters[i2]))
+                                        {
+                                            ((IndicatorParameterInt)newIndicator.Parameters[i2]).ValueInt = Convert.ToInt32(ind.Parameters[i2]);
+                                            parametersChanged = true;
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Decimal
+                                            && ((IndicatorParameterDecimal)newIndicator.Parameters[i2]).ValueDecimal != Convert.ToDecimal(ind.Parameters[i2]))
+                                        {
+                                            ((IndicatorParameterDecimal)newIndicator.Parameters[i2]).ValueDecimal = Convert.ToDecimal(ind.Parameters[i2]);
+                                            parametersChanged = true;
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Bool
+                                            && ((IndicatorParameterBool)newIndicator.Parameters[i2]).ValueBool != Convert.ToBoolean(ind.Parameters[i2]))
+                                        {
+                                            ((IndicatorParameterBool)newIndicator.Parameters[i2]).ValueBool = Convert.ToBoolean(ind.Parameters[i2]);
+                                            parametersChanged = true;
+                                        }
+                                        if (newIndicator.Parameters[i2].Type == IndicatorParameterType.String
+                                            && ((IndicatorParameterString)newIndicator.Parameters[i2]).ValueString != ind.Parameters[i2])
+                                        {
+                                            ((IndicatorParameterString)newIndicator.Parameters[i2]).ValueString = ind.Parameters[i2];
+                                            parametersChanged = true;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (parametersChanged)
+                            {
+                                newIndicator.Reload();
+                                newIndicator.Save();
+                            }
+                        }
+                        catch (Exception error)
+                        {
+                            SendNewLogMessage(error.ToString(), LogMessageType.Error);
+                        }
+                        newIndicator.Save();
+                    }
+                }
+
+                SaveIndicators();
+            }
+            catch (Exception e)
+            {
+                SendNewLogMessage(e.ToString(),LogMessageType.Error);
+            }
+        }
+
         /// <summary>
         /// создать индикатор для вкладок
         /// </summary>
@@ -1807,56 +2009,6 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 newIndicator = (Aindicator)Tabs[i].CreateCandleIndicator(newIndicator, ind.NameArea);
                 newIndicator.CanDelete = ind.CanDelete;
-
-                try
-                {
-                    bool parametersChanged = false;
-
-                    if (ind.Parameters.Count == newIndicator.Parameters.Count)
-                    {
-
-                        if (ind.Parameters != null && ind.Parameters.Count != 0)
-                        {
-                            for (int i2 = 0; i2 < ind.Parameters.Count; i2++)
-                            {
-                                if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Int
-                                    && ((IndicatorParameterInt)newIndicator.Parameters[i2]).ValueInt != Convert.ToInt32(ind.Parameters[i2]))
-                                {
-                                    ((IndicatorParameterInt)newIndicator.Parameters[i2]).ValueInt = Convert.ToInt32(ind.Parameters[i2]);
-                                    parametersChanged = true;
-                                }
-                                if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Decimal
-                                    && ((IndicatorParameterDecimal)newIndicator.Parameters[i2]).ValueDecimal != Convert.ToDecimal(ind.Parameters[i2]))
-                                {
-                                    ((IndicatorParameterDecimal)newIndicator.Parameters[i2]).ValueDecimal = Convert.ToDecimal(ind.Parameters[i2]);
-                                    parametersChanged = true;
-                                }
-                                if (newIndicator.Parameters[i2].Type == IndicatorParameterType.Bool
-                                    && ((IndicatorParameterBool)newIndicator.Parameters[i2]).ValueBool != Convert.ToBoolean(ind.Parameters[i2]))
-                                {
-                                    ((IndicatorParameterBool)newIndicator.Parameters[i2]).ValueBool = Convert.ToBoolean(ind.Parameters[i2]);
-                                    parametersChanged = true;
-                                }
-                                if (newIndicator.Parameters[i2].Type == IndicatorParameterType.String
-                                    && ((IndicatorParameterString)newIndicator.Parameters[i2]).ValueString != ind.Parameters[i2])
-                                {
-                                    ((IndicatorParameterString)newIndicator.Parameters[i2]).ValueString = ind.Parameters[i2];
-                                    parametersChanged = true;
-                                }
-                            }
-                        }
-                    }
-
-                    if(parametersChanged)
-                    {
-                        newIndicator.Reload();
-                    }
-                }
-                catch (Exception error)
-                {
-                    SendNewLogMessage(error.ToString(), LogMessageType.Error);
-                }
-
                 newIndicator.Save();
             }
         }
@@ -2278,14 +2430,32 @@ namespace OsEngine.OsTrader.Panels.Tab
             return null;
         }
 
+        /// <summary>
+        /// All tab positions
+        /// </summary>
+        public List<Position> PositionsOpenAll
+        {
+            get
+            {
+                List<Position> positions = new List<Position>();
+
+                for (int i = 0; i < Tabs.Count; i++)
+                {
+                    List<Position> curPoses = Tabs[i].PositionsOpenAll;
+
+                    if (curPoses.Count != 0)
+                    {
+                        positions.AddRange(curPoses);
+                    }
+                }
+
+                return positions;
+            }
+        }
+
         #endregion
 
         #region Events
-
-        /// <summary>
-        /// New tab creation event
-        /// </summary>
-        public event Action<BotTabSimple> NewTabCreateEvent;
 
         /// <summary>
         /// Subscribe to events in the tab
@@ -2417,6 +2587,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
             };
         }
+
+        /// <summary>
+        /// New tab creation event
+        /// </summary>
+        public event Action<BotTabSimple> NewTabCreateEvent;
 
         /// <summary>
         /// Last candle finishede

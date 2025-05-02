@@ -161,8 +161,8 @@ namespace OsEngine.OsOptimizer
                     _filterDealsCountIsOn = Convert.ToBoolean(reader.ReadLine());
                     _isScript = Convert.ToBoolean(reader.ReadLine());
                     _iterationCount = Convert.ToInt32(reader.ReadLine());
-                    _commissionType = (ComissionType)Enum.Parse(typeof(ComissionType),
-                        reader.ReadLine() ?? ComissionType.None.ToString());
+                    _commissionType = (CommissionType)Enum.Parse(typeof(CommissionType),
+                        reader.ReadLine() ?? CommissionType.None.ToString());
                     _commissionValue = reader.ReadLine().ToDecimal();
                     _lastInSample = Convert.ToBoolean(reader.ReadLine());
 
@@ -420,6 +420,11 @@ namespace OsEngine.OsOptimizer
 
                 BotToTest = BotFactory.GetStrategyForName(_strategyName, botName, StartProgram.IsTester, _isScript);
 
+                if(BotToTest == null)
+                {
+                    return;
+                }
+
                 List<IIBotTab> sources = BotToTest.GetTabs();
 
                 for (int i = 0; i < sources.Count; i++)
@@ -564,7 +569,7 @@ namespace OsEngine.OsOptimizer
         }
         private decimal _startDeposit;
 
-        public ComissionType CommissionType
+        public CommissionType CommissionType
         {
             get => _commissionType;
             set
@@ -579,7 +584,7 @@ namespace OsEngine.OsOptimizer
                 UpdateBotManualControlSettings();
             }
         }
-        private ComissionType _commissionType;
+        private CommissionType _commissionType;
 
         public decimal CommissionValue
         {

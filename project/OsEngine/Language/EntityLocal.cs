@@ -97,7 +97,7 @@ namespace OsEngine.Language
 
         public string PositionColumn7 => OsLocalization.ConvertToLocString(
             "Eng:State_" +
-            "Ru:Cостояние_");
+            "Ru:Состояние_");
 
         public string PositionColumn8 => OsLocalization.ConvertToLocString(
             "Eng:Vol_" +
@@ -173,7 +173,7 @@ namespace OsEngine.Language
 
         public string OrderColumn7 => OsLocalization.ConvertToLocString(
             "Eng:State_" +
-            "Ru:Cтатус_");
+            "Ru:Статус_");
 
         public string OrderColumn8 => OsLocalization.ConvertToLocString(
             "Eng:Price_" +
@@ -319,6 +319,14 @@ namespace OsEngine.Language
           "Eng:Expiration_" +
           "Ru:Экспирация_");
 
+        public string SecuritiesColumn19 => OsLocalization.ConvertToLocString(
+         "Eng:Volume step_" +
+         "Ru:Шаг объёма_");
+
+        public string SecuritiesColumn20 => OsLocalization.ConvertToLocString(
+         "Eng:Min volume Type_" +
+         "Ru:Тип мин объёма_");
+
         public string TitleSecurityUi => OsLocalization.ConvertToLocString(
             "Eng:Security settings_" +
             "Ru:Настройка инструмента_");
@@ -335,6 +343,14 @@ namespace OsEngine.Language
             "Eng:No_" +
             "Ru:Нет_");
 
+        public string ButtonSave => OsLocalization.ConvertToLocString(
+            "Eng:Save_" +
+            "Ru:Сохранить_");
+
+        public string ButtonLoad => OsLocalization.ConvertToLocString(
+            "Eng:Load_" +
+            "Ru:Загрузить_");
+
         public string ErrorSave => OsLocalization.ConvertToLocString(
             "Eng:The saving process is interrupted. One of the fields does not have a valid value_" +
             "Ru:Процесс сохранения прерван. В одном из полей не допустимое значение_");
@@ -350,6 +366,10 @@ namespace OsEngine.Language
         public string ParametersColumn2 => OsLocalization.ConvertToLocString(
             "Eng:Current value_" +
             "Ru:Текущее значение_");
+
+        public string ColumnPortfolio0 => OsLocalization.ConvertToLocString(
+            "Eng:Server_" +
+            "Ru:Сервер_");
 
         public string ColumnPortfolio1 => OsLocalization.ConvertToLocString(
             "Eng:Portfolio_" +
@@ -377,7 +397,7 @@ namespace OsEngine.Language
 
         public string ColumnPortfolio7 => OsLocalization.ConvertToLocString(
             "Eng:Incoming volume_" +
-            "Ru:Обьём входящий_");
+            "Ru:Объём входящий_");
 
         public string ColumnPortfolio8 => OsLocalization.ConvertToLocString(
             "Eng:Volume now_" +

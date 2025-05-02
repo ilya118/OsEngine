@@ -205,7 +205,7 @@ namespace OsEngine.OsTrader.Panels
         /// <summary>
         /// show the chart window with deals
         /// </summary>
-        public void ShowChartDialog()
+        public BotPanelChartUi ShowChartDialog()
         {
             if (_chartUi == null)
             {
@@ -217,6 +217,8 @@ namespace OsEngine.OsTrader.Panels
             {
                 _chartUi.Activate();
             }
+
+            return _chartUi;
         }
 
         public BotPanelChartUi _chartUi;
@@ -419,6 +421,15 @@ namespace OsEngine.OsTrader.Panels
                         return false;
                     }
                 }
+
+                for (int i = 0; TabsScreener != null && i < TabsScreener.Count; i++)
+                {
+                    if (TabsScreener[i].IsConnected == false)
+                    {
+                        return false;
+                    }
+                }
+
                 for (int i = 0; TabsIndex != null && i < TabsIndex.Count; i++)
                 {
                     if (TabsIndex[i].IsConnected == false)
@@ -619,7 +630,7 @@ namespace OsEngine.OsTrader.Panels
         /// <summary>
         /// total profit
         /// </summary>
-        public decimal TotalProfitInPersent
+        public decimal TotalProfitInPercent
         {
             get
             {
@@ -689,7 +700,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// average profit from the transaction
         /// </summary>
-        public decimal MiddleProfitInPersent
+        public decimal MiddleProfitInPercent
         {
             get
             {
@@ -754,7 +765,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// maximum drawdown
         /// </summary>
-        public decimal MaxDrowDown
+        public decimal MaxDrawDown
         {
             get
             {
@@ -784,7 +795,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// profit position count
         /// </summary>
-        public decimal WinPositionPersent
+        public decimal WinPositionPercent
         {
             get
             {
@@ -809,7 +820,7 @@ position => position.State != PositionStateType.OpeningFail
                     }
 
                     allPoses += journals[i].AllPosition.Count;
-                    List<Position> winPositions = journals[i].AllPosition.FindAll(pos => pos.ProfitOperationPunkt > 0);
+                    List<Position> winPositions = journals[i].AllPosition.FindAll(pos => pos.ProfitOperationAbs > 0);
                     winPoses += (winPositions.Count);
                 }
                 return winPoses / allPoses;
@@ -939,7 +950,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// show parameter settings window
         /// </summary>
-        public void ShowParametrDialog()
+        public void ShowParameterDialog()
         {
             if (_parameters == null ||
                 _parameters.Count == 0)
@@ -948,37 +959,55 @@ position => position.State != PositionStateType.OpeningFail
                 return;
             }
 
-            if (_paramUi == null)
+            if (_parametersUi == null)
             {
-                _paramUi = new ParemetrsUi(_parameters, ParamGuiSettings, this);
-                _paramUi.Show();
-                _paramUi.Closing += _paramUi_Closing;
+                _parametersUi = new StrategyParametersUi(_parameters, ParamGuiSettings, this);
+                _parametersUi.Show();
+                _parametersUi.Closing += _parametersUi_Closing;
             }
             else
             {
-                _paramUi.Activate();
+                _parametersUi.Activate();
             }
         }
 
-        private void _paramUi_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void _parametersUi_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            _paramUi.Closing -= _paramUi_Closing;
-            _paramUi = null;
+            _parametersUi.Closing -= _parametersUi_Closing;
+            _parametersUi = null;
         }
 
         /// <summary>
         /// parameters window
         /// </summary>
-        private ParemetrsUi _paramUi;
+        private StrategyParametersUi _parametersUi;
 
         /// <summary>
         /// close the options window
         /// </summary>
         public void CloseParameterDialog()
         {
-            if (_paramUi != null)
+            if (_parametersUi != null)
             {
-                _paramUi.Close();
+                _parametersUi.Close();
+            }
+        }
+
+        /// <summary>
+        /// Whether the parameter window is open for display. True - is open
+        /// </summary>
+        public bool ParamGuiIsOpen
+        {
+            get
+            {
+                if(_parametersUi == null)
+                {
+                    return false;
+                }
+                else
+                {
+                    return true;
+                }
             }
         }
 
@@ -990,12 +1019,12 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// create a Decimal type parameter
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         /// <param name="start">first value </param>
         /// <param name="stop">last value </param>
         /// <param name="step">value step </param>
-        /// <param name="tabName">name of the tab in the param window </param>
+        /// <param name="tabName">name of the tab in the parameter window </param>
         public StrategyParameterDecimal CreateParameter(string name, decimal value, decimal start, decimal stop, decimal step, string tabControlName = null)
         {
             StrategyParameterDecimal newParameter = new StrategyParameterDecimal(name, value, start, stop, step, tabControlName);
@@ -1009,9 +1038,9 @@ position => position.State != PositionStateType.OpeningFail
         }
 
         /// <summary>
-        /// create a TimeOfDay type paramete
+        /// create a TimeOfDay type parameter
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         /// <param name="start">first value </param>
         /// <param name="stop">last value </param>
@@ -1032,7 +1061,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// create int parameter
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         /// <param name="start">first value </param>
         /// <param name="stop">last value </param>
@@ -1052,7 +1081,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// create string parameter
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         /// <param name="collection">values </param>
         public StrategyParameterString CreateParameter(string name, string value, string[] collection, string tabControlName = null)
@@ -1110,7 +1139,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// create string parameter 
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         public StrategyParameterString CreateParameter(string name, string value, string tabControlName = null)
         {
@@ -1127,7 +1156,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// create bool type parameter 
         /// </summary>
-        /// <param name="name">param name </param>
+        /// <param name="name">parameter name </param>
         /// <param name="value">default value </param>
         public StrategyParameterBool CreateParameter(string name, bool value, string tabControlName = null)
         {
@@ -1271,7 +1300,7 @@ position => position.State != PositionStateType.OpeningFail
         {
             if (StartProgram != StartProgram.IsOsOptimizer)
             {
-                SaveParametrs();
+                SaveParameters();
             }
 
             try
@@ -1290,7 +1319,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// save parameter values
         /// </summary>
-        public void SaveParametrs()
+        public void SaveParameters()
         {
             if (_lastParamLoadTime.AddSeconds(3) > DateTime.Now)
             {
@@ -1672,6 +1701,7 @@ position => position.State != PositionStateType.OpeningFail
                 {
                     newTab = new BotTabPair(nameTab, StartProgram);
                     _tabsPair.Add((BotTabPair)newTab);
+                    ((BotTabPair)newTab).UserSelectActionEvent += UserSetPositionAction;
                 }
                 else if (tabType == BotTabType.Polygon)
                 {
@@ -1687,6 +1717,7 @@ position => position.State != PositionStateType.OpeningFail
                 {
                     newTab = new BotTabScreener(nameTab, StartProgram);
                     _tabsScreener.Add((BotTabScreener)newTab);
+
                     ((BotTabScreener)newTab).UserSelectActionEvent += UserSetPositionAction;
 
                      ((BotTabScreener)newTab).NewTabCreateEvent += (tab) =>
@@ -1849,7 +1880,7 @@ position => position.State != PositionStateType.OpeningFail
                 }
                 else if (ActiveTab.TabType == BotTabType.Pair)
                 {
-                    ((BotTabPair)ActiveTab).StartPaint(_hostChart);
+                    ((BotTabPair)ActiveTab).StartPaint(_hostChart, _hostOpenDeals, _hostCloseDeals);
                 }
                 else if (ActiveTab.TabType == BotTabType.Polygon)
                 {
@@ -2006,6 +2037,10 @@ position => position.State != PositionStateType.OpeningFail
                     for (int i = 0; i < _tabsScreener.Count; i++)
                     {
                         _tabsScreener[i].CloseAllPositionAtMarket();
+                    }
+                    for (int i = 0; i < _tabsPair.Count; i++)
+                    {
+                        _tabsPair[i].CloseAllPositionAtMarket();
                     }
 
                     return;
@@ -2262,22 +2297,22 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// set border under of Parameter
         /// </summary>
-        /// <param name="paramName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
+        /// <param name="parameterName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
         /// <param name="color">border color</param>
         /// <param name="thickness">border thickness (min 1, max 10)</param>
-        public void SetBorderUnderParameter(string paramName, System.Drawing.Color color, int thickness)
+        public void SetBorderUnderParameter(string parameterName, System.Drawing.Color color, int thickness)
         {
             try
             {
-                ParamDesign newBorderSet = new ParamDesign(ParamDesignType.BorderUnder, paramName, color, thickness);
+                ParamDesign newBorderSet = new ParamDesign(ParamDesignType.BorderUnder, parameterName, color, thickness);
 
-                if (_parameterDesigns.ContainsKey(paramName + ParamDesignType.BorderUnder.ToString()))
+                if (_parameterDesigns.ContainsKey(parameterName + ParamDesignType.BorderUnder.ToString()))
                 {
-                    _parameterDesigns[paramName + ParamDesignType.BorderUnder.ToString()] = newBorderSet;
+                    _parameterDesigns[parameterName + ParamDesignType.BorderUnder.ToString()] = newBorderSet;
                 }
                 else
                 {
-                    _parameterDesigns.Add(paramName + ParamDesignType.BorderUnder.ToString(), newBorderSet);
+                    _parameterDesigns.Add(parameterName + ParamDesignType.BorderUnder.ToString(), newBorderSet);
                 }
             }
             catch (Exception error)
@@ -2289,21 +2324,21 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// set fore color of Parameter (text color)
         /// </summary>
-        /// <param name="paramName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
+        /// <param name="parameterName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
         /// <param name="color">color</param>
-        public void SetForeColorParameter(string paramName, System.Drawing.Color color)
+        public void SetForeColorParameter(string parameterName, System.Drawing.Color color)
         {
             try
             {
-                ParamDesign newForeColorSet = new ParamDesign(ParamDesignType.ForeColor, paramName, color, 1);
+                ParamDesign newForeColorSet = new ParamDesign(ParamDesignType.ForeColor, parameterName, color, 1);
 
-                if (_parameterDesigns.ContainsKey(paramName + ParamDesignType.ForeColor.ToString()))
+                if (_parameterDesigns.ContainsKey(parameterName + ParamDesignType.ForeColor.ToString()))
                 {
-                    _parameterDesigns[paramName + ParamDesignType.ForeColor.ToString()] = newForeColorSet;
+                    _parameterDesigns[parameterName + ParamDesignType.ForeColor.ToString()] = newForeColorSet;
                 }
                 else
                 {
-                    _parameterDesigns.Add(paramName + ParamDesignType.ForeColor.ToString(), newForeColorSet);
+                    _parameterDesigns.Add(parameterName + ParamDesignType.ForeColor.ToString(), newForeColorSet);
                 }
             }
             catch (Exception error)
@@ -2315,21 +2350,21 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// set selection color of Parameter
         /// </summary>
-        /// <param name="paramName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
+        /// <param name="parameterName">Parameter name (do not empty names "" of StrategyParameter; for StrategyParameterButton use "buttonLabel"; for StrategyParameterLabel use "label")</param>
         /// <param name="color">color</param>
-        public void SetSelectionColorParameter(string paramName, System.Drawing.Color color)
+        public void SetSelectionColorParameter(string parameterName, System.Drawing.Color color)
         {
             try
             {
-                ParamDesign newSelectionColorSet = new ParamDesign(ParamDesignType.SelectionColor, paramName, color, 1);
+                ParamDesign newSelectionColorSet = new ParamDesign(ParamDesignType.SelectionColor, parameterName, color, 1);
 
-                if (_parameterDesigns.ContainsKey(paramName + ParamDesignType.SelectionColor.ToString()))
+                if (_parameterDesigns.ContainsKey(parameterName + ParamDesignType.SelectionColor.ToString()))
                 {
-                    _parameterDesigns[paramName + ParamDesignType.SelectionColor.ToString()] = newSelectionColorSet;
+                    _parameterDesigns[parameterName + ParamDesignType.SelectionColor.ToString()] = newSelectionColorSet;
                 }
                 else
                 {
-                    _parameterDesigns.Add(paramName + ParamDesignType.SelectionColor.ToString(), newSelectionColorSet);
+                    _parameterDesigns.Add(parameterName + ParamDesignType.SelectionColor.ToString(), newSelectionColorSet);
                 }
             }
             catch (Exception error)
@@ -2349,7 +2384,34 @@ position => position.State != PositionStateType.OpeningFail
             }
         }
         private Dictionary<string, ParamDesign> _parameterDesigns = new Dictionary<string, ParamDesign>();
-	
+
+        /// <summary>	
+        ///  repaint Parameter tables (it is not recommended to call often, recommended >100 ms)
+        /// </summary>
+        public void RePaintParameterTables()
+        {
+            if (_isRePaintParameterTables == false)
+            {
+                _isRePaintParameterTables = true;
+            }
+            else
+            {
+                _isRePaintParameterTables = false;
+            }
+        }
+
+        /// <summary>
+        /// status of Parameter tables repaint (it is not specific pointer)
+        /// </summary>
+        public bool IsRePaintParameterTables
+        {
+            get
+            {
+                return _isRePaintParameterTables;
+            }
+        }
+        private bool _isRePaintParameterTables;
+
     }
 
     /// <summary>
@@ -2413,10 +2475,10 @@ position => position.State != PositionStateType.OpeningFail
     /// </summary>
     public readonly struct ParamDesign
     {
-        public ParamDesign(ParamDesignType designType, string paramName, System.Drawing.Color color, int thickness)
+        public ParamDesign(ParamDesignType designType, string parameterName, System.Drawing.Color color, int thickness)
         {
             DesignType = designType;
-            ParamName = paramName;
+            ParameterName = parameterName;
             Color = color;
             Thickness = thickness;
         }
@@ -2429,7 +2491,7 @@ position => position.State != PositionStateType.OpeningFail
         /// <summary>
         /// Parameter name
         /// </summary>
-        public string ParamName { get; }
+        public string ParameterName { get; }
 
         public System.Drawing.Color Color { get; }
 
