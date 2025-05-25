@@ -1527,6 +1527,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
                 if (mouse.Button == MouseButtons.Left)
                 {
+                    if(SecuritiesDataGrid.ContextMenuStrip != null)
+                    {
+                        SecuritiesDataGrid.ContextMenuStrip = null;
+                    }
+
                     // send to watch the chart
                     if (SecuritiesDataGrid.SelectedCells == null ||
                         SecuritiesDataGrid.SelectedCells.Count == 0)
@@ -1676,11 +1681,11 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                 BotTabSimple tab = Tabs[0];
 
-                System.Windows.Forms.ContextMenu menu = tab.GetContextDialog();
+                System.Windows.Forms.ContextMenuStrip menu = tab.GetContextDialog();
 
-                SecuritiesDataGrid.ContextMenu = menu;
+                SecuritiesDataGrid.ContextMenuStrip = menu;
 
-                SecuritiesDataGrid.ContextMenu.Show(SecuritiesDataGrid, new System.Drawing.Point(mouse.X, mouse.Y));
+                SecuritiesDataGrid.ContextMenuStrip.Show(SecuritiesDataGrid, new System.Drawing.Point(mouse.X, mouse.Y));
             }
             catch (Exception ex)
             {

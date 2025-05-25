@@ -240,23 +240,27 @@ namespace OsEngine.OsTrader
 
             if (mouse.Button != MouseButtons.Right)
             {
+                if(_grid.ContextMenuStrip != null)
+                {
+                    _grid.ContextMenuStrip = null;
+                }
                 return;
             }
 
             try
             {
-                MenuItem[] items = new MenuItem[2];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[2];
 
-                items[0] = new MenuItem { Text = OsLocalization.Trader.Label213 };
+                items[0] = new ToolStripMenuItem { Text = OsLocalization.Trader.Label213 };
                 items[0].Click += PositionCloseAll_Click;
 
-                items[1] = new MenuItem { Text = OsLocalization.Trader.Label214 };
+                items[1] = new ToolStripMenuItem { Text = OsLocalization.Trader.Label214 };
                 items[1].Click += PositionCloseForNumber_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items);
 
-                _grid.ContextMenu = menu;
-                _grid.ContextMenu.Show(_grid, new Point(mouse.X, mouse.Y));
+                _grid.ContextMenuStrip = menu;
+                _grid.ContextMenuStrip.Show(_grid, new Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {

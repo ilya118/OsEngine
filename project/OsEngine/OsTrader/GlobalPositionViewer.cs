@@ -829,18 +829,23 @@ namespace OsEngine.OsTrader
 
                 if (mouse.Button != MouseButtons.Right)
                 {
+                    if(_gridClosePoses.ContextMenuStrip != null)
+                    {
+                        _gridClosePoses.ContextMenuStrip = null;
+                    }
                     return;
                 }
 
-                MenuItem[] items = new MenuItem[1];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[1];
 
-                items[0] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem7 };
+                items[0] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem7 };
                 items[0].Click += ClosePositionClearDelete_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip(); 
+                menu.Items.AddRange(items);
 
-                _gridClosePoses.ContextMenu = menu;
-                _gridClosePoses.ContextMenu.Show(_gridClosePoses, new Point(mouse.X, mouse.Y));
+                _gridClosePoses.ContextMenuStrip = menu;
+                _gridClosePoses.ContextMenuStrip.Show(_gridClosePoses, new Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {
@@ -909,30 +914,35 @@ namespace OsEngine.OsTrader
 
                 if (mouse.Button != MouseButtons.Right)
                 {
+                    if(_gridOpenPoses.ContextMenuStrip != null)
+                    {
+                        _gridOpenPoses.ContextMenuStrip = null;
+                    }
+
                     return;
                 }
 
-                MenuItem[] items = new MenuItem[5];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[5];
 
-                items[0] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem1 };
+                items[0] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem1 };
                 items[0].Click += PositionCloseAll_Click;
 
-                items[1] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem3 };
+                items[1] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem3 };
                 items[1].Click += PositionCloseForNumber_Click;
 
-                items[2] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem5 };
+                items[2] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem5 };
                 items[2].Click += PositionNewStop_Click;
 
-                items[3] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem6 };
+                items[3] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem6 };
                 items[3].Click += PositionNewProfit_Click;
 
-                items[4] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem7 };
+                items[4] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem7 };
                 items[4].Click += PositionClearDelete_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items);
 
-                _gridOpenPoses.ContextMenu = menu;
-                _gridOpenPoses.ContextMenu.Show(_gridOpenPoses, new Point(mouse.X, mouse.Y));
+                _gridOpenPoses.ContextMenuStrip = menu;
+                _gridOpenPoses.ContextMenuStrip.Show(_gridOpenPoses, new Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {

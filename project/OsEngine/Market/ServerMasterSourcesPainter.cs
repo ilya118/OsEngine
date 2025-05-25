@@ -523,35 +523,35 @@ namespace OsEngine.Market
                     }
                 }
 
-                List<MenuItem> items = new List<MenuItem>();
+                List<ToolStripMenuItem> items = new List<ToolStripMenuItem>();
 
-                items.Add(new MenuItem(serverType.ToString()));
+                items.Add(new ToolStripMenuItem(serverType.ToString()));
                 items[0].Enabled = false;
 
-                items.Add(new MenuItem(OsLocalization.Market.Label119));
+                items.Add(new ToolStripMenuItem(OsLocalization.Market.Label119));
                 items[1].Click += _gridSources_ShowSettingsWindow_Click;
 
                 if (isPin == false)
                 {
-                    items.Add(new MenuItem(OsLocalization.Market.Label117));
+                    items.Add(new ToolStripMenuItem(OsLocalization.Market.Label117));
                     items[2].Click += _gridSources_AttachServer_Click;
                 }
                 else if (isPin == true)
                 {
-                    items.Add(new MenuItem(OsLocalization.Market.Label118));
+                    items.Add(new ToolStripMenuItem(OsLocalization.Market.Label118));
                     items[2].Click += _gridSources_DetachServer_Click;
                 }
 
-                items.Add(new MenuItem(OsLocalization.Market.ButtonConnect));
+                items.Add(new ToolStripMenuItem(OsLocalization.Market.ButtonConnect));
                 items[3].Click += _gridSources_Connect_Click;
 
-                items.Add(new MenuItem(OsLocalization.Market.ButtonDisconnect));
+                items.Add(new ToolStripMenuItem(OsLocalization.Market.ButtonDisconnect));
                 items[4].Click += _gridSources_Disconnect_Click;
 
-                ContextMenu menu = new ContextMenu(items.ToArray());
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items.ToArray());
 
-                _gridSources.ContextMenu = menu;
-                _gridSources.ContextMenu.Show(_gridSources, new System.Drawing.Point(_mouseXPos, _mouseYPos));
+                _gridSources.ContextMenuStrip = menu;
+                _gridSources.ContextMenuStrip.Show(_gridSources, new System.Drawing.Point(_mouseXPos, _mouseYPos));
             }
             catch (Exception ex)
             {
@@ -645,15 +645,12 @@ namespace OsEngine.Market
                     return;
                 }
 
-
-
                 myServer.StartServer();
             }
             catch (Exception ex)
             {
                 ServerMaster.Log?.ProcessMessage(ex.ToString(), Logging.LogMessageType.Error);
             }
-
         }
 
         private void _gridSources_Disconnect_Click(object sender, EventArgs e)

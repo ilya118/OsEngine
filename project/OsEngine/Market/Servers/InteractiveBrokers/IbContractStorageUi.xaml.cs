@@ -9,8 +9,6 @@ using System.Windows;
 using System.Windows.Forms;
 using OsEngine.Entity;
 using OsEngine.Language;
-using ContextMenu = System.Windows.Forms.ContextMenu;
-using MenuItem = System.Windows.Forms.MenuItem;
 using MouseEventArgs = System.Windows.Forms.MouseEventArgs;
 
 namespace OsEngine.Market.Servers.InteractiveBrokers
@@ -195,23 +193,30 @@ namespace OsEngine.Market.Servers.InteractiveBrokers
             MouseEventArgs mouse = (MouseEventArgs)e;
             if (mouse.Button != MouseButtons.Right)
             {
+                if(_grid.ContextMenuStrip != null)
+                {
+                    _grid.ContextMenuStrip = null;
+                }
+
                 return;
             }
 
             // creating a context menu / cоздание контекстного меню
 
-            MenuItem[] items = new MenuItem[2];
+            ToolStripMenuItem[] items = new ToolStripMenuItem[2];
 
-            items[0] = new MenuItem();
+            items[0] = new ToolStripMenuItem();
             items[0].Text = OsLocalization.Market.Label47;
             items[0].Click += AlertDelete_Click;
 
-            items[1] = new MenuItem() { Text = OsLocalization.Market.Label48 };
+            items[1] = new ToolStripMenuItem() { Text = OsLocalization.Market.Label48 };
             items[1].Click += AlertCreate_Click;
 
-            ContextMenu menu = new ContextMenu(items);
-            _grid.ContextMenu = menu;
-            _grid.ContextMenu.Show(_grid, new System.Drawing.Point(mouse.X, mouse.Y));
+            ContextMenuStrip menu = new ContextMenuStrip();
+            menu.Items.AddRange(items);
+
+            _grid.ContextMenuStrip = menu;
+            _grid.ContextMenuStrip.Show(_grid, new System.Drawing.Point(mouse.X, mouse.Y));
         }
 
         void AlertDelete_Click(object sender, EventArgs e)

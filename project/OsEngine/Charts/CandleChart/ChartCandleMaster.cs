@@ -651,7 +651,7 @@ namespace OsEngine.Charts.CandleChart
         /// </summary>
         private void ReloadContext()
         {
-            ContextMenu menu = GetContextMenu();
+            ContextMenuStrip menu = GetContextMenu();
             ChartCandle.ShowContextMenu(menu);
         }
 
@@ -659,25 +659,31 @@ namespace OsEngine.Charts.CandleChart
         /// взять контекстное меню настройки отображения чарта и индикаторов
         /// </summary>
         /// <returns></returns>
-        public ContextMenu GetContextMenu()
+        public ContextMenuStrip GetContextMenu()
         {
             try
             {
-                List<MenuItem> menuRedact = null;
+                List<ToolStripMenuItem> menuRedact = null;
 
-                List<MenuItem> menuDelete = null;
+                List<ToolStripMenuItem> menuDelete = null;
 
                 if (_indicators != null)
                 {
-                    menuRedact = new List<MenuItem>();
-                    menuDelete = new List<MenuItem>();
+                    menuRedact = new List<ToolStripMenuItem>();
+
+                    menuDelete = new List<ToolStripMenuItem>();
                     for (int i = 0; i < _indicators.Count; i++)
                     {
-                        menuRedact.Add(new MenuItem(_indicators[i].GetType().Name));
+                        string indicatorName = _indicators[i].GetType().Name;
+
+                        menuRedact.Add(new ToolStripMenuItem(indicatorName));
+                        menuRedact[menuRedact.Count - 1].ToolTipText = indicatorName + "*" + i;
                         menuRedact[menuRedact.Count - 1].Click += RedactContextMenu_Click;
+
                         if (_indicators[i].CanDelete)
                         {
-                            menuDelete.Add(new MenuItem(_indicators[i].GetType().Name));
+                            menuDelete.Add(new ToolStripMenuItem(indicatorName));
+                            menuDelete[menuDelete.Count - 1].ToolTipText = indicatorName + "*" + i;
                             menuDelete[menuDelete.Count - 1].Click += DeleteContextMenu_Click;
                         }
                     }
@@ -693,57 +699,74 @@ namespace OsEngine.Charts.CandleChart
                 {
                     if (menuRedact == null)
                     {
-                        menuRedact = new List<MenuItem>();
-                        menuDelete = new List<MenuItem>();
+                        menuRedact = new List<ToolStripMenuItem>();
+
+                        menuDelete = new List<ToolStripMenuItem>();
                     }
-                    menuDelete.Add(new MenuItem("Trades"));
+
+                    menuDelete.Add(new ToolStripMenuItem("Trades"));
                     menuDelete[menuDelete.Count - 1].Click += DeleteContextMenu_Click;
                 }
 
-                List<MenuItem> items;
+                List<ToolStripMenuItem> items;
 
-                items = new List<MenuItem>();
-                items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem1,
-                    new MenuItem[]
-                {new MenuItem(OsLocalization.Charts.ChartMenuItem2,
-                        new MenuItem[]{new MenuItem(OsLocalization.Charts.ChartMenuItem3),
-                            new MenuItem(OsLocalization.Charts.ChartMenuItem4)}),
+                items = new List<ToolStripMenuItem>();
 
-                new MenuItem(OsLocalization.Charts.ChartMenuItem5,
-                    new MenuItem[]{
-                        new MenuItem(OsLocalization.Charts.ChartMenuItem15),
-                        new MenuItem(OsLocalization.Charts.ChartMenuItem6),
-                        new MenuItem(OsLocalization.Charts.ChartMenuItem7),
-                        new MenuItem(OsLocalization.Charts.ChartMenuItem8),
-                        new MenuItem(OsLocalization.Charts.ChartMenuItem9)})}
 
-                ));
+                ToolStripMenuItem item1 = new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem1);
 
-                items[items.Count - 1].MenuItems[0].MenuItems[0].Click += ChartBlackColor_Click;
-                items[items.Count - 1].MenuItems[0].MenuItems[1].Click += ChartWhiteColor_Click;
 
-                items[items.Count - 1].MenuItems[1].MenuItems[0].Click += ChartAutoToPosition_Click;
-                items[items.Count - 1].MenuItems[1].MenuItems[1].Click += ChartCrossToPosition_Click;
-                items[items.Count - 1].MenuItems[1].MenuItems[2].Click += ChartRombToPosition_Click;
-                items[items.Count - 1].MenuItems[1].MenuItems[3].Click += ChartCircleToPosition_Click;
-                items[items.Count - 1].MenuItems[1].MenuItems[4].Click += ChartTriangleToPosition_Click;
+                ToolStripMenuItem item2 = new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem2);
 
-                items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem10));
+                item2.DropDownItems.AddRange(new ToolStripMenuItem[]{
+                            new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem3),
+                            new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem4)});
+
+                ToolStripMenuItem item5 = new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem5);
+                item5.DropDownItems.AddRange(
+                    new ToolStripMenuItem[]{
+                        new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem15),
+                        new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem6),
+                        new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem7),
+                        new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem8),
+                        new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem9)});
+
+                item1.DropDownItems.Add(item2);
+                item1.DropDownItems.Add(item5);
+
+                items.Add(item1);
+
+                ((ToolStripMenuItem)items[0].DropDownItems[0]).DropDownItems[0].Click += ChartBlackColor_Click;
+                ((ToolStripMenuItem)items[0].DropDownItems[0]).DropDownItems[1].Click += ChartWhiteColor_Click;
+
+                ((ToolStripMenuItem)items[0].DropDownItems[1]).DropDownItems[0].Click += ChartAutoToPosition_Click;
+                ((ToolStripMenuItem)items[0].DropDownItems[1]).DropDownItems[1].Click += ChartCrossToPosition_Click;
+                ((ToolStripMenuItem)items[0].DropDownItems[1]).DropDownItems[2].Click += ChartRombToPosition_Click;
+                ((ToolStripMenuItem)items[0].DropDownItems[1]).DropDownItems[3].Click += ChartCircleToPosition_Click;
+                ((ToolStripMenuItem)items[0].DropDownItems[1]).DropDownItems[4].Click += ChartTriangleToPosition_Click;
+
+                items.Add(new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem10));
                 items[items.Count - 1].Click += ChartHideIndicators_Click;
 
-                items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem11));
+                items.Add(new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem11));
                 items[items.Count - 1].Click += ChartShowIndicators_Click;
 
                 if (menuRedact != null)
                 {
-                    items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem12, menuRedact.ToArray()));
-                    items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem13, menuDelete.ToArray()));
+                    var itemEdit = new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem12);
+                    itemEdit.DropDownItems.AddRange(menuRedact.ToArray());
+                    items.Add(itemEdit);
+
+                    var itemDel = new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem13);
+                    itemDel.DropDownItems.AddRange(menuDelete.ToArray());
+                    items.Add(itemDel);
                 }
 
-                items.Add(new MenuItem(OsLocalization.Charts.ChartMenuItem14));
+               items.Add(new ToolStripMenuItem(OsLocalization.Charts.ChartMenuItem14));
                 items[items.Count - 1].Click += CreateIndicators_Click;
 
-                ContextMenu menu = new ContextMenu(items.ToArray());
+                ContextMenuStrip menu = new ContextMenuStrip();
+                menu.Items.AddRange(items.ToArray());
 
                 return menu;
             }
@@ -753,7 +776,7 @@ namespace OsEngine.Charts.CandleChart
             }
             return null;
         }
-
+                
         /// <summary>
         /// user has selected the crosshair in context menu to draw trades on chart
         /// Пользователь выбрал в контекстном меню перекрестие для прорисовки сделок на чарте
@@ -848,9 +871,12 @@ namespace OsEngine.Charts.CandleChart
         {
             try
             {
-                MenuItem item = (MenuItem)sender;
-                _indicators[item.Index].ShowDialog();
-                _indicators[item.Index].Save();
+                ToolStripMenuItem item = (ToolStripMenuItem)sender;
+
+                int num = Convert.ToInt32(item.ToolTipText.Split('*')[1]);
+
+                _indicators[num].ShowDialog();
+                _indicators[num].Save();
 
                 if (IndicatorUpdateEvent != null)
                 {
@@ -877,26 +903,24 @@ namespace OsEngine.Charts.CandleChart
         {
             try
             {
-                int number = ((MenuItem)sender).Index;
+                ToolStripMenuItem item = (ToolStripMenuItem)sender;
 
-                if ((_indicators == null || _indicators.Count <= number))
+                int number = Convert.ToInt32(item.ToolTipText.Split('*')[1]);
+
+
+                if ((_indicators == null || number >= _indicators.Count))
                 {
                     return;
                 }
 
-                List<IIndicator> indicators = _indicators.FindAll(candle => candle.CanDelete == true);
-                if (number < indicators.Count)
+                IIndicator indicator = _indicators[number];
+
+                DeleteIndicator(indicator);
+
+                if (IndicatorManuallyDeleteEvent != null)
                 {
-                    IIndicator indicator = indicators[number];
-
-                    DeleteIndicator(indicator);
-
-                    if (IndicatorManuallyDeleteEvent != null)
-                    {
-                        IndicatorManuallyDeleteEvent(indicator);
-                    }
+                    IndicatorManuallyDeleteEvent(indicator);
                 }
-
             }
             catch (Exception error)
             {
@@ -1182,14 +1206,15 @@ namespace OsEngine.Charts.CandleChart
 
                 indicator.Delete();
 
-                if (_indicators.Count == 1)
+                for (int i = 0; i < _indicators.Count; i++)
                 {
-                    _indicators = null;
+                    if(_indicators[i].Name == indicator.Name)
+                    {
+                        _indicators.RemoveAt(i);
+                        break;
+                    }
                 }
-                else
-                {
-                    _indicators.Remove(indicator);
-                }
+
                 Save();
                 ReloadContext();
             }

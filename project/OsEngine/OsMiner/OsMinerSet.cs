@@ -379,21 +379,21 @@ namespace OsEngine.OsMiner
 
             try
             {
-                MenuItem[] items = new MenuItem[3];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[3];
 
-                items[0] = new MenuItem {Text =OsLocalization.Miner.Message6};
+                items[0] = new ToolStripMenuItem {Text =OsLocalization.Miner.Message6};
                 items[0].Click += OsMinerSetAdd_Click;
 
-                items[1] = new MenuItem {Text = OsLocalization.Miner.Message9};
+                items[1] = new ToolStripMenuItem {Text = OsLocalization.Miner.Message9};
                 items[1].Click += OsMinerSetRedact_Click;
 
-                items[2] = new MenuItem { Text = OsLocalization.Miner.Message7};
+                items[2] = new ToolStripMenuItem { Text = OsLocalization.Miner.Message7};
                 items[2].Click += OsMinerSetDelete_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items);
 
-                _gridPatternsInSet.ContextMenu = menu;
-                _gridPatternsInSet.ContextMenu.Show(_gridPatternsInSet, new Point(mouse.X, mouse.Y));
+                _gridPatternsInSet.ContextMenuStrip = menu;
+                _gridPatternsInSet.ContextMenuStrip.Show(_gridPatternsInSet, new Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {
@@ -408,7 +408,14 @@ namespace OsEngine.OsMiner
         /// </summary>
         void OsMinerSetDelete_Click(object sender, EventArgs e)
         {
-            DeletePattern();
+            try
+            {
+                DeletePattern();
+            }
+            catch(Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         /// <summary>
@@ -417,7 +424,14 @@ namespace OsEngine.OsMiner
         /// </summary>
         void OsMinerSetRedact_Click(object sender, EventArgs e)
         {
-            RedactPattern();
+            try
+            {
+                RedactPattern();
+            }
+            catch (Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         /// <summary>
@@ -426,8 +440,15 @@ namespace OsEngine.OsMiner
         /// </summary>
         void OsMinerSetAdd_Click(object sender, EventArgs e)
         {
-            CreatePattern();
-            Patterns[_activePatternNum].Paint(_hostChart, _rectChart);
+            try
+            {
+                CreatePattern();
+                Patterns[_activePatternNum].Paint(_hostChart, _rectChart);
+            }
+            catch (Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         /// <summary>
@@ -436,32 +457,39 @@ namespace OsEngine.OsMiner
         /// </summary>
         void _gridPatternsInSet_Click(object sender, EventArgs e)
         {
-            if (_gridPatternsInSet.SelectedCells.Count == 0)
+            try
             {
-                return;
-            }
-            int activPattern = _gridPatternsInSet.SelectedCells[0].RowIndex;
+                if (_gridPatternsInSet.SelectedCells.Count == 0)
+                {
+                    return;
+                }
+                int activPattern = _gridPatternsInSet.SelectedCells[0].RowIndex;
 
-            if (activPattern >= Patterns.Count)
+                if (activPattern >= Patterns.Count)
+                {
+                    return;
+                }
+
+                if (_activePatternNum == activPattern)
+                {
+                    return;
+                }
+
+
+                if (_activePatternNum < 0)
+                {
+                    _activePatternNum = 0;
+                }
+
+                Patterns[_activePatternNum].StopPaint();
+                _activePatternNum = activPattern;
+
+                Patterns[_activePatternNum].Paint(_hostChart, _rectChart);
+            }
+            catch (Exception ex)
             {
-                return;
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
             }
-
-            if(_activePatternNum == activPattern)
-            {
-                return;
-            }
-
-
-            if (_activePatternNum < 0)
-            {
-                _activePatternNum = 0;
-            }
-
-            Patterns[_activePatternNum].StopPaint();
-            _activePatternNum = activPattern;
-
-            Patterns[_activePatternNum].Paint(_hostChart, _rectChart);
         }
 
         /// <summary>
@@ -470,7 +498,14 @@ namespace OsEngine.OsMiner
         /// </summary>
         void _gridPatternsInSet_DoubleClick(object sender, EventArgs e)
         {
-            RedactPattern();
+            try
+            {
+                RedactPattern();
+            }
+            catch (Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         /// <summary>

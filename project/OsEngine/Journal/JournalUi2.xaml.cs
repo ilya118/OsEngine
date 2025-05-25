@@ -21,8 +21,6 @@ using System.Windows.Forms.DataVisualization.Charting;
 using OsEngine.Language;
 using Chart = System.Windows.Forms.DataVisualization.Charting.Chart;
 using ChartArea = System.Windows.Forms.DataVisualization.Charting.ChartArea;
-using ContextMenu = System.Windows.Forms.ContextMenu;
-using MenuItem = System.Windows.Forms.MenuItem;
 using Series = System.Windows.Forms.DataVisualization.Charting.Series;
 using System.Threading;
 using OsEngine.Layout;
@@ -2174,37 +2172,45 @@ namespace OsEngine.Journal
                 MouseEventArgs mouse = (MouseEventArgs)e;
                 if (mouse.Button != MouseButtons.Right)
                 {
+                    if(_openPositionGrid.ContextMenuStrip != null)
+                    {
+                        _openPositionGrid.ContextMenuStrip = null;
+                    }
                     return;
                 }
 
-                List<MenuItem> items = new List<MenuItem>();
+                List<ToolStripMenuItem> items = new List<ToolStripMenuItem>();
 
-                items.Add(new MenuItem { Text = OsLocalization.Journal.PositionMenuItem8 });
+                items.Add(new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem8 });
                 items[0].Click += OpenDealMoreInfo_Click;
 
-                items.Add(new MenuItem { Text = OsLocalization.Journal.PositionMenuItem9 });
+                items.Add(new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem9 });
                 items[1].Click += OpenDealDelete_Click;
 
-                items.Add(new MenuItem { Text = OsLocalization.Journal.PositionMenuItem10 });
+                items.Add(new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem10 });
                 items[2].Click += OpenDealClearAll_Click;
 
                 if (_botsJournals.Count != 0)
                 {
-                    List<MenuItem> itemsBots = new List<MenuItem>();
+                    List<ToolStripMenuItem> itemsBots = new List<ToolStripMenuItem>();
 
                     for (int i = 0; i < _botsJournals.Count; i++)
                     {
-                        itemsBots.Add(new MenuItem { Text = _botsJournals[i].BotName });
+                        itemsBots.Add(new ToolStripMenuItem { Text = _botsJournals[i].BotName });
                         itemsBots[i].Click += OpenDealCreatePosition_Click;
                     }
 
-                    items.Add(new MenuItem(OsLocalization.Journal.PositionMenuItem13, itemsBots.ToArray()));
+                    var item = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem13};
+                    item.DropDownItems.AddRange(itemsBots.ToArray());
+
+                    items.Add(item);
                 }
 
-                ContextMenu menu = new ContextMenu(items.ToArray());
+                ContextMenuStrip menu = new ContextMenuStrip();
+                menu.Items.AddRange(items.ToArray());
 
-                _openPositionGrid.ContextMenu = menu;
-                _openPositionGrid.ContextMenu.Show(_openPositionGrid, new System.Drawing.Point(mouse.X, mouse.Y));
+                _openPositionGrid.ContextMenuStrip = menu;
+                _openPositionGrid.ContextMenuStrip.Show(_openPositionGrid, new System.Drawing.Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {
@@ -2218,8 +2224,6 @@ namespace OsEngine.Journal
 
             try
             {
-              
-
                 if (_openPositionGrid.CurrentCell == null)
                 {
                     return;
@@ -2308,16 +2312,33 @@ namespace OsEngine.Journal
                     return;
                 }
 
-                int number = ((MenuItem)sender).Index;
+                ToolStripMenuItem tab = (ToolStripMenuItem)sender;
 
-                string botName = _botsJournals[number].BotName;
+                string botName = tab.Text; 
 
                 Position newPos = new Position();
 
                 newPos.Number = NumberGen.GetNumberDeal(_startProgram);
                 newPos.NameBot = botName;
-                _botsJournals[number]._Tabs[0].Journal.SetNewDeal(newPos);
 
+                BotPanelJournal myJournal = null;
+
+                for(int i = 0;i < _botsJournals.Count;i++)
+                {
+                    if (_botsJournals[i].BotName == botName)
+                    {
+                        myJournal = _botsJournals[i];
+                        break;
+
+                    }
+                }
+
+                if(myJournal == null)
+                {
+                    return;
+                }
+
+                myJournal._Tabs[0].Journal.SetNewDeal(newPos);
 
                 RePaint();
             }
@@ -2635,24 +2656,25 @@ namespace OsEngine.Journal
                     return;
                 }
 
-                MenuItem[] items = new MenuItem[4];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[4];
 
-                items[0] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem8 };
+                items[0] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem8 };
                 items[0].Click += CloseDealMoreInfo_Click;
 
-                items[1] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem9 };
+                items[1] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem9 };
                 items[1].Click += CloseDealDelete_Click;
 
-                items[2] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem10 };
+                items[2] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem10 };
                 items[2].Click += CloseDealClearAll_Click;
 
-                items[3] = new MenuItem { Text = OsLocalization.Journal.PositionMenuItem11 };
+                items[3] = new ToolStripMenuItem { Text = OsLocalization.Journal.PositionMenuItem11 };
                 items[3].Click += CloseDealSaveInFile_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip();
+                menu.Items.AddRange(items);
 
-                _closePositionGrid.ContextMenu = menu;
-                _closePositionGrid.ContextMenu.Show(_closePositionGrid, new System.Drawing.Point(mouse.X, mouse.Y));
+                _closePositionGrid.ContextMenuStrip = menu;
+                _closePositionGrid.ContextMenuStrip.Show(_closePositionGrid, new System.Drawing.Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {
@@ -4025,6 +4047,13 @@ namespace OsEngine.Journal
 
                 _minTime = _startTime;
                 _maxTime = _endTime;
+
+                if(_minTime == DateTime.MinValue 
+                    ||
+                    _maxTime == DateTime.MaxValue)
+                {
+                    return;
+                }
 
                 if (IsSlide == false)
                 { // слайдер времени выключен. Просто обновляем

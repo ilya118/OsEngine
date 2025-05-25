@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Your rights to use code governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
+ * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+using System;
 using System.Threading.Tasks;
 using System.Windows.Forms.Integration;
 using System.Windows.Forms;
@@ -7,8 +12,6 @@ using OsEngine.OsTrader.Panels;
 using OsEngine.Language;
 using System.Threading;
 using System.Collections.Generic;
-using OsEngine.Market;
-using System.Windows.Input;
 using OsEngine.Journal;
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels.Tab;
@@ -319,6 +322,11 @@ namespace OsEngine.OsTrader.Gui
             {
                 if (e.Button != MouseButtons.Right)
                 {
+                    if (_grid.ContextMenuStrip != null)
+                    {
+                        _grid.ContextMenuStrip = null;
+                    }
+
                     return;
                 }
 
@@ -333,37 +341,37 @@ namespace OsEngine.OsTrader.Gui
 
                 _lastSelectedBot = _master.PanelsArray[rowIndex];
 
-                List<MenuItem> items = new List<MenuItem>();
+                List<ToolStripMenuItem> items = new List<ToolStripMenuItem>();
 
-                items.Add(new MenuItem(_lastSelectedBot.GetNameStrategyType() + "  " + _lastSelectedBot.NameStrategyUniq));
+                items.Add(new ToolStripMenuItem(_lastSelectedBot.GetNameStrategyType() + "  " + _lastSelectedBot.NameStrategyUniq));
                 items[0].Enabled = false;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label172));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label172));
                 items[1].Click += BotTabsPainter_Chart_Click;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label45));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label45));
                 items[2].Click += BotTabsPainter_Parameters_Click;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label40));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label40));
                 items[3].Click += BotTabsPainter_Journal_Click;
 
                 if(_lastSelectedBot.OnOffEventsInTabs == true)
                 {
-                    items.Add(new MenuItem(OsLocalization.Trader.Label412));
+                    items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label412));
                 }
                 else //if (selectedBot.OnOffEventsInTabs == false)
                 {
-                    items.Add(new MenuItem(OsLocalization.Trader.Label413));
+                    items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label413));
                 }
                 items[4].Click += BotTabsPainter_OnOffEvents_Click;
 
                 if (_lastSelectedBot.OnOffEmulatorsInTabs == true)
                 {
-                    items.Add(new MenuItem(OsLocalization.Trader.Label414));
+                    items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label414));
                 }
                 else //if (selectedBot.OnOffEventsInTabs == false)
                 {
-                    items.Add(new MenuItem(OsLocalization.Trader.Label415));
+                   items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label415));
                 }
                 if(_master._startProgram == StartProgram.IsTester)
                 {
@@ -371,19 +379,19 @@ namespace OsEngine.OsTrader.Gui
                 }
                 items[5].Click += BotTabsPainter_OnOffEmulator_Click;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label416));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label416));
                 items[6].Click += BotTabsPainter_MoveUp_Click;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label417));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label417));
                 items[7].Click += BotTabsPainter_MoveDown_Click;
 
-                items.Add(new MenuItem(OsLocalization.Trader.Label39));
+                items.Add(new ToolStripMenuItem(OsLocalization.Trader.Label39));
                 items[8].Click += BotTabsPainter_Delete_Click;
 
-                ContextMenu menu = new ContextMenu(items.ToArray());
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items.ToArray());
 
-                _grid.ContextMenu = menu;
-                _grid.ContextMenu.Show(_grid, new System.Drawing.Point(_mouseXPos, _mouseYPos));
+                _grid.ContextMenuStrip = menu;
+                _grid.ContextMenuStrip.Show(_grid, new System.Drawing.Point(_mouseXPos, _mouseYPos));
             }
             catch (Exception ex)
             {

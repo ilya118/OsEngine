@@ -27,6 +27,7 @@ using OsEngine.Market.Servers;
 using OsEngine.Market.Servers.Optimizer;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.OsTrader.Panels.Tab.Internal;
+using OsEngine.OsTrader.Grids;
 
 namespace OsEngine.OsTrader.Panels.Tab
 {
@@ -59,6 +60,9 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _connector.ConnectorStartedReconnectEvent += _connector_ConnectorStartedReconnectEvent;
                 _connector.SecuritySubscribeEvent += _connector_SecuritySubscribeEvent;
                 _connector.DialogClosed += _connector_DialogClosed;
+
+                _gridsMaster = new TradeGridsMaster(startProgram, name, this);
+                _gridsMaster.LogMessageEvent += SetNewLogMessage;
 
                 if (startProgram != StartProgram.IsOsOptimizer)
                 {
@@ -186,7 +190,8 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// Start drawing this robot
         /// </summary>
         public void StartPaint(Grid gridChart, WindowsFormsHost hostChart, WindowsFormsHost hostGlass, WindowsFormsHost hostOpenDeals,
-                     WindowsFormsHost hostCloseDeals, Rectangle rectangleChart, WindowsFormsHost hostAlerts, TextBox textBoxLimitPrice, Grid gridChartControlPanel, TextBox textBoxVolume)
+                     WindowsFormsHost hostCloseDeals, Rectangle rectangleChart, WindowsFormsHost hostAlerts, TextBox textBoxLimitPrice, 
+                     Grid gridChartControlPanel, TextBox textBoxVolume, WindowsFormsHost hostGrids)
         {
             try
             {
@@ -199,8 +204,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _chartMaster?.StartPaint(gridChart, hostChart, rectangleChart);
                 _marketDepthPainter?.StartPaint(hostGlass, textBoxLimitPrice, textBoxVolume);
                 _journal?.StartPaint(hostOpenDeals, hostCloseDeals);
-
                 _alerts?.StartPaint(hostAlerts);
+                _gridsMaster?.StartPaint(hostGrids);
 
                 _chartMaster?.StartPaintChartControlPanel(gridChartControlPanel);
             }
@@ -221,6 +226,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _marketDepthPainter?.StopPaint();
                 _journal?.StopPaint();
                 _alerts?.StopPaint();
+                _gridsMaster?.StopPaint();
             }
             catch (Exception error)
             {
@@ -244,6 +250,8 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// </summary>
 
         public bool IsCreatedByScreener { get; set; }
+
+        public int SelectedControlTab = 0;
 
         /// <summary>
         /// are events sent to the top from the tab?
@@ -323,6 +331,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                 if (_chartMaster != null)
                 {
                     _chartMaster.Clear();
+                }
+
+                if (_gridsMaster != null)
+                {
+                    _gridsMaster.Clear();
                 }
 
                 _lastTradeTime = DateTime.MinValue;
@@ -405,6 +418,13 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _chartMaster.Delete();
                     _chartMaster.LogMessageEvent -= SetNewLogMessage;
                     _chartMaster = null;
+                }
+
+                if (_gridsMaster != null)
+                {
+                    _gridsMaster.Delete();
+                    _gridsMaster.LogMessageEvent -= SetNewLogMessage;
+                    _gridsMaster = null;
                 }
 
                 if (_marketDepthPainter != null)
@@ -657,6 +677,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// Chart drawing master
         /// </summary>
         private ChartCandleMaster _chartMaster;
+
+        /// <summary>
+        /// Automatic trading grids
+        /// </summary>
+        private TradeGridsMaster _gridsMaster;
 
         /// <summary>
         /// Class drawing a marketDepth
@@ -1527,7 +1552,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <summary>
         /// Take the context menu for setting the chart and indicators
         /// </summary>
-        public System.Windows.Forms.ContextMenu GetContextDialog()
+        public System.Windows.Forms.ContextMenuStrip GetContextDialog()
         {
             return _chartMaster.GetContextMenu();
         }

@@ -189,27 +189,31 @@ namespace OsEngine.Logging
 
                 if (mouse.Button != MouseButtons.Right)
                 {
+                    if(_grid.ContextMenuStrip != null)
+                    {
+                        _grid.ContextMenuStrip = null;
+                    }
                     return;
                 }
 
                 int mouseXPos = mouse.X;
                 int mouseYPos = mouse.Y;
 
-                List<MenuItem> items = new List<MenuItem>();
+                List<ToolStripMenuItem> items = new List<ToolStripMenuItem>();
 
-                items.Add(new MenuItem(OsLocalization.Logging.Label27));
+                items.Add(new ToolStripMenuItem(OsLocalization.Logging.Label27));
                 items[0].Click += Log_MessageServer_Click;
 
-                items.Add(new MenuItem(OsLocalization.Logging.Label28));
+                items.Add(new ToolStripMenuItem(OsLocalization.Logging.Label28));
                 items[1].Click += Log_ShowFile_Click;
 
-                items.Add(new MenuItem(OsLocalization.Logging.Label29));
+                items.Add(new ToolStripMenuItem(OsLocalization.Logging.Label29));
                 items[2].Click += Log_ShowErrorLog_Click;
 
-                ContextMenu menu = new ContextMenu(items.ToArray());
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items.ToArray());
 
-                _grid.ContextMenu = menu;
-                _grid.ContextMenu.Show(_grid, new System.Drawing.Point(mouseXPos, mouseYPos));
+                _grid.ContextMenuStrip = menu;
+                _grid.ContextMenuStrip.Show(_grid, new System.Drawing.Point(mouseXPos, mouseYPos));
             }
             catch (Exception ex)
             {

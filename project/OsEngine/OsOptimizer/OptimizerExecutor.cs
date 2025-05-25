@@ -132,6 +132,7 @@ namespace OsEngine.OsOptimizer
 
             GC.Collect();
             GC.WaitForPendingFinalizers();
+            GC.Collect();
 
             TimeSpan time = DateTime.Now - timeStart;
 

@@ -1195,7 +1195,7 @@ namespace OsEngine.OsOptimizer
         {
             try
             {
-                string saveFileName = _master.StrategyName + "_" + _master.Storage.SecuritiesTester[0].Security.Name;
+                string saveFileName = _master.StrategyName + "_" + _master.Storage.SecuritiesTester[0].Security.Name; // не работает, выдает AFKS
                             
                 // Генерация имени файла с текущей датой и временем
                 

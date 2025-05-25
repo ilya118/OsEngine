@@ -492,19 +492,19 @@ namespace OsEngine.Market
                     return;
                 }
 
-                MenuItem[] items = new MenuItem[2];
+                ToolStripMenuItem[] items = new ToolStripMenuItem[2];
 
-                items[0] = new MenuItem { Text = OsLocalization.Market.Message4 };
+                items[0] = new ToolStripMenuItem { Text = OsLocalization.Market.Message4 };
 
                 items[0].Click += OrdersCloseAll_Click;
 
-                items[1] = new MenuItem { Text = OsLocalization.Market.Message5 };
+                items[1] = new ToolStripMenuItem { Text = OsLocalization.Market.Message5 };
                 items[1].Click += PositionCloseForNumber_Click;
 
-                ContextMenu menu = new ContextMenu(items);
+                ContextMenuStrip menu = new ContextMenuStrip(); menu.Items.AddRange(items);
 
-                _gridActiveOrders.ContextMenu = menu;
-                _gridActiveOrders.ContextMenu.Show(_gridActiveOrders, new Point(mouse.X, mouse.Y));
+                _gridActiveOrders.ContextMenuStrip = menu;
+                _gridActiveOrders.ContextMenuStrip.Show(_gridActiveOrders, new Point(mouse.X, mouse.Y));
             }
             catch (Exception error)
             {
