@@ -14,10 +14,9 @@ using OsEngine.Logging;
 using System.Security.Cryptography;
 using OsEngine.Market.Servers.CoinEx.Futures.Entity;
 using OsEngine.Market.Servers.CoinEx.Futures.Entity.Enums;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 using System.Collections.Concurrent;
 using System.IO.Compression;
-using System.IO;
 using Newtonsoft.Json;
 using System.Net.Http;
 using System.Net;
@@ -598,12 +597,9 @@ namespace OsEngine.Market.Servers.CoinEx.Futures
                 {
                     _webSocketMessage = new ConcurrentQueue<string>();
                     _wsClient.EmitOnPing = true;
-                    _wsClient.SslConfiguration.EnabledSslProtocols
-                     = System.Security.Authentication.SslProtocols.Ssl3
-                      | System.Security.Authentication.SslProtocols.Tls11
-                      | System.Security.Authentication.SslProtocols.Tls12
-                      | System.Security.Authentication.SslProtocols.Tls13
-                      | System.Security.Authentication.SslProtocols.Tls;
+                    /*_wsClient.SslConfiguration.EnabledSslProtocols
+                     = System.Security.Authentication.SslProtocols.Tls12
+                      | System.Security.Authentication.SslProtocols.Tls13;*/
 
                     _wsClient.OnOpen += WebSocket_Opened;
                     _wsClient.OnClose += WebSocket_Closed;
@@ -696,26 +692,50 @@ namespace OsEngine.Market.Servers.CoinEx.Futures
 
         private void WebSocket_Closed(Object sender, CloseEventArgs e)
         {
-            SendLogMessage($"Close reason: {e.Code} {e.Reason}", LogMessageType.Connect);
-            SetDisconnected();
-        }
-
-        private void WebSocketData_Error(object sender, WebSocketSharp.ErrorEventArgs e)
-        {
             try
             {
-                if (e.Exception != null)
+                if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessage("Web Socket Error: " + e.Exception.ToString(), LogMessageType.Error);
-                }
-                else
-                {
-                    SendLogMessage("Web Socket Error: " + e.ToString(), LogMessageType.Error);
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
                 }
             }
             catch (Exception ex)
             {
-                SendLogMessage("Web socket error: " + ex.ToString(), LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private void WebSocketData_Error(object sender, ErrorEventArgs e)
+        {
+            try
+            {
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1695,8 +1715,8 @@ namespace OsEngine.Market.Servers.CoinEx.Futures
 
         private static string Decompress(byte[] data)
         {
-            using (MemoryStream msi = new MemoryStream(data))
-            using (MemoryStream mso = new MemoryStream())
+            using (System.IO.MemoryStream msi = new System.IO.MemoryStream(data))
+            using (System.IO.MemoryStream mso = new System.IO.MemoryStream())
             {
                 //using DeflateStream decompressor = new DeflateStream(msi, CompressionMode.Decompress);
                 using GZipStream decompressor = new GZipStream(msi, CompressionMode.Decompress);

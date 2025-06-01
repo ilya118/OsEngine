@@ -55,7 +55,7 @@ namespace OsEngine.OsTrader
 
             for (int i = 0; i < actualTabs.Count; i++)
             {
-                if (_tabsToWatch.Find(t => t.TabName == actualTabs[i].TabName) == null)
+                if (_tabsToWatch.Find(t => t != null && t.TabName == actualTabs[i].TabName) == null)
                 {
                     _tabsToWatch.Add(actualTabs[i]);
                 }
@@ -74,7 +74,7 @@ namespace OsEngine.OsTrader
 
             for (int i = 0; i < _tabsToWatch.Count; i++)
             {
-                if (actualTabs.Find(t => t.TabName == _tabsToWatch[i].TabName) == null)
+                if (actualTabs.Find(t => t != null && t.TabName == _tabsToWatch[i].TabName) == null)
                 {
                     _tabsToWatch.RemoveAt(i);
                     i--;
@@ -501,9 +501,6 @@ positionOpener.LifeTimeType
 
         // messages in log
 
-        /// <summary>
-        /// Send a new message to the top
-        /// </summary>
         private void SendNewLogMessage(string message, LogMessageType type)
         {
             if (LogMessageEvent != null)
@@ -516,9 +513,6 @@ positionOpener.LifeTimeType
             }
         }
 
-        /// <summary>
-        /// Outgoing message for log
-        /// </summary>
         public event Action<string, LogMessageType> LogMessageEvent;
     }
 }

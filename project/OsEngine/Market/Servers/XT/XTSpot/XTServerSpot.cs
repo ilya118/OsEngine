@@ -12,7 +12,8 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
+using RestSharp;
 
 namespace OsEngine.Market.Servers.XT.XTSpot
 {
@@ -69,43 +70,58 @@ namespace OsEngine.Market.Servers.XT.XTSpot
                 _publicKey = ((ServerParameterString)ServerParameters[0]).Value;
                 _secretKey = ((ServerParameterPassword)ServerParameters[1]).Value;
 
-                HttpResponseMessage responseMessage = _httpPublicClient.GetAsync(_baseUrl + "/v4/public/time").Result;
-                string json = responseMessage.Content.ReadAsStringAsync().Result;
-
-                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                if (string.IsNullOrEmpty(_publicKey)
+                   || string.IsNullOrEmpty(_secretKey))
                 {
-                    try
+                    SendLogMessage("Can`t run XTSpot connector. No keys", LogMessageType.Error);
+                    return;
+                }
+
+                try
+                {
+                    RestClient client = new RestClient(_baseUrl);
+                    RestRequest request = new RestRequest("/v4/public/time", Method.GET);
+                    IRestResponse responseMessage = client.Execute(request);
+
+                    if (responseMessage.StatusCode == HttpStatusCode.OK)
                     {
-                        _listenKey = GetListenKey();
-                        if (string.IsNullOrEmpty(_listenKey))
+                        try
                         {
-                            SendLogMessage("Check the Public and Private Key!", LogMessageType.Error);
-                            ServerStatus = ServerConnectStatus.Disconnect;
+                            _listenKey = GetListenKey();
+                            if (string.IsNullOrEmpty(_listenKey))
+                            {
+                                SendLogMessage("Check the Public and Private Key!", LogMessageType.Error);
+                                ServerStatus = ServerConnectStatus.Disconnect;
 
-                            DisconnectEvent?.Invoke();
-                            return;
+                                DisconnectEvent?.Invoke();
+                                return;
+                            }
+
+                            FIFOListWebSocketPublicMarketDepthsMessage = new ConcurrentQueue<string>();
+                            FIFOListWebSocketPrivateMessage = new ConcurrentQueue<string>();
+                            FIFOListWebSocketPublicTradesMessage = new ConcurrentQueue<string>();
+
+                            CreateWebSocketConnection();
+                            CheckFullActivation();
                         }
-
-                        FIFOListWebSocketPublicMarketDepthsMessage = new ConcurrentQueue<string>();
-                        FIFOListWebSocketPrivateMessage = new ConcurrentQueue<string>();
-                        FIFOListWebSocketPublicTradesMessage = new ConcurrentQueue<string>();
-
-                        CreateWebSocketConnection();
-                        CheckFullActivation();
+                        catch (Exception exception)
+                        {
+                            SendLogMessage(exception.ToString(), LogMessageType.Error);
+                            SendLogMessage("Connection cannot be open. XT. Error request", LogMessageType.Error);
+                            ServerStatus = ServerConnectStatus.Disconnect;
+                            DisconnectEvent?.Invoke();
+                        }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        SendLogMessage(exception.ToString(), LogMessageType.Error);
                         SendLogMessage("Connection cannot be open. XT. Error request", LogMessageType.Error);
                         ServerStatus = ServerConnectStatus.Disconnect;
                         DisconnectEvent?.Invoke();
                     }
                 }
-                else
+                catch (Exception exception)
                 {
-                    SendLogMessage("Connection cannot be open. XT. Error request", LogMessageType.Error);
-                    ServerStatus = ServerConnectStatus.Disconnect;
-                    DisconnectEvent?.Invoke();
+                    SendLogMessage("Dispose error" + exception.ToString(), LogMessageType.Error);
                 }
             }
 
@@ -566,12 +582,7 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
                     _webSocketPrivate = new WebSocket(_webSocketPrivateUrl);
                     _webSocketPrivate.EmitOnPing = true;
-                    _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                        = System.Security.Authentication.SslProtocols.Ssl3
-                       | System.Security.Authentication.SslProtocols.Tls11
-                       | System.Security.Authentication.SslProtocols.Tls12
-                       | System.Security.Authentication.SslProtocols.Tls13
-                       | System.Security.Authentication.SslProtocols.Tls;
+
                     _webSocketPrivate.OnOpen += _webSocketPrivate_OnOpen;
                     _webSocketPrivate.OnClose += _webSocketPrivate_OnClose;
                     _webSocketPrivate.OnMessage += _webSocketPrivate_OnMessage;
@@ -585,13 +596,6 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
                     _webSocketPublicMarketDepths = new WebSocket(_webSocketPublicUrl);
                     _webSocketPublicMarketDepths.EmitOnPing = true;
-                    _webSocketPublicMarketDepths.SslConfiguration.EnabledSslProtocols
-                        = System.Security.Authentication.SslProtocols.Ssl3
-                       | System.Security.Authentication.SslProtocols.Tls11
-                       | System.Security.Authentication.SslProtocols.Tls12
-                       | System.Security.Authentication.SslProtocols.Tls13
-                       | System.Security.Authentication.SslProtocols.Tls;
-
                     _webSocketPublicMarketDepths.OnOpen += _webSocketPublicMarketDepths_OnOpen;
                     _webSocketPublicMarketDepths.OnClose += _webSocketPublicMarketDepths_OnClose;
                     _webSocketPublicMarketDepths.OnMessage += _webSocketPublicMarketDepths_OnMessage;
@@ -605,12 +609,6 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
                     _webSocketPublicTrades = new WebSocket(_webSocketPublicUrl);
                     _webSocketPublicTrades.EmitOnPing = true;
-                    _webSocketPublicTrades.SslConfiguration.EnabledSslProtocols
-                        = System.Security.Authentication.SslProtocols.Ssl3
-                       | System.Security.Authentication.SslProtocols.Tls11
-                       | System.Security.Authentication.SslProtocols.Tls12
-                       | System.Security.Authentication.SslProtocols.Tls13
-                       | System.Security.Authentication.SslProtocols.Tls;
                     _webSocketPublicTrades.OnOpen += _webSocketPublicTrades_OnOpen;
                     _webSocketPublicTrades.OnClose += _webSocketPublicTrades_OnClose;
                     _webSocketPublicTrades.OnMessage += _webSocketPublicTrades_OnMessage;
@@ -728,14 +726,31 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
             private void _webSocketPublicTrades_OnError(object sender, ErrorEventArgs e)
             {
-                WebSocketSharp.ErrorEventArgs error = e;
-
-                if (error.Exception != null)
+                try
                 {
-                    SendLogMessage("WebSocketPublicTrades Error: " + error.Exception.ToString(), LogMessageType.Error);
-                }
+                    if (ServerStatus == ServerConnectStatus.Disconnect)
+                    {
+                        return;
+                    }
 
-                CheckFullActivation();
+                    if (e.Exception != null)
+                    {
+                        string message = e.Exception.ToString();
+
+                        if (message.Contains("The remote party closed the WebSocket connection"))
+                        {
+                            // ignore
+                        }
+                        else
+                        {
+                            SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+                }
             }
 
             private void _webSocketPublicTrades_OnMessage(object sender, MessageEventArgs e)
@@ -775,12 +790,19 @@ namespace OsEngine.Market.Servers.XT.XTSpot
             {
                 try
                 {
-                    CheckFullActivation();
-                    SendLogMessage("WebSocketPublicTrades Connection Closed by XT. WebSocket Closed Event " + e.Code + e.Reason, LogMessageType.Error);
+                    if (ServerStatus != ServerConnectStatus.Disconnect)
+                    {
+                        string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                        message += OsLocalization.Market.Message102;
+
+                        SendLogMessage(message, LogMessageType.Error);
+                        ServerStatus = ServerConnectStatus.Disconnect;
+                        DisconnectEvent();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                    SendLogMessage(ex.ToString(), LogMessageType.Error);
                 }
             }
 
@@ -794,14 +816,31 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
             private void _webSocketPublicMarketDepths_OnError(object sender, ErrorEventArgs e)
             {
-                WebSocketSharp.ErrorEventArgs error = e;
-
-                if (error.Exception != null)
+                try
                 {
-                    SendLogMessage("WebSocketPublic Error: " + error.Exception.ToString(), LogMessageType.Error);
-                }
+                    if (ServerStatus == ServerConnectStatus.Disconnect)
+                    {
+                        return;
+                    }
 
-                CheckFullActivation();
+                    if (e.Exception != null)
+                    {
+                        string message = e.Exception.ToString();
+
+                        if (message.Contains("The remote party closed the WebSocket connection"))
+                        {
+                            // ignore
+                        }
+                        else
+                        {
+                            SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+                }
             }
 
             private void _webSocketPublicMarketDepths_OnMessage(object sender, MessageEventArgs e)
@@ -841,12 +880,19 @@ namespace OsEngine.Market.Servers.XT.XTSpot
             {
                 try
                 {
-                    CheckFullActivation();
-                    SendLogMessage("WebSocketPublicTMarketDepths Connection Closed by XT. WebSocket Closed Event " + e.Code + e.Reason, LogMessageType.Error);
+                    if (ServerStatus != ServerConnectStatus.Disconnect)
+                    {
+                        string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                        message += OsLocalization.Market.Message102;
+
+                        SendLogMessage(message, LogMessageType.Error);
+                        ServerStatus = ServerConnectStatus.Disconnect;
+                        DisconnectEvent();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                    SendLogMessage(ex.ToString(), LogMessageType.Error);
                 }
             }
 
@@ -860,14 +906,31 @@ namespace OsEngine.Market.Servers.XT.XTSpot
 
             private void _webSocketPrivate_OnError(object sender, ErrorEventArgs e)
             {
-                WebSocketSharp.ErrorEventArgs error = e;
-
-                if (error.Exception != null)
+                try
                 {
-                    SendLogMessage("WebSocketPrivate Error" + error.Exception.ToString(), LogMessageType.Error);
-                }
+                    if (ServerStatus == ServerConnectStatus.Disconnect)
+                    {
+                        return;
+                    }
 
-                CheckFullActivation();
+                    if (e.Exception != null)
+                    {
+                        string message = e.Exception.ToString();
+
+                        if (message.Contains("The remote party closed the WebSocket connection"))
+                        {
+                            // ignore
+                        }
+                        else
+                        {
+                            SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+                }
             }
 
             private void _webSocketPrivate_OnMessage(object sender, MessageEventArgs e)
@@ -912,12 +975,19 @@ namespace OsEngine.Market.Servers.XT.XTSpot
             {
                 try
                 {
-                    CheckFullActivation();
-                    SendLogMessage("WebSocketPrivate Connection Closed by XT. WebSocket Closed Event", LogMessageType.Error);
+                    if (ServerStatus != ServerConnectStatus.Disconnect)
+                    {
+                        string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                        message += OsLocalization.Market.Message102;
+
+                        SendLogMessage(message, LogMessageType.Error);
+                        ServerStatus = ServerConnectStatus.Disconnect;
+                        DisconnectEvent();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                    SendLogMessage(ex.ToString(), LogMessageType.Error);
                 }
             }
 

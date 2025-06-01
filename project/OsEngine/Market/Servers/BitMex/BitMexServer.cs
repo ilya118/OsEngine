@@ -14,11 +14,10 @@ using Newtonsoft.Json;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
-using OsEngine.Market.Servers.BitMart.Json;
 using OsEngine.Market.Servers.BitMex.BitMexEntity;
 using OsEngine.Market.Servers.Entity;
 using RestSharp;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 
 namespace OsEngine.Market.Servers.BitMex
@@ -640,22 +639,12 @@ namespace OsEngine.Market.Servers.BitMex
 
         private int GetCountCandlesToLoad()
         {
-            AServer server = null;
 
-            for (int i = 0; i < ServerMaster.GetServers().Count; i++)
+            for (int i = 0; i < ServerParameters.Count; i++)
             {
-                if (ServerMaster.GetServers()[i].ServerType == ServerType.BitMex)
+                if (ServerParameters[i].Name.Equals(OsLocalization.Market.ServerParam6))
                 {
-                    server = (AServer)ServerMaster.GetServers()[i];
-                    break;
-                }
-            }
-
-            for (int i = 0; i < server.ServerParameters.Count; i++)
-            {
-                if (server.ServerParameters[i].Name.Equals(OsLocalization.Market.ServerParam6))
-                {
-                    ServerParameterInt Param = (ServerParameterInt)server.ServerParameters[i];
+                    ServerParameterInt Param = (ServerParameterInt)ServerParameters[i];
                     return Param.Value;
                 }
             }
@@ -774,7 +763,7 @@ namespace OsEngine.Market.Servers.BitMex
             startTime = DateTime.SpecifyKind(startTime, DateTimeKind.Utc);
             endTime = DateTime.SpecifyKind(endTime, DateTimeKind.Utc);
             actualTime = DateTime.SpecifyKind(actualTime, DateTimeKind.Utc);
-            
+
             if (startTime >= endTime ||
                 startTime >= DateTime.UtcNow ||
                 actualTime > endTime ||
@@ -835,7 +824,7 @@ namespace OsEngine.Market.Servers.BitMex
                 {
                     break;
                 }
-                else 
+                else
                 {
                     trades.RemoveAt(i);
                 }
@@ -925,13 +914,11 @@ namespace OsEngine.Market.Servers.BitMex
                 return;
             }
             _webSocket = new WebSocket(_serverAdress);
-            _webSocket.SslConfiguration.EnabledSslProtocols
-                = System.Security.Authentication.SslProtocols.Ssl3
-                | System.Security.Authentication.SslProtocols.Tls11
-                | System.Security.Authentication.SslProtocols.None
+            /*_webSocket.SslConfiguration.EnabledSslProtocols
+                = System.Security.Authentication.SslProtocols.None
                 | System.Security.Authentication.SslProtocols.Tls12
-                | System.Security.Authentication.SslProtocols.Tls13
-                | System.Security.Authentication.SslProtocols.Tls;
+                | System.Security.Authentication.SslProtocols.Tls13;*/
+
             _webSocket.EmitOnPing = true;
 
             _webSocket.OnOpen += _webSocket_Opened;
@@ -977,11 +964,32 @@ namespace OsEngine.Market.Servers.BitMex
 
         #region 7 WebSocket events
 
-        private void _webSocket_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void _webSocket_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1018,13 +1026,24 @@ namespace OsEngine.Market.Servers.BitMex
             }
         }
 
-        private void _webSocket_Closed(object sender, EventArgs e)
+        private void _webSocket_Closed(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null && ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection closed by BitMex. WebSocket closed event", LogMessageType.Connect);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (DisconnectEvent != null
+                    & ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -2050,7 +2069,7 @@ namespace OsEngine.Market.Servers.BitMex
 
                             Order newOrder = new Order();
                             newOrder.SecurityNameCode = item.symbol;
- 
+
                             newOrder.TimeCallBack = DateTimeOffset.Parse(item.transactTime).UtcDateTime;
                             newOrder.TimeCreate = DateTimeOffset.Parse(item.timestamp).UtcDateTime;
 

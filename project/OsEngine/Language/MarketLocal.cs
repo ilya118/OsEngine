@@ -805,6 +805,18 @@ namespace OsEngine.Language
           "Eng:The field is used when the proxy selection type is Manual. In the field you should insert the proxy number or IP address_" +
           "Ru:Поле используется при типе выбора прокси Manual. В поле надо вставить номер прокси или IP адрес_");
 
+        public string Label193 => OsLocalization.ConvertToLocString(
+          "Eng:Disables or enables the trading floor. Very much affects the connection speed. Trading mode TQBR_" +
+          "Ru:Отключает или включает площадку для торговли. Очень сильно влияет на скорость подключения. Режим торгов TQBR_");
+
+        public string Label194 => OsLocalization.ConvertToLocString(
+          "Eng:Disables or enables the trading floor. Very much affects the connection speed. Trading mode TQTF, TQIF_" +
+          "Ru:Отключает или включает площадку для торговли. Очень сильно влияет на скорость подключения. Режим торгов TQTF, TQIF_");
+
+        public string Label195 => OsLocalization.ConvertToLocString(
+          "Eng:Disables or enables the trading floor. Very much affects the connection speed. Trading mode MTQR, SPFEQ_" +
+          "Ru:Отключает или включает площадку для торговли. Очень сильно влияет на скорость подключения. Режим торгов MTQR, SPFEQ_");
+
         public string LabelCommissionType => OsLocalization.ConvertToLocString(
             "Eng:Commission type_" +
             "Ru:Тип комиссии_");
@@ -1237,6 +1249,14 @@ namespace OsEngine.Language
             "Eng:Connector operating time_" +
             "Ru:Время работы коннектора_");
 
+        public string Message101 => OsLocalization.ConvertToLocString(
+            "Eng:. Connection closed by remote party. WebSocket disable_" +
+            "Ru:. Соединение закрыто удаленной стороной. WebSocket отключен_");
+
+        public string Message102 => OsLocalization.ConvertToLocString(
+            "Eng:The program automatically went into reconnect mode. _" +
+            "Ru:Программа автоматически перешла в режим повторного подключения. _");
+
         public string TitleTester => OsLocalization.ConvertToLocString(
             "Eng:Exchange emulator_" +
             "Ru:Эмулятор биржи_");
@@ -1365,6 +1385,18 @@ namespace OsEngine.Language
             "Eng:Currency_" +
             "Ru:Валюты_");
 
+        public string UseMoexStock => OsLocalization.ConvertToLocString(
+            "Eng:MOEX Stock_" +
+            "Ru:MOEX Акции_");
+
+        public string UseOtcStock => OsLocalization.ConvertToLocString(
+            "Eng:OtcStock_" +
+            "Ru:ОТС Акции_");
+
+        public string UseFunds => OsLocalization.ConvertToLocString(
+            "Eng:Funds_" +
+            "Ru:Фонды_");
+
         public string UseOther => OsLocalization.ConvertToLocString(
             "Eng:Other_" +
             "Ru:Другое_");
@@ -1380,13 +1412,21 @@ namespace OsEngine.Language
         public string Exchange => OsLocalization.ConvertToLocString(
             "Eng:Exchange_" +
             "Ru:Биржа_"
-
-
         );
         public string IgnoreMorningAuctionTrades => OsLocalization.ConvertToLocString(
             "Eng:Ignore morning auction trades_" +
             "Ru:Игнорировать сделки утреннего аукциона_");
 
+        public string AuthorizationCode => OsLocalization.ConvertToLocString(
+            "Eng:Authorization code_" +
+            "Ru:Код авторизации_");
 
+        public string SendButton => OsLocalization.ConvertToLocString(
+           "Eng:Send_" +
+           "Ru:Отправить_");
+
+        public string TelegramAuthTitle => OsLocalization.ConvertToLocString(
+             "Eng:Telegram authorization_" +
+             "Ru:Telegram авторизация_");
     }
 }

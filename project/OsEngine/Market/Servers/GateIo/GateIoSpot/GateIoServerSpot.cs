@@ -15,11 +15,11 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
+
 
 namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 {
@@ -62,55 +62,60 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             _myProxy = proxy;
             _publicKey = ((ServerParameterString)ServerParameters[0]).Value;
             _secretKey = ((ServerParameterPassword)ServerParameters[1]).Value;
-
-            HttpResponseMessage responseMessage = null;
-
-            if (_myProxy == null)
+            try
             {
-                _httpPublicClient = new HttpClient();
-            }
-            else
-            {
-                HttpClientHandler httpClientHandler = new HttpClientHandler
+                IRestResponse responseMessage = null;
+
+                RestClient client = new RestClient(HttpUrl);
+
+                if (_myProxy != null)
                 {
-                    Proxy = _myProxy
-                };
-
-                _httpPublicClient = new HttpClient(httpClientHandler);
-            }
-
-            int tryCounter = 0;
-
-            for (int i = 0; i < 3; i++)
-            {
-                try
-                {
-                    responseMessage = _httpPublicClient.GetAsync(HttpUrl + "/spot/time").Result;
-                    break;
+                    client.Proxy = _myProxy;
                 }
-                catch (Exception e)
-                {
-                    tryCounter++;
 
-                    if (tryCounter >= 3)
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                int tryCounter = 0;
+
+                for (int i = 0; i < 3; i++)
+                {
+                    try
                     {
-                        SendLogMessage(e.Message, LogMessageType.Connect);
-                        ServerStatus = ServerConnectStatus.Disconnect;
-                        DisconnectEvent();
-                        return;
+                        RestRequest requestRest = new RestRequest("/spot/time", Method.GET);
+                        responseMessage = client.Execute(requestRest);
+                        break;
+                    }
+                    catch (Exception e)
+                    {
+                        tryCounter++;
+
+                        if (tryCounter >= 3)
+                        {
+                            SendLogMessage(e.Message, LogMessageType.Connect);
+                            ServerStatus = ServerConnectStatus.Disconnect;
+                            DisconnectEvent();
+                            return;
+                        }
                     }
                 }
-            }
 
-            if (responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
-            {
-                _timeLastSendPing = DateTime.Now;
-                _fifoListWebSocketMessage = new ConcurrentQueue<string>();
-                CreateWebSocketConnection();
+                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    _timeLastSendPing = DateTime.Now;
+                    _fifoListWebSocketMessage = new ConcurrentQueue<string>();
+                    CreateWebSocketConnection();
+                }
+                else
+                {
+                    SendLogMessage("Connection can`t be open. GateIoSpot. Error request", LogMessageType.Error);
+                }
             }
-            else
+            catch (Exception exception)
             {
-                SendLogMessage("Connection can`t be open. GateIo. Error request", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -126,7 +131,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             _fifoListWebSocketMessage = new ConcurrentQueue<string>();
@@ -177,10 +182,18 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
             try
             {
-                HttpResponseMessage responseMessage = _httpPublicClient.GetAsync(HttpUrl + "/spot/currency_pairs").Result;
-                string json = responseMessage.Content.ReadAsStringAsync().Result;
+                RestRequest requestRest = new RestRequest("/spot/currency_pairs", Method.GET);
 
-                List<CurrencyPair> currencyPairs = JsonConvert.DeserializeAnonymousType<List<CurrencyPair>>(json, new List<CurrencyPair>());
+                RestClient client = new RestClient(HttpUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse responseMessage = client.Execute(requestRest);
+
+                List<CurrencyPair> currencyPairs = JsonConvert.DeserializeAnonymousType<List<CurrencyPair>>(responseMessage.Content, new List<CurrencyPair>());
 
                 if (responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
                 {
@@ -188,12 +201,12 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 }
                 else
                 {
-                    SendLogMessage($"Http State Code: {responseMessage.StatusCode}, {json}", LogMessageType.Error);
+                    SendLogMessage($"Securities error. Code: {responseMessage.StatusCode}, {responseMessage.Content}", LogMessageType.Error);
                 }
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -415,27 +428,31 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 queryParam += $"from={fromTimeStamp}&";
                 queryParam += $"to={toTimeStamp}";
 
-                string requestUri = HttpUrl + "/spot/candlesticks?" + queryParam;
+                string requestStr = "/spot/candlesticks?" + queryParam;
+                RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+                RestClient client = new RestClient(HttpUrl);
 
-                HttpResponseMessage responseMessage = _httpPublicClient.GetAsync(requestUri).Result;
-
-                if (responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                if (_myProxy != null)
                 {
-                    string json = responseMessage.Content.ReadAsStringAsync().Result;
+                    client.Proxy = _myProxy;
+                }
 
-                    List<string[]> response = JsonConvert.DeserializeAnonymousType(json, new List<string[]>());
+                IRestResponse responseMessage = client.Execute(requestRest);
+
+                if (responseMessage.StatusCode == HttpStatusCode.OK)
+                {
+                    List<string[]> response = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new List<string[]>());
 
                     return ConvertCandles(response);
                 }
                 else
                 {
-                    string json = responseMessage.Content.ReadAsStringAsync().Result;
-                    SendLogMessage($"Http State Code: {responseMessage.StatusCode} - {json}", LogMessageType.Error);
+                    SendLogMessage($"CandleHistory error. Code: {responseMessage.StatusCode} - {responseMessage.Content}", LogMessageType.Error);
                 }
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             return null;
@@ -522,7 +539,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             return null;
@@ -534,24 +551,30 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             queryParam += "limit=1000&";
             queryParam += $"to={startTimeStamp}";
 
-            string requestUri = HttpUrl + "/spot/trades?" + queryParam;
+            string requestStr = "/spot/trades?" + queryParam;
 
-            return Execute(requestUri);
+            return Execute(requestStr);
         }
 
-        private List<Trade> Execute(string requestUri)
+        private List<Trade> Execute(string requestStr)
         {
             try
             {
                 _rateGateData.WaitToProceed();
 
-                HttpResponseMessage responseMessage = _httpPublicClient.GetAsync(requestUri).Result;
+                RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+                RestClient client = new RestClient(HttpUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse responseMessage = client.Execute(requestRest);
 
                 if (responseMessage.StatusCode == HttpStatusCode.OK)
                 {
-                    string json = responseMessage.Content.ReadAsStringAsync().Result;
-
-                    List<ApiEntities> response = JsonConvert.DeserializeAnonymousType(json, new List<ApiEntities>());
+                    List<ApiEntities> response = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new List<ApiEntities>());
 
                     return ConvertTrades(response);
                 }
@@ -562,7 +585,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             return null;
@@ -578,15 +601,21 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 queryParam += "limit=1000&";
                 queryParam += $"last_id={lastId}&";
                 queryParam += $"reverse=true";
-                string requestUri = HttpUrl + "/spot/trades?" + queryParam;
+                string requestStr = "/spot/trades?" + queryParam;
 
-                HttpResponseMessage responseMessage = _httpPublicClient.GetAsync(requestUri).Result;
+                RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+                RestClient client = new RestClient(HttpUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse responseMessage = client.Execute(requestRest);
 
                 if (responseMessage.StatusCode == HttpStatusCode.OK)
                 {
-                    string json = responseMessage.Content.ReadAsStringAsync().Result;
-
-                    List<ApiEntities> response = JsonConvert.DeserializeAnonymousType(json, new List<ApiEntities>());
+                    List<ApiEntities> response = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new List<ApiEntities>());
 
                     return ConvertTrades(response);
                 }
@@ -597,7 +626,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             return null;
@@ -669,23 +698,19 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
             if (_myProxy != null)
             {
-                NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                _webSocket.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                _webSocket.SetProxy(_myProxy);
             }
 
-            _webSocket.SslConfiguration.EnabledSslProtocols
-                = System.Security.Authentication.SslProtocols.Ssl3
-                | System.Security.Authentication.SslProtocols.Tls11
-                | System.Security.Authentication.SslProtocols.None
-                | System.Security.Authentication.SslProtocols.Tls12
-                | System.Security.Authentication.SslProtocols.Tls13
-                | System.Security.Authentication.SslProtocols.Tls;
+            /* _webSocket.SslConfiguration.EnabledSslProtocols
+                 = System.Security.Authentication.SslProtocols.None
+                 | System.Security.Authentication.SslProtocols.Tls12
+                 | System.Security.Authentication.SslProtocols.Tls13;*/
+
             _webSocket.EmitOnPing = true;
 
             if (_myProxy != null)
             {
-                NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                _webSocket.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                _webSocket.SetProxy(_myProxy);
             }
 
             _webSocket.OnOpen += WebSocket_Opened;
@@ -723,9 +748,30 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
         private void WebSocket_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -761,19 +807,29 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
         }
 
-        private void WebSocket_Closed(object sender, EventArgs e)
+        private void WebSocket_Closed(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null && ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by GateIo. WebSocket Closed Event", LogMessageType.Connect);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
         private void WebSocket_Opened(object sender, EventArgs e)
         {
-            SendLogMessage("Connection Open", LogMessageType.Connect);
+            SendLogMessage("GateIoSpot connection Open", LogMessageType.Connect);
 
             if (ConnectEvent != null && ServerStatus != ServerConnectStatus.Connect)
             {
@@ -851,7 +907,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1104,7 +1160,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 catch (Exception exception)
                 {
                     Thread.Sleep(5000);
-                    SendLogMessage(exception.ToString(), LogMessageType.Error);
+                    SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
                 }
             }
         }
@@ -1126,9 +1182,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
                 NewTradesEvent(trade);
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1180,9 +1236,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
                 MarketDepthEvent(depth);
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1228,9 +1284,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                     MyTradeEvent(newTrade);
                 }
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1311,9 +1367,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                     MyOrderEvent(newOrder);
                 }
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1339,9 +1395,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
                 PortfolioEvent(new List<Portfolio> { _myPortfolio });
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1416,7 +1472,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1470,7 +1526,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1590,7 +1646,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
             return null;
         }
@@ -1756,7 +1812,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
 
             return null;
@@ -1846,12 +1902,12 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 }
                 else
                 {
-                    SendLogMessage($"Get status Order. Error: {responseMessage.Content}", LogMessageType.Error);
+                    SendLogMessage($"MyTrades to order error. Code:{responseMessage.StatusCode} || msg: {responseMessage.Content}", LogMessageType.Error);
                 }
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1860,8 +1916,6 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
         #region 12 Queries
 
         private const string HttpUrl = "https://api.gateio.ws/api/v4";
-
-        private HttpClient _httpPublicClient;
 
         private readonly Dictionary<string, Security> _subscribedSecurities = new Dictionary<string, Security>();
 
@@ -1884,28 +1938,33 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
                 string sign = GetHashHMAC(signString, _secretKey);
 
                 string fullUrl = $"{_host}{_prefix}{url}";
+                RestClient client = new RestClient(fullUrl);
 
-                _httpPublicClient.DefaultRequestHeaders.TryAddWithoutValidation("Timestamp", timeStamp);
-                _httpPublicClient.DefaultRequestHeaders.TryAddWithoutValidation("KEY", _publicKey);
-                _httpPublicClient.DefaultRequestHeaders.TryAddWithoutValidation("SIGN", sign);
-
-                HttpResponseMessage response = _httpPublicClient.GetAsync(fullUrl).Result;
-                string responseContent = response.Content.ReadAsStringAsync().Result;
-
-                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                if (_myProxy != null)
                 {
-                    List<GetCurrencyVolumeResponse> getCurrencyVolumeResponse = JsonConvert.DeserializeAnonymousType(responseContent, new List<GetCurrencyVolumeResponse>());
+                    client.Proxy = _myProxy;
+                }
+
+                RestRequest request = new RestRequest(Method.GET);
+                request.AddHeader("KEY", _publicKey);
+                request.AddHeader("SIGN", sign);
+                request.AddHeader("Timestamp", timeStamp);
+                IRestResponse responseMessage = client.Execute(request);
+
+                if (responseMessage.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    List<GetCurrencyVolumeResponse> getCurrencyVolumeResponse = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new List<GetCurrencyVolumeResponse>());
 
                     UpdatePortfolio(getCurrencyVolumeResponse);
                 }
                 else
                 {
-                    SendLogMessage($"CreateQueryPortfolio> Http State Code: {response.StatusCode}, {responseContent}", LogMessageType.Error);
+                    SendLogMessage($"CreateQueryPortfolio> Http State Code: {responseMessage.StatusCode}, {responseMessage.Content}", LogMessageType.Error);
                 }
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(), LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 
@@ -1938,9 +1997,9 @@ namespace OsEngine.Market.Servers.GateIo.GateIoSpot
 
                 PortfolioEvent(new List<Portfolio> { _myPortfolio });
             }
-            catch (Exception error)
+            catch (Exception exception)
             {
-                SendLogMessage($"{error.Message} {error.StackTrace}", LogMessageType.Error);
+                SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
         }
 

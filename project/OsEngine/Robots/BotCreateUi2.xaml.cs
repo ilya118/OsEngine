@@ -79,6 +79,7 @@ namespace OsEngine.Robots
                 || startProgram == StartProgram.IsTester)
             {
                 TextBoxName.Text = "MyNewBot";
+                TextBoxName.TextChanged += TextBoxName_TextChanged;
             }
 
             Title = OsLocalization.Trader.Label59;
@@ -90,12 +91,12 @@ namespace OsEngine.Robots
 
             Closed += BotCreateUi2_Closed;
 
-            ComboBoxLockation.Items.Add(BotCreationType.All.ToString());
-            ComboBoxLockation.Items.Add(BotCreationType.Include.ToString());
-            ComboBoxLockation.Items.Add(BotCreationType.Script.ToString());
-            ComboBoxLockation.SelectedItem = BotCreationType.All.ToString();
+            ComboBoxLocation.Items.Add(BotCreationType.All.ToString());
+            ComboBoxLocation.Items.Add(BotCreationType.Include.ToString());
+            ComboBoxLocation.Items.Add(BotCreationType.Script.ToString());
+            ComboBoxLocation.SelectedItem = BotCreationType.All.ToString();
 
-            ComboBoxLockation.SelectionChanged += ComboBoxLocation_SelectionChanged;
+            ComboBoxLocation.SelectionChanged += ComboBoxLocation_SelectionChanged;
 
             LabelLocation.Content = OsLocalization.Trader.Label295;
 
@@ -117,6 +118,21 @@ namespace OsEngine.Robots
             ButtonRightInSearchResults.Click += ButtonRightInSearchResults_Click;
             ButtonLeftInSearchResults.Click += ButtonLeftInSearchResults_Click;
 
+        }
+
+        private void TextBoxName_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            try
+            {
+                if(TextBoxName.Text.Length > 20)
+                {
+                    TextBoxName.Text = TextBoxName.Text.Substring(0, 20);
+                }
+            }
+            catch
+            {
+               // ignore
+            }
         }
 
         private void ComboBoxLocation_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -141,6 +157,7 @@ namespace OsEngine.Robots
             TextBoxSearchSecurity.LostKeyboardFocus -= TextBoxSearchSecurity_LostKeyboardFocus;
             ButtonRightInSearchResults.Click -= ButtonRightInSearchResults_Click;
             ButtonLeftInSearchResults.Click -= ButtonLeftInSearchResults_Click;
+            TextBoxName.TextChanged -= TextBoxName_TextChanged;
         }
 
         private List<string> _botsIncluded;
@@ -380,7 +397,7 @@ namespace OsEngine.Robots
 
                 _grid.Rows.Clear();
 
-                string lockation = ComboBoxLockation.SelectedItem.ToString();
+                string lockation = ComboBoxLocation.SelectedItem.ToString();
 
                 for (int i = 0; i < descriptions.Count; i++)
                 {

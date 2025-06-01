@@ -7,13 +7,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 using OsEngine.Market.Servers.HTX.Spot.Entity;
 using OsEngine.Market.Servers.HTX.Entity;
 using RestSharp;
 using System.IO.Compression;
-using System.IO;
-using System.Security.Authentication;
 using OsEngine.Language;
 using System.Net;
 
@@ -343,7 +341,7 @@ namespace OsEngine.Market.Servers.HTX.Spot
                     ResponseMessagePortfolios response = JsonConvert.DeserializeObject<ResponseMessagePortfolios>(JsonResponse);
                     List<ResponseMessagePortfolios.Data> item = response.data;
 
-                    for (int i = 0; i < item.Count; i++)
+                    for (int i = 0; item != null && i < item.Count; i++)
                     {
                         Portfolio portfolio = new Portfolio();
                         portfolio.Number = $"HTX_{item[i].type}_{item[i].id}_Portfolio";
@@ -613,22 +611,11 @@ namespace OsEngine.Market.Servers.HTX.Spot
 
         private int GetCountCandlesToLoad()
         {
-            AServer server = null;
-
-            for (int i = 0; i < ServerMaster.GetServers().Count; i++)
+            for (int i = 0; i < ServerParameters.Count; i++)
             {
-                if (ServerMaster.GetServers()[i].ServerType == ServerType.HTXSpot)
+                if (ServerParameters[i].Name.Equals(OsLocalization.Market.ServerParam6))
                 {
-                    server = (AServer)ServerMaster.GetServers()[i];
-                    break;
-                }
-            }
-
-            for (int i = 0; i < server.ServerParameters.Count; i++)
-            {
-                if (server.ServerParameters[i].Name.Equals(OsLocalization.Market.ServerParam6))
-                {
-                    ServerParameterInt Param = (ServerParameterInt)server.ServerParameters[i];
+                    ServerParameterInt Param = (ServerParameterInt)ServerParameters[i];
                     return Param.Value;
                 }
             }
@@ -784,7 +771,7 @@ namespace OsEngine.Market.Servers.HTX.Spot
         private void CreateWebSocketConnection()
         {
             _webSocketPublic = new WebSocket(_webSocketUrlPublic);
-            _webSocketPublic.SslConfiguration.EnabledSslProtocols = SslProtocols.Tls12;
+            //_webSocketPublic.SslConfiguration.EnabledSslProtocols = SslProtocols.Tls12;
             _webSocketPublic.OnOpen += webSocketPublic_OnOpen;
             _webSocketPublic.OnMessage += webSocketPublic_OnMessage;
             _webSocketPublic.OnError += webSocketPublic_OnError;
@@ -793,7 +780,7 @@ namespace OsEngine.Market.Servers.HTX.Spot
             _webSocketPublic.Connect();
 
             _webSocketPrivate = new WebSocket(_webSocketUrlPrivate);
-            _webSocketPrivate.SslConfiguration.EnabledSslProtocols = SslProtocols.Tls12;
+            //_webSocketPrivate.SslConfiguration.EnabledSslProtocols = SslProtocols.Tls12;
             _webSocketPrivate.OnOpen += webSocketPrivate_OnOpen;
             _webSocketPrivate.OnMessage += webSocketPrivate_OnMessage;
             _webSocketPrivate.OnError += webSocketPrivate_OnError;
@@ -876,13 +863,32 @@ namespace OsEngine.Market.Servers.HTX.Spot
 
         #region 7 WebSocket events
 
-        private void webSocketPublic_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void webSocketPublic_OnError(object sender, ErrorEventArgs e)
         {
-            WebSocketSharp.ErrorEventArgs error = e;
-
-            if (error.Exception != null)
+            try
             {
-                SendLogMessage(error.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -922,13 +928,22 @@ namespace OsEngine.Market.Servers.HTX.Spot
 
         private void webSocketPublic_OnClose(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null
-                && ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by HTXSpot. WebSocket Public Closed Event", LogMessageType.System);
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
             }
-            ServerStatus = ServerConnectStatus.Disconnect;
-            DisconnectEvent();
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         private void webSocketPublic_OnOpen(object sender, EventArgs e)
@@ -938,13 +953,32 @@ namespace OsEngine.Market.Servers.HTX.Spot
             CheckActivationSockets();
         }
 
-        private void webSocketPrivate_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void webSocketPrivate_OnError(object sender, ErrorEventArgs e)
         {
-            WebSocketSharp.ErrorEventArgs error = e;
-
-            if (error.Exception != null)
+            try
             {
-                SendLogMessage(error.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -984,12 +1018,21 @@ namespace OsEngine.Market.Servers.HTX.Spot
 
         private void webSocketPrivate_OnClose(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null
-                & ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by HTXSpot. WebSocket Private Closed Event", LogMessageType.System);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1296,7 +1339,7 @@ namespace OsEngine.Market.Servers.HTX.Spot
                     decimal bid = item.bids[i][1].ToString().ToDecimal();
                     decimal price = item.bids[i][0].ToString().ToDecimal();
 
-                    if (bid == 0 
+                    if (bid == 0
                         || price == 0)
                     {
                         continue;
@@ -1309,7 +1352,7 @@ namespace OsEngine.Market.Servers.HTX.Spot
                 }
             }
 
-            if (asks.Count == 0 
+            if (asks.Count == 0
                 || bids.Count == 0)
             {
                 return;
@@ -2087,12 +2130,12 @@ namespace OsEngine.Market.Servers.HTX.Spot
 
         public static string Decompress(byte[] input)
         {
-            using (GZipStream stream = new GZipStream(new MemoryStream(input), CompressionMode.Decompress))
+            using (GZipStream stream = new GZipStream(new System.IO.MemoryStream(input), CompressionMode.Decompress))
             {
                 const int size = 4096;
                 byte[] buffer = new byte[size];
 
-                using (MemoryStream memory = new MemoryStream())
+                using (System.IO.MemoryStream memory = new System.IO.MemoryStream())
                 {
                     int count = 0;
                     do

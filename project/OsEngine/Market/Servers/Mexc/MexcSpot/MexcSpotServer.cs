@@ -19,7 +19,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 
 namespace OsEngine.Market.Servers.Mexc
@@ -655,13 +655,10 @@ namespace OsEngine.Market.Servers.Mexc
                     }
 
                     WebSocket _webSocketPublic = new WebSocket(_ws);
-                    _webSocketPublic.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                    | System.Security.Authentication.SslProtocols.Tls11
-                    | System.Security.Authentication.SslProtocols.None
+                    /*_webSocketPublic.SslConfiguration.EnabledSslProtocols
+                    = System.Security.Authentication.SslProtocols.None
                     | System.Security.Authentication.SslProtocols.Tls12
-                    | System.Security.Authentication.SslProtocols.Tls13
-                    | System.Security.Authentication.SslProtocols.Tls;
+                    | System.Security.Authentication.SslProtocols.Tls13;*/
                     _webSocketPublic.EmitOnPing = true;
                     _webSocketPublic.OnOpen += _webSocketPublic_OnOpen;
                     _webSocketPublic.OnClose += _webSocketPublic_OnClose;
@@ -698,13 +695,10 @@ namespace OsEngine.Market.Servers.Mexc
                     string uri = _wsPrivate + "?listenKey=" + _listenKey;
 
                     _webSocketPrivate = new WebSocket(uri);
-                    _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                   | System.Security.Authentication.SslProtocols.Tls11
-                   | System.Security.Authentication.SslProtocols.None
+                    /*_webSocketPrivate.SslConfiguration.EnabledSslProtocols
+                    = System.Security.Authentication.SslProtocols.None
                    | System.Security.Authentication.SslProtocols.Tls12
-                   | System.Security.Authentication.SslProtocols.Tls13
-                   | System.Security.Authentication.SslProtocols.Tls;
+                   | System.Security.Authentication.SslProtocols.Tls13;*/
                     _webSocketPrivate.EmitOnPing = true;
                     _webSocketPrivate.OnOpen += _webSocketPrivate_OnOpen;
                     _webSocketPrivate.OnClose += _webSocketPrivate_OnClose;
@@ -932,20 +926,32 @@ namespace OsEngine.Market.Servers.Mexc
 
         #region 7 WebSocket events
 
-        private void _webSocketPublic_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void _webSocketPublic_OnError(object sender, ErrorEventArgs e)
         {
             try
             {
-                WebSocketSharp.ErrorEventArgs error = e;
-
-                if (error.Exception != null)
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessage(error.Exception.ToString(), LogMessageType.Error);
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                SendLogMessage("Public socket error" + ex.ToString(), LogMessageType.Error);
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -997,10 +1003,12 @@ namespace OsEngine.Market.Servers.Mexc
         {
             try
             {
-                SendLogMessage("Connection Closed by MexcSpot. WebSocket Public Closed Event", LogMessageType.Error);
-
                 if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
                     ServerStatus = ServerConnectStatus.Disconnect;
                     DisconnectEvent();
                 }
@@ -1017,24 +1025,32 @@ namespace OsEngine.Market.Servers.Mexc
             CheckActivationSockets();
         }
 
-        private void _webSocketPrivate_OnError(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void _webSocketPrivate_OnError(object sender, ErrorEventArgs e)
         {
             try
             {
-                WebSocketSharp.ErrorEventArgs error = e;
-
-                if (error.Exception != null)
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessage("WebSocketPrivate Error" + error.Exception.ToString(), LogMessageType.Error);
+                    return;
                 }
-                else
+
+                if (e.Exception != null)
                 {
-                    SendLogMessage("WebSocketPrivate Error" + error.ToString(), LogMessageType.Error);
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
                 }
             }
             catch (Exception ex)
             {
-                SendLogMessage("Private socket error" + ex.ToString(), LogMessageType.Error);
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1081,10 +1097,12 @@ namespace OsEngine.Market.Servers.Mexc
         {
             try
             {
-                SendLogMessage("Connection Closed by MexcSpot. WebSocket Private Closed Event", LogMessageType.Error);
-
                 if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
                     ServerStatus = ServerConnectStatus.Disconnect;
                     DisconnectEvent();
                 }
@@ -1217,6 +1235,17 @@ namespace OsEngine.Market.Servers.Mexc
                     && _webSocketPublicSpot.Count == 0)
                 {
                     WebSocket newSocket = CreateWebSocketPublicConnection();
+
+                    DateTime timeEnd = DateTime.Now.AddSeconds(10);
+                    while (newSocket.ReadyState != WebSocketState.Open)
+                    {
+                        Thread.Sleep(1000);
+
+                        if (timeEnd < DateTime.Now)
+                        {
+                            break;
+                        }
+                    }
 
                     if (newSocket.ReadyState == WebSocketState.Open)
                     {

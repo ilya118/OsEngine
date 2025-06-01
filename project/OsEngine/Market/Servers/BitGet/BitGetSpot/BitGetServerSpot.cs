@@ -9,11 +9,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
-using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 {
@@ -73,8 +72,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
 
             ServicePointManager.SecurityProtocol =
-                SecurityProtocolType.Ssl3
-                | SecurityProtocolType.Tls11
+                SecurityProtocolType.Tls11
                 | SecurityProtocolType.Tls12
                 | SecurityProtocolType.Tls13
                 | SecurityProtocolType.Tls;
@@ -331,10 +329,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
             try
             {
-                HttpResponseMessage responseMessage = CreatePrivateQueryOrders("/api/v2/spot/account/assets", "GET", null, null);
-                string json = responseMessage.Content.ReadAsStringAsync().Result;
-
-                ResponseRestMessage<List<RestMessageAccount>> stateResponse = JsonConvert.DeserializeAnonymousType(json, new ResponseRestMessage<List<RestMessageAccount>>());
+                IRestResponse responseMessage = CreatePrivateQueryOrders("/api/v2/spot/account/assets", Method.GET, null, null);
+                ResponseRestMessage<List<RestMessageAccount>> stateResponse = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new ResponseRestMessage<List<RestMessageAccount>>());
 
                 if (responseMessage.StatusCode == HttpStatusCode.OK)
                 {
@@ -680,17 +676,13 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
                 if (_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    _webSocketPublic.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    _webSocketPublic.SetProxy(_myProxy);
                 }
 
                 _webSocketPublic.EmitOnPing = true;
-                _webSocketPublic.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                   | System.Security.Authentication.SslProtocols.Tls11
-                   | System.Security.Authentication.SslProtocols.Tls12
-                   | System.Security.Authentication.SslProtocols.Tls13
-                   | System.Security.Authentication.SslProtocols.Tls;
+                /*_webSocketPublic.SslConfiguration.EnabledSslProtocols
+                    = System.Security.Authentication.SslProtocols.Tls12
+                   | System.Security.Authentication.SslProtocols.Tls13;*/
                 _webSocketPublic.OnOpen += WebSocketPublic_Opened;
                 _webSocketPublic.OnClose += WebSocketPublic_Closed;
                 _webSocketPublic.OnMessage += WebSocketPublic_MessageReceived;
@@ -706,17 +698,13 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
                 if (_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    _webSocketPrivate.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    _webSocketPrivate.SetProxy(_myProxy);
                 }
 
                 _webSocketPrivate.EmitOnPing = true;
-                _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                   = System.Security.Authentication.SslProtocols.Ssl3
-                   | System.Security.Authentication.SslProtocols.Tls11
-                   | System.Security.Authentication.SslProtocols.Tls12
-                   | System.Security.Authentication.SslProtocols.Tls13
-                   | System.Security.Authentication.SslProtocols.Tls;
+                /*_webSocketPrivate.SslConfiguration.EnabledSslProtocols
+                   = System.Security.Authentication.SslProtocols.Tls12
+                   | System.Security.Authentication.SslProtocols.Tls13;*/
                 _webSocketPrivate.OnOpen += WebSocketPrivate_Opened;
                 _webSocketPrivate.OnClose += WebSocketPrivate_Closed;
                 _webSocketPrivate.OnMessage += WebSocketPrivate_MessageReceived;
@@ -836,14 +824,16 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
         }
 
-        private void WebSocketPublic_Closed(object sender, EventArgs e)
+        private void WebSocketPublic_Closed(object sender, CloseEventArgs e)
         {
             try
             {
-                if (DisconnectEvent != null
-                 & ServerStatus != ServerConnectStatus.Disconnect)
+                if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessage("Connection Closed by BitGet. WebSocket Public Closed Event", LogMessageType.System);
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
                     ServerStatus = ServerConnectStatus.Disconnect;
                     DisconnectEvent();
                 }
@@ -885,11 +875,32 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
         }
 
-        private void WebSocketPublic_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPublic_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -908,14 +919,23 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
         }
 
-        private void WebSocketPrivate_Closed(object sender, EventArgs e)
+        private void WebSocketPrivate_Closed(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null
-                && ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by BitGet. WebSocket Private Closed Event", LogMessageType.System);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -954,11 +974,32 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
         }
 
-        private void WebSocketPrivate_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPrivate_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1625,10 +1666,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
                 string jsonRequest = JsonConvert.SerializeObject(jsonContent);
 
-                HttpResponseMessage responseMessage = CreatePrivateQueryOrders("/api/v2/spot/trade/place-order", Method.POST.ToString(), null, jsonRequest);
-                string JsonResponse = responseMessage.Content.ReadAsStringAsync().Result;
-
-                ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(JsonResponse, new ResponseRestMessage<object>());
+                IRestResponse responseMessage = CreatePrivateQueryOrders("/api/v2/spot/trade/place-order", Method.POST, null, jsonRequest);
+                ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new ResponseRestMessage<object>());
 
                 if (responseMessage.StatusCode == HttpStatusCode.OK)
                 {
@@ -1674,10 +1713,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
                 string jsonRequest = JsonConvert.SerializeObject(jsonContent);
 
-                HttpResponseMessage response = CreatePrivateQueryOrders("/api/v2/spot/trade/cancel-order", Method.POST.ToString(), null, jsonRequest);
-                string JsonResponse = response.Content.ReadAsStringAsync().Result;
-
-                ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(JsonResponse, new ResponseRestMessage<object>());
+                IRestResponse response = CreatePrivateQueryOrders("/api/v2/spot/trade/cancel-order", Method.POST, null, jsonRequest);
+                ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(response.Content, new ResponseRestMessage<object>());
 
                 if (response.StatusCode == HttpStatusCode.OK)
                 {
@@ -1722,7 +1759,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
 
                 string jsonRequest = JsonConvert.SerializeObject(jsonContent);
 
-                CreatePrivateQueryOrders("/api/v2/spot/trade/cancel-symbol-order", Method.POST.ToString(), null, jsonRequest);
+                CreatePrivateQueryOrders("/api/v2/spot/trade/cancel-symbol-order", Method.POST, null, jsonRequest);
             }
             catch (Exception e)
             {
@@ -2026,45 +2063,38 @@ namespace OsEngine.Market.Servers.BitGet.BitGetSpot
             }
         }
 
-        private HttpResponseMessage CreatePrivateQueryOrders(string path, string method, string queryString, string body)
+        private IRestResponse CreatePrivateQueryOrders(string path, Method method, string queryString, string body)
         {
             try
             {
-                HttpClient httpClient = null;
-
-                if (_myProxy == null)
-                {
-                    httpClient = new HttpClient();
-                }
-                else
-                {
-                    HttpClientHandler httpClientHandler = new HttpClientHandler
-                    {
-                        Proxy = _myProxy
-                    };
-
-                    httpClient = new HttpClient(httpClientHandler);
-                }
+                RestRequest requestRest = new RestRequest(path, method);
 
                 string requestPath = path;
                 string url = $"{BaseUrl}{requestPath}";
                 string timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString();
-                string signature = GenerateSignature(timestamp, method, requestPath, queryString, body, SeckretKey);
+                string signature = GenerateSignature(timestamp, method.ToString(), requestPath, queryString, body, SeckretKey);
 
-                httpClient.DefaultRequestHeaders.Add("ACCESS-KEY", PublicKey);
-                httpClient.DefaultRequestHeaders.Add("ACCESS-SIGN", signature);
-                httpClient.DefaultRequestHeaders.Add("ACCESS-TIMESTAMP", timestamp);
-                httpClient.DefaultRequestHeaders.Add("ACCESS-PASSPHRASE", Passphrase);
-                httpClient.DefaultRequestHeaders.Add("X-CHANNEL-API-CODE", "6yq7w");
+                requestRest.AddHeader("ACCESS-KEY", PublicKey);
+                requestRest.AddHeader("ACCESS-SIGN", signature);
+                requestRest.AddHeader("ACCESS-TIMESTAMP", timestamp);
+                requestRest.AddHeader("ACCESS-PASSPHRASE", Passphrase);
+                requestRest.AddHeader("X-CHANNEL-API-CODE", "6yq7w");
 
-                if (method.Equals("POST"))
+                if (method.ToString().Equals("POST"))
                 {
-                    return httpClient.PostAsync(url, new StringContent(body, Encoding.UTF8, "application/json")).Result;
+                    requestRest.AddParameter("application/json", body, ParameterType.RequestBody);
                 }
-                else
+
+                RestClient client = new RestClient(BaseUrl);
+
+                if (_myProxy != null)
                 {
-                    return httpClient.GetAsync(url).Result;
+                    client.Proxy = _myProxy;
                 }
+
+                IRestResponse response = client.Execute(requestRest);
+
+                return response;
             }
             catch (Exception ex)
             {

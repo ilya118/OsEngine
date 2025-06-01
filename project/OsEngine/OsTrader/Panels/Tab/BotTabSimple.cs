@@ -1312,6 +1312,8 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 DialogClosed();
             }
+
+            _journal.Save();
         }
 
         public event Action DialogClosed;
@@ -4855,7 +4857,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <param name="price">the current price at which the high-level interface wanted to close the position</param>
         /// <param name="security">security</param>
         /// <param name="side">side</param>
-        private decimal RoundPrice(decimal price, Security security, Side side)
+        public decimal RoundPrice(decimal price, Security security, Side side)
         {
             try
             {
@@ -5006,9 +5008,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
 
-                        if (position.StopIsMarket == false
-                            || StartProgram == StartProgram.IsTester
-                            || StartProgram == StartProgram.IsOsOptimizer)
+                        if (position.StopIsMarket == false)
                         {
                             CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true, true);
                         }
@@ -5038,9 +5038,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
 
-                        if (position.StopIsMarket == false
-                           || StartProgram == StartProgram.IsTester
-                           || StartProgram == StartProgram.IsOsOptimizer)
+                        if (position.StopIsMarket == false)
                         {
                             CloseDeal(position, OrderPriceType.Limit, position.StopOrderPrice, ManualPositionSupport.SecondToClose, true, true);
                         }
@@ -5073,9 +5071,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
 
-                        if (position.ProfitIsMarket == false
-                            || StartProgram == StartProgram.IsTester
-                            || StartProgram == StartProgram.IsOsOptimizer)
+                        if (position.ProfitIsMarket == false)
                         {
                             CloseDeal(position, OrderPriceType.Limit, position.ProfitOrderPrice, ManualPositionSupport.SecondToClose, true, true);
                         }
@@ -5105,9 +5101,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                             + " LastMarketPrice: " + lastTrade,
                             LogMessageType.System);
 
-                        if (position.ProfitIsMarket == false
-                           || StartProgram == StartProgram.IsTester
-                           || StartProgram == StartProgram.IsOsOptimizer)
+                        if (position.ProfitIsMarket == false)
                         {
                             CloseDeal(position, OrderPriceType.Limit, position.ProfitOrderPrice, ManualPositionSupport.SecondToClose, true, true);
                         }

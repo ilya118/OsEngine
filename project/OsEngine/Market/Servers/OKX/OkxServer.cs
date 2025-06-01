@@ -10,7 +10,7 @@ using OsEngine.Entity;
 using OsEngine.Logging;
 using OsEngine.Market.Servers.OKX.Entity;
 using OsEngine.Market.Servers.Entity;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 using System.Net.Http;
 using OsEngine.Language;
 using RestSharp;
@@ -29,7 +29,7 @@ namespace OsEngine.Market.Servers.OKX
             CreateParameterPassword(OsLocalization.Market.ServerParameterSecretKey, "");
             CreateParameterPassword(OsLocalization.Market.ServerParamPassword, "");
             CreateParameterEnum("Hedge Mode", "On", new List<string> { "On", "Off" });
-            CreateParameterEnum("Margin Mode", "Cross", new List<string> { "Cross", "Isolated" });            
+            CreateParameterEnum("Margin Mode", "Cross", new List<string> { "Cross", "Isolated" });
             CreateParameterBoolean(OsLocalization.Market.UseOptions, false);
             CreateParameterEnum("Demo Mode", "Off", new List<string> { "Off", "On" });
         }
@@ -112,10 +112,17 @@ namespace OsEngine.Market.Servers.OKX
                     SecurityProtocolType.Tls11 |
                     SecurityProtocolType.Tls12 |
                     SecurityProtocolType.Tls13 |
-                    SecurityProtocolType.Ssl3 |
                     SecurityProtocolType.SystemDefault;
 
-                HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/time").Result;
+                RestRequest requestRest = new RestRequest("/api/v5/public/time", Method.GET);
+                RestClient client = new RestClient(_baseUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
@@ -252,16 +259,22 @@ namespace OsEngine.Market.Servers.OKX
         {
             try
             {
-                HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/instruments?instType=SWAP").Result;
+                RestRequest requestRest = new RestRequest("/api/v5/public/instruments?instType=SWAP", Method.GET);
+                RestClient client = new RestClient(_baseUrl);
 
-                string json = response.Content.ReadAsStringAsync().Result;
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    SendLogMessage($"GetFuturesSecurities - {json}", LogMessageType.Error);
+                    SendLogMessage($"GetFuturesSecurities - {response.Content}", LogMessageType.Error);
                 }
 
-                SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(json, new SecurityResponse());
+                SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(response.Content, new SecurityResponse());
 
                 return securityResponse;
             }
@@ -277,16 +290,26 @@ namespace OsEngine.Market.Servers.OKX
             try
             {
                 //get list of possible options
-                HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/underlying?instType=OPTION").Result;
+                //HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/underlying?instType=OPTION").Result;
 
-                string json = response.Content.ReadAsStringAsync().Result;
+                RestRequest requestRest = new RestRequest("/api/v5/public/underlying?instType=OPTION", Method.GET);
+                RestClient client = new RestClient(_baseUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
+
+                //string json = response.Content.ReadAsStringAsync().Result;
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    SendLogMessage($"GetOptionSecurities - {json}", LogMessageType.Error);
+                    SendLogMessage($"GetOptionSecurities - {response.Content}", LogMessageType.Error);
                 }
 
-                SecurityUnderlyingResponse baseSecuritiesResponse = JsonConvert.DeserializeAnonymousType(json, new SecurityUnderlyingResponse());
+                SecurityUnderlyingResponse baseSecuritiesResponse = JsonConvert.DeserializeAnonymousType(response.Content, new SecurityUnderlyingResponse());
 
                 if (baseSecuritiesResponse == null ||
                     baseSecuritiesResponse.data == null ||
@@ -317,16 +340,26 @@ namespace OsEngine.Market.Servers.OKX
                 {
                     string baseSecurity = baseSecurities[k];
 
-                    HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/instruments?instType=OPTION&uly=" + baseSecurity).Result;
+                    //HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/instruments?instType=OPTION&uly=" + baseSecurity).Result;
 
-                    string json = response.Content.ReadAsStringAsync().Result;
+                    RestRequest requestRest = new RestRequest("/api/v5/public/instruments?instType=OPTION&uly=" + baseSecurity, Method.GET);
+                    RestClient client = new RestClient(_baseUrl);
+
+                    if (_myProxy != null)
+                    {
+                        client.Proxy = _myProxy;
+                    }
+
+                    IRestResponse response = client.Execute(requestRest);
+
+                    //string json = response.Content.ReadAsStringAsync().Result;
 
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        SendLogMessage($"GetOptionSecurities - {json}", LogMessageType.Error);
+                        SendLogMessage($"GetOptionSecurities - {response.Content}", LogMessageType.Error);
                     }
 
-                    SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(json, new SecurityResponse());
+                    SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(response.Content, new SecurityResponse());
 
                     if (ret == null)
                     {
@@ -351,15 +384,22 @@ namespace OsEngine.Market.Servers.OKX
         {
             try
             {
-                HttpResponseMessage response = _httpClient.GetAsync(_baseUrl + "/api/v5/public/instruments?instType=SPOT").Result;
-                string json = response.Content.ReadAsStringAsync().Result;
+                RestRequest requestRest = new RestRequest("/api/v5/public/instruments?instType=SPOT", Method.GET);
+                RestClient client = new RestClient(_baseUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
 
                 if (response.StatusCode != HttpStatusCode.OK)
                 {
-                    SendLogMessage($"GetSpotSecurities - {json}", LogMessageType.Error);
+                    SendLogMessage($"GetSpotSecurities - {response.Content}", LogMessageType.Error);
                 }
 
-                SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(json, new SecurityResponse());
+                SecurityResponse securityResponse = JsonConvert.DeserializeAnonymousType(response.Content, new SecurityResponse());
 
                 return securityResponse;
             }
@@ -391,8 +431,15 @@ namespace OsEngine.Market.Servers.OKX
                     securityType = SecurityType.Option;
                 }
 
-                security.Lot = item.lotSz.ToDecimal();
+                security.Name = item.instId;
+                security.NameFull = item.instId;
 
+                if (item.lotSz == string.Empty)
+                {
+                    continue;
+                }
+
+                security.Lot = item.lotSz.ToDecimal();
                 string volStep = item.minSz.Replace(',', '.');
 
                 if (volStep != null
@@ -405,8 +452,7 @@ namespace OsEngine.Market.Servers.OKX
                 security.MinTradeAmountType = MinTradeAmountType.Contract;
                 security.MinTradeAmount = item.minSz.ToDecimal();
                 security.VolumeStep = item.lotSz.ToDecimal();
-                security.Name = item.instId;
-                security.NameFull = item.instId;
+
 
                 if (securityType == SecurityType.CurrencyPair)
                 {
@@ -604,13 +650,11 @@ namespace OsEngine.Market.Servers.OKX
 
         private int GetCountCandlesToLoad()
         {
-            AServer server = (AServer)ServerMaster.GetServers().Find(server => server.ServerType == ServerType.OKX);
-
-            for (int i = 0; i < server.ServerParameters.Count; i++)
+            for (int i = 0; i < ServerParameters.Count; i++)
             {
-                if (server.ServerParameters[i].Name.Equals("Candles to load"))
+                if (ServerParameters[i].Name.Equals("Candles to load"))
                 {
-                    ServerParameterInt Param = (ServerParameterInt)server.ServerParameters[i];
+                    ServerParameterInt Param = (ServerParameterInt)ServerParameters[i];
                     return Param.Value;
                 }
             }
@@ -861,17 +905,9 @@ namespace OsEngine.Market.Servers.OKX
 
                 if (_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    webSocketPublicNew.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    webSocketPublicNew.SetProxy(_myProxy);
                 }
 
-                webSocketPublicNew.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                    | System.Security.Authentication.SslProtocols.Tls11
-                    | System.Security.Authentication.SslProtocols.None
-                    | System.Security.Authentication.SslProtocols.Tls12
-                    | System.Security.Authentication.SslProtocols.Tls13
-                    | System.Security.Authentication.SslProtocols.Tls;
                 webSocketPublicNew.EmitOnPing = true;
                 webSocketPublicNew.OnOpen += WebSocketPublic_Opened;
                 webSocketPublicNew.OnClose += WebSocketPublic_Closed;
@@ -879,7 +915,7 @@ namespace OsEngine.Market.Servers.OKX
                 webSocketPublicNew.OnError += WebSocketPublic_Error;
                 webSocketPublicNew.Connect();
 
-                return webSocketPublicNew;               
+                return webSocketPublicNew;
             }
             catch (Exception exception)
             {
@@ -908,17 +944,10 @@ namespace OsEngine.Market.Servers.OKX
 
                 if (_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    _webSocketPrivate.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    _webSocketPrivate.SetProxy(_myProxy);
                 }
 
-                _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                   | System.Security.Authentication.SslProtocols.Tls11
-                   | System.Security.Authentication.SslProtocols.None
-                   | System.Security.Authentication.SslProtocols.Tls12
-                   | System.Security.Authentication.SslProtocols.Tls13
-                   | System.Security.Authentication.SslProtocols.Tls;
+
                 _webSocketPrivate.EmitOnPing = true;
                 _webSocketPrivate.OnOpen += WebSocketPrivate_Opened;
                 _webSocketPrivate.OnClose += WebSocketPrivate_Closed;
@@ -1097,14 +1126,16 @@ namespace OsEngine.Market.Servers.OKX
             }
         }
 
-        private void WebSocketPublic_Closed(object sender, EventArgs e)
+        private void WebSocketPublic_Closed(object sender, CloseEventArgs e)
         {
             try
             {
-                if (DisconnectEvent != null
-                 & ServerStatus != ServerConnectStatus.Disconnect)
+                if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessage("Connection Closed by OKX. WebSocket Public Closed Event", LogMessageType.System);
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
                     ServerStatus = ServerConnectStatus.Disconnect;
                     DisconnectEvent();
                 }
@@ -1145,19 +1176,32 @@ namespace OsEngine.Market.Servers.OKX
             }
         }
 
-        private void WebSocketPublic_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPublic_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                string exception = e.Exception.ToString();
-
-                if (exception.Contains("0x80004005")
-                    || exception.Contains("no address was supplied"))
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
                     return;
                 }
 
-                SendLogMessage(exception, LogMessageType.Error);
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1165,9 +1209,9 @@ namespace OsEngine.Market.Servers.OKX
         {
             try
             {
+                CreateAuthMessageWebSockets();
                 SendLogMessage("OKX WebSocket Private connection open", LogMessageType.System);
                 CheckSocketsActivate();
-                CreateAuthMessageWebSockets();
             }
             catch (Exception error)
             {
@@ -1175,14 +1219,23 @@ namespace OsEngine.Market.Servers.OKX
             }
         }
 
-        private void WebSocketPrivate_Closed(object sender, EventArgs e)
+        private void WebSocketPrivate_Closed(object sender, CloseEventArgs e)
         {
-            if (DisconnectEvent != null
-                && ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by OKX. WebSocket Private Closed Event", LogMessageType.System);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1221,19 +1274,32 @@ namespace OsEngine.Market.Servers.OKX
             }
         }
 
-        private void WebSocketPrivate_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPrivate_Error(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                string exception = e.Exception.ToString();
-
-                if (exception.Contains("0x80004005")
-                    || exception.Contains("no address was supplied"))
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
                     return;
                 }
 
-                SendLogMessage(exception, LogMessageType.Error);
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 

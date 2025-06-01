@@ -17,7 +17,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 
 namespace OsEngine.Market.Servers.BloFin
@@ -602,10 +602,11 @@ namespace OsEngine.Market.Servers.BloFin
         private void CreateWebSocketConnection()
         {
             _webSocketPrivate = new WebSocket(_webSocketUrlPrivate);
-            _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                = System.Security.Authentication.SslProtocols.Tls12;
-            _webSocketPrivate.EmitOnPing = true;
 
+            /*_webSocketPrivate.SslConfiguration.EnabledSslProtocols
+                = System.Security.Authentication.SslProtocols.Tls12;*/
+
+            _webSocketPrivate.EmitOnPing = true;
             _webSocketPrivate.OnOpen += _webSocketPrivate_OnOpen;
             _webSocketPrivate.OnMessage += _webSocketPrivate_OnMessage;
             _webSocketPrivate.OnError += _webSocketPrivate_OnError;
@@ -613,8 +614,8 @@ namespace OsEngine.Market.Servers.BloFin
             _webSocketPrivate.Connect();
 
             _webSocketPublic = new WebSocket(_webSocketUrlPublic);
-            _webSocketPublic.SslConfiguration.EnabledSslProtocols
-               = System.Security.Authentication.SslProtocols.Tls12;
+            /*_webSocketPublic.SslConfiguration.EnabledSslProtocols
+               = System.Security.Authentication.SslProtocols.Tls12;*/
             _webSocketPublic.EmitOnPing = true;
 
             _webSocketPublic.OnOpen += _webSocketPublic_OnOpen;
@@ -718,19 +719,51 @@ namespace OsEngine.Market.Servers.BloFin
 
         private void _webSocketPrivate_OnClose(object sender, CloseEventArgs e)
         {
-            CheckActivationSockets();
-            SendLogMessage($"Connection Closed by BloFinFutures. WebSocket Private Closed Event. Code:{e.Code} msg: {e.Reason}", LogMessageType.System);
+            try
+            {
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
         private void _webSocketPrivate_OnError(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                string exception = e.Exception.ToString();
-                SendLogMessage(exception, LogMessageType.Error);
-            }
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
 
-            CheckActivationSockets();
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+            }
         }
 
         private void _webSocketPrivate_OnMessage(object sender, MessageEventArgs e)
@@ -775,9 +808,9 @@ namespace OsEngine.Market.Servers.BloFin
         {
             try
             {
+                CreateAuthMessageWebSockets();
                 CheckActivationSockets();
                 SendLogMessage("BloFinFutures WebSocket Private connection open", LogMessageType.System);
-                CreateAuthMessageWebSockets();
             }
             catch (Exception ex)
             {
@@ -789,24 +822,49 @@ namespace OsEngine.Market.Servers.BloFin
         {
             try
             {
-                CheckActivationSockets();
-                SendLogMessage($"Connection Closed by BloFinFutures. WebSocket Public Closed Event Code:{e.Code} msg: {e.Reason}", LogMessageType.System);
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
             }
             catch (Exception ex)
             {
-                SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
         private void _webSocketPublic_OnError(object sender, ErrorEventArgs e)
         {
-            if (e.Exception != null)
+            try
             {
-                string exception = e.Exception.ToString();
-                SendLogMessage(exception, LogMessageType.Error);
-            }
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
 
-            CheckActivationSockets();
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+            }
         }
 
         private void _webSocketPublic_OnMessage(object sender, MessageEventArgs e)

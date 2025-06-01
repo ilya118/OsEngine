@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 using System.Collections;
 
 namespace OsEngine.Market.Servers.TraderNet
@@ -169,6 +169,11 @@ namespace OsEngine.Market.Servers.TraderNet
             {
                 List<string> listSecurities = GetSecList(_sid);
 
+                if (listSecurities == null)
+                {
+                    return;
+                }
+
                 string strListSec = "";
                 int count = 0;
 
@@ -210,6 +215,12 @@ namespace OsEngine.Market.Servers.TraderNet
                 qData.Add("q", data);
 
                 HttpResponseMessage responseMessage = CreateQuery($"/api/", "POST", null, qData);
+
+                if (responseMessage == null)
+                {
+                    return null;
+                }
+
                 string JsonResponse = responseMessage.Content.ReadAsStringAsync().Result;
 
                 if (!JsonResponse.Contains("osengine"))
@@ -448,7 +459,7 @@ namespace OsEngine.Market.Servers.TraderNet
                     }
                 }
 
-                if (allCandles[allCandles.Count - 1].TimeStart <= endTime)
+                if (allCandles[allCandles.Count - 1].TimeStart < endTime)
                 {
                     startTimeReq = TimeZoneInfo.ConvertTimeFromUtc(allCandles[allCandles.Count - 1].TimeStart, TimeZoneInfo.Local);
                     endTimeReq = startTimeReq.AddMinutes(tfTotalMinutes * 100000);
@@ -639,12 +650,10 @@ namespace OsEngine.Market.Servers.TraderNet
                 string url = _webSocketUrl + $"/?SID={_sid}";
                 
                 _webSocket = new WebSocket(url);
-                _webSocket.SslConfiguration.EnabledSslProtocols
-                    = System.Security.Authentication.SslProtocols.Ssl3
-                   | System.Security.Authentication.SslProtocols.Tls11
-                   | System.Security.Authentication.SslProtocols.Tls12
-                   | System.Security.Authentication.SslProtocols.Tls13
-                   | System.Security.Authentication.SslProtocols.Tls;
+                
+                /*_webSocket.SslConfiguration.EnabledSslProtocols
+                    = System.Security.Authentication.SslProtocols.Tls12
+                   | System.Security.Authentication.SslProtocols.Tls13;*/
                 _webSocket.EmitOnPing = true;
                 _webSocket.OnOpen += WebSocket_Opened;
                 _webSocket.OnClose += WebSocket_Closed;
@@ -710,7 +719,7 @@ namespace OsEngine.Market.Servers.TraderNet
             }
         }
 
-        private void WebSocket_Closed(object sender, EventArgs e)
+        private void WebSocket_Closed(object sender, CloseEventArgs e)
         {
             try
             {
@@ -758,7 +767,7 @@ namespace OsEngine.Market.Servers.TraderNet
             }
         }
 
-        private void WebSocket_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocket_Error(object sender, ErrorEventArgs e)
         {
             if (e.Exception != null)
             {
@@ -940,15 +949,23 @@ namespace OsEngine.Market.Servers.TraderNet
             }
         }
 
+        private string CutString(string message)
+        {
+            int count = message.IndexOf("{");
+
+            string str = message.Remove(0, count);
+            str = str.Remove(str.Length - 1);
+            count = str.LastIndexOf(",");
+            str = str.Remove(count);
+
+            return str;
+        }
+
         private void UpdatePortfolio(string message)
         {
             try
             {
-                int count = message.IndexOf("{");
-
-                string str = message.Remove(0, count);
-                str = str.Remove(str.Length - 1);
-
+                string str = CutString(message);
                 ResponsePortfolio positions = JsonConvert.DeserializeObject<ResponsePortfolio>(str);
 
                 if (positions == null)
@@ -1006,7 +1023,7 @@ namespace OsEngine.Market.Servers.TraderNet
             }
             catch (Exception e)
             {
-                SendLogMessage(e.Message, LogMessageType.Error);
+                SendLogMessage("TraderNet - UpdatePortfolio: " + e.Message, LogMessageType.Error);
             }
         }
 
@@ -1044,7 +1061,7 @@ namespace OsEngine.Market.Servers.TraderNet
             
             catch (Exception ex)
             {
-                SendLogMessage($"UpdateOrder: {ex.Message}", LogMessageType.Error);
+                SendLogMessage($"TraderNet - UpdateOrder: {ex.Message}", LogMessageType.Error);
             }
         }
 
@@ -1078,11 +1095,7 @@ namespace OsEngine.Market.Servers.TraderNet
                     return;
                 }
 
-                int count = message.IndexOf("{");
-
-                string str = message.Remove(0, count);
-                str = str.Remove(str.Length - 1);
-
+                string str = CutString(message);
                 ResponseTrade responseTrade = JsonConvert.DeserializeObject<ResponseTrade>(str);
 
                 if (responseTrade == null)
@@ -1109,7 +1122,7 @@ namespace OsEngine.Market.Servers.TraderNet
             }
             catch (Exception ex)
             {
-                SendLogMessage(ex.Message, LogMessageType.Error);
+                SendLogMessage("TraderNet - UpdateTrade: " + ex.Message, LogMessageType.Error);
             }
         }
 
@@ -1129,11 +1142,7 @@ namespace OsEngine.Market.Servers.TraderNet
         {
             try
             {
-                int count = message.IndexOf("{");
-
-                string str = message.Remove(0, count);
-                str = str.Remove(str.Length - 1);
-
+                string str = CutString(message);
                 ResponseDepth responseDepth = JsonConvert.DeserializeObject<ResponseDepth>(str);
 
                 if (responseDepth == null)
@@ -1192,7 +1201,7 @@ namespace OsEngine.Market.Servers.TraderNet
             }
             catch (Exception ex)
             {
-                SendLogMessage(ex.Message, LogMessageType.Error);
+                SendLogMessage("TraderNet - UpdateDepth: " + ex.Message, LogMessageType.Error);
             }
         }
 
@@ -1422,7 +1431,8 @@ namespace OsEngine.Market.Servers.TraderNet
         {
             int count = jsonResponse.IndexOf(",");
             string str = jsonResponse.Remove(0, count+1);
-            str = str.Remove(str.Length - 1);
+            count = str.LastIndexOf(",");
+            str = str.Remove(count);
 
             List<ResponseOrders> responseOrder = JsonConvert.DeserializeObject<List<ResponseOrders>>(str);
 

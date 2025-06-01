@@ -61,6 +61,7 @@ namespace OsEngine
 
             InitializeComponent();
             AppDomain.CurrentDomain.UnhandledException += CurrentDomain_UnhandledException;
+            TaskScheduler.UnobservedTaskException += TaskScheduler_UnobservedTaskException;
 
             ImageAlor2.Visibility = Visibility.Collapsed;
             ImageAlor.Visibility = Visibility.Collapsed;
@@ -148,6 +149,8 @@ namespace OsEngine
             }
 
             ChangeText();
+
+            this.ContentRendered += MainWindow_ContentRendered;
         }
 
         #region Block and Unblock interface
@@ -296,8 +299,31 @@ namespace OsEngine
             _awaitUiBotsInfoLoading.Dispose();
         }
 
+        private void MainWindow_ContentRendered(object sender, EventArgs e)
+        {
+            Task.Run(() =>
+            {
+                Thread.Sleep(1000);
+                try
+                {
+                    ChangeText();
+                }
+                catch
+                {
+                    // ignore
+                }
+            });
+        }
+
         private void ChangeText()
         {
+
+            if (ImageGear.Dispatcher.CheckAccess() == false)
+            {
+                ImageGear.Dispatcher.Invoke(new Action(ChangeText));
+                return;
+            }
+
             Title = OsLocalization.MainWindow.Title;
             BlockDataLabel.Content = OsLocalization.MainWindow.BlockDataLabel;
             BlockTestingLabel.Content = OsLocalization.MainWindow.BlockTestingLabel;
@@ -487,7 +513,30 @@ namespace OsEngine
 
         void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
-            string message = OsLocalization.MainWindow.Message5 + e.ExceptionObject;
+            string message = OsLocalization.MainWindow.Message5 + " THREAD " + e.ExceptionObject;
+
+            message = _startProgram + "  " + message;
+
+            message = System.Reflection.Assembly.GetExecutingAssembly() + "\n" + message;
+
+            _messageToCrashServer = "Crash% " + message;
+            Thread worker = new Thread(SendMessageInCrashServer);
+            worker.Start();
+
+            if (PrimeSettingsMaster.RebootTradeUiLight == true &&
+                RobotUiLight.IsRobotUiLightStart)
+            {
+                Reboot(message);
+            }
+            else
+            {
+                MessageBox.Show(message);
+            }
+        }
+
+        private void TaskScheduler_UnobservedTaskException(object sender, UnobservedTaskExceptionEventArgs e)
+        {
+            string message = OsLocalization.MainWindow.Message5 + " TASK " + e.Exception.ToString();
 
             message = _startProgram + "  " + message;
 

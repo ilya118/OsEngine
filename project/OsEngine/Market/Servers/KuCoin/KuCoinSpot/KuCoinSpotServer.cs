@@ -12,7 +12,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 
 namespace OsEngine.Market.Servers.KuCoin.KuCoinSpot
@@ -414,8 +414,7 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinSpot
                 _webSocketPublicUrl = wsResponse.data.instanceServers[0].endpoint + "?token=" + wsResponse.data.token;
 
                 WebSocket webSocketPublicNew = new WebSocket(_webSocketPublicUrl);
-                webSocketPublicNew.SslConfiguration.EnabledSslProtocols
-                   = System.Security.Authentication.SslProtocols.Tls12;
+
                 webSocketPublicNew.EmitOnPing = true;
                 webSocketPublicNew.OnOpen += _webSocketPublic_OnOpen;
                 webSocketPublicNew.OnMessage += _webSocketPublic_OnMessage;
@@ -450,8 +449,6 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinSpot
             // set dynamic server address ws
             _webSocketPrivateUrl = wsResponse.data.instanceServers[0].endpoint + "?token=" + wsResponse.data.token;
             _webSocketPrivate = new WebSocket(_webSocketPrivateUrl);
-            _webSocketPrivate.SslConfiguration.EnabledSslProtocols
-                = System.Security.Authentication.SslProtocols.Tls12;
             _webSocketPrivate.EmitOnPing = true;
             _webSocketPrivate.OnOpen += _webSocketPrivate_OnOpen;
             _webSocketPrivate.OnMessage += _webSocketPrivate_OnMessage;
@@ -556,21 +553,50 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinSpot
 
         private void _webSocketPublic_OnClose(object sender, CloseEventArgs e)
         {
-            if (ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by KuCoin. WebSocket Public Closed Event", LogMessageType.Error);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
         private void _webSocketPublic_OnError(object sender, ErrorEventArgs e)
         {
-            WebSocketSharp.ErrorEventArgs error = e;
-
-            if (error.Exception != null)
+            try
             {
-                SendLogMessage(error.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -612,21 +638,50 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinSpot
 
         private void _webSocketPrivate_OnClose(object sender, CloseEventArgs e)
         {
-            if (ServerStatus != ServerConnectStatus.Disconnect)
+            try
             {
-                SendLogMessage("Connection Closed by KuCoinSpot. WebSocket Private Closed Event", LogMessageType.Error);
-                ServerStatus = ServerConnectStatus.Disconnect;
-                DisconnectEvent();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
         private void _webSocketPrivate_OnError(object sender, ErrorEventArgs e)
         {
-            WebSocketSharp.ErrorEventArgs error = e;
-
-            if (error.Exception != null)
+            try
             {
-                SendLogMessage(error.Exception.ToString(), LogMessageType.Error);
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
             }
         }
 

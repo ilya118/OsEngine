@@ -18,7 +18,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 
 namespace OsEngine.Market.Servers.Bybit
 {
@@ -622,16 +622,16 @@ namespace OsEngine.Market.Servers.Bybit
 
         private decimal GetVolumeStepByVolumeDecimals(int volumeDecimals)
         {
-            if(volumeDecimals == 0)
+            if (volumeDecimals == 0)
             {
                 return 1;
             }
 
             string result = "0.";
 
-            for(int i = 0;i < volumeDecimals;i++)
+            for (int i = 0; i < volumeDecimals; i++)
             {
-                if(i +1 == volumeDecimals)
+                if (i + 1 == volumeDecimals)
                 {
                     result += "1";
                 }
@@ -1393,13 +1393,10 @@ namespace OsEngine.Market.Servers.Bybit
         private WebSocket CreateNewSpotPublicSocket()
         {
             WebSocket webSocketPublicSpot = new WebSocket(wsPublicUrl(Category.spot));
-            webSocketPublicSpot.EmitOnPing = true;
-            webSocketPublicSpot.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.None;
 
             if (_myProxy != null)
             {
-                NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                webSocketPublicSpot.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                webSocketPublicSpot.SetProxy(_myProxy);
             }
 
             webSocketPublicSpot.OnOpen += WebSocketPublic_Opened;
@@ -1415,13 +1412,10 @@ namespace OsEngine.Market.Servers.Bybit
         private WebSocket CreateNewLinearPublicSocket()
         {
             WebSocket webSocketPublicLinear = new WebSocket(wsPublicUrl(Category.linear));
-            webSocketPublicLinear.EmitOnPing = true;
-            webSocketPublicLinear.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.None;
 
             if (_myProxy != null)
             {
-                NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                webSocketPublicLinear.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                webSocketPublicLinear.SetProxy(_myProxy);
             }
 
             webSocketPublicLinear.OnOpen += WebSocketPublic_Opened;
@@ -1437,13 +1431,11 @@ namespace OsEngine.Market.Servers.Bybit
         private WebSocket CreateNewInversePublicSocket()
         {
             WebSocket webSocketPublicInverse = new WebSocket(wsPublicUrl(Category.inverse));
-            webSocketPublicInverse.EmitOnPing = true;
-            webSocketPublicInverse.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.None;
 
             if (_myProxy != null)
             {
                 NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                webSocketPublicInverse.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                webSocketPublicInverse.SetProxy(_myProxy);
             }
 
             webSocketPublicInverse.OnOpen += WebSocketPublic_Opened;
@@ -1463,13 +1455,10 @@ namespace OsEngine.Market.Servers.Bybit
                 if (concurrentQueueMessagePrivateWebSocket == null) concurrentQueueMessagePrivateWebSocket = new ConcurrentQueue<string>();
 
                 webSocketPrivate = new WebSocket(wsPrivateUrl);
-                webSocketPrivate.EmitOnPing = true;
-                webSocketPrivate.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.None;
 
                 if (_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    webSocketPrivate.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    webSocketPrivate.SetProxy(_myProxy);
                 }
 
                 webSocketPrivate.OnMessage += WebSocketPrivate_MessageReceived;
@@ -1524,17 +1513,28 @@ namespace OsEngine.Market.Servers.Bybit
             }
         }
 
-        private void WebSocketPrivate_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPrivate_Error(object sender, ErrorEventArgs e)
         {
             try
             {
-                if (DateTime.Now.Subtract(SendLogMessageTime).TotalSeconds > 10)
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessageTime = DateTime.Now;
-                    SendLogMessage($"WebSocketPrivate {sender} error {e.Exception.Message}, wait reconnect", LogMessageType.Error);
+                    return;
                 }
 
-                CheckFullActivation();
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -1542,15 +1542,23 @@ namespace OsEngine.Market.Servers.Bybit
             }
         }
 
-        private void WebSocketPrivate_Closed(object sender, EventArgs e)
+        private void WebSocketPrivate_Closed(object sender, CloseEventArgs e)
         {
             try
             {
-                CheckFullActivation();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
             }
             catch (Exception ex)
             {
-                SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1606,31 +1614,51 @@ namespace OsEngine.Market.Servers.Bybit
             }
         }
 
-        private void WebSocketPublic_Closed(object sender, EventArgs e)
+        private void WebSocketPublic_Closed(object sender, CloseEventArgs e)
         {
             try
             {
-                CheckFullActivation();
+                if (ServerStatus != ServerConnectStatus.Disconnect)
+                {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
+                    DisconnectEvent();
+                }
             }
             catch (Exception ex)
             {
-                SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
+
         }
 
         DateTime SendLogMessageTime = DateTime.Now;
 
-        private void WebSocketPublic_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void WebSocketPublic_Error(object sender, ErrorEventArgs e)
         {
             try
             {
-                if (DateTime.Now.Subtract(SendLogMessageTime).TotalSeconds > 10)
+                if (ServerStatus == ServerConnectStatus.Disconnect)
                 {
-                    SendLogMessageTime = DateTime.Now;
-                    SendLogMessage($"WebSocketPublic {sender} error {e.Exception.Message}, wait reconnect", LogMessageType.Error);
+                    return;
                 }
 
-                CheckFullActivation();
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -3720,11 +3748,11 @@ namespace OsEngine.Market.Servers.Bybit
             {
                 if (httpClientHandler == null)
                 {
-                    if(_myProxy == null)
+                    if (_myProxy == null)
                     {
                         httpClientHandler = new HttpClientHandler();
                     }
-                    else if(_myProxy != null)
+                    else if (_myProxy != null)
                     {
                         httpClientHandler = new HttpClientHandler
                         {
@@ -3819,7 +3847,7 @@ namespace OsEngine.Market.Servers.Bybit
                         request = new HttpRequestMessage(httpMethod, RestUrl + uri + $"?" + jsonPayload);
                     }
 
-                    
+
 
                     request.Headers.Add("X-BAPI-API-KEY", PublicKey);
                     request.Headers.Add("X-BAPI-SIGN", signature);

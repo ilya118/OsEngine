@@ -19,7 +19,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using Newtonsoft.Json;
-using WebSocketSharp;
+using OsEngine.Entity.WebSocketOsEngine;
 using TradeResponse = OsEngine.Market.Servers.Binance.Spot.BinanceSpotEntity.TradeResponse;
 
 namespace OsEngine.Market.Servers.Binance.Spot
@@ -1251,14 +1251,13 @@ namespace OsEngine.Market.Servers.Binance.Spot
 
                 if(_myProxy != null)
                 {
-                    NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                    client.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                    client.SetProxy(_myProxy);
                 }
 
                 client.OnOpen += Client_Opened;
                 client.OnError += Client_Error;
                 client.OnClose += Client_Closed;
-                client.ConnectAsync();
+                client.Connect();
 
                 return client;
             }
@@ -1284,24 +1283,53 @@ namespace OsEngine.Market.Servers.Binance.Spot
             }
         }
 
-        private void Client_Closed(object sender, EventArgs e)
+        private void Client_Closed(object sender, CloseEventArgs e)
         {
-            if (ServerStatus == ServerConnectStatus.Connect)
+            try
             {
-                ServerStatus = ServerConnectStatus.Disconnect;
-
-                SendLogMessage("Websocket lost connection: " + e.ToString(), LogMessageType.Error);
-
-                if (DisconnectEvent != null)
+                if (ServerStatus != ServerConnectStatus.Disconnect)
                 {
+                    string message = this.GetType().Name + OsLocalization.Market.Message101 + "\n";
+                    message += OsLocalization.Market.Message102;
+
+                    SendLogMessage(message, LogMessageType.Error);
+                    ServerStatus = ServerConnectStatus.Disconnect;
                     DisconnectEvent();
                 }
             }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
         }
 
-        private void Client_Error(object sender, WebSocketSharp.ErrorEventArgs e)
+        private void Client_Error(object sender, ErrorEventArgs e)
         {
-            SendLogMessage("Error websocket :" + e.ToString(), LogMessageType.Error);
+            try
+            {
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    return;
+                }
+
+                if (e.Exception != null)
+                {
+                    string message = e.Exception.ToString();
+
+                    if (message.Contains("The remote party closed the WebSocket connection"))
+                    {
+                        // ignore
+                    }
+                    else
+                    {
+                        SendLogMessage(e.Exception.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage("Data socket error" + ex.ToString(), LogMessageType.Error);
+            }
         }
 
         #endregion
@@ -1441,17 +1469,15 @@ namespace OsEngine.Market.Servers.Binance.Spot
 
             if (_myProxy != null)
             {
-                NetworkCredential credential = (NetworkCredential)_myProxy.Credentials;
-                _wsClient.SetProxy(_myProxy.Address.ToString(), credential.UserName, credential.Password);
+                _wsClient.SetProxy(_myProxy);
             }
 
             _wsClient.EmitOnPing = true;
-            _wsClient.SslConfiguration.EnabledSslProtocols = System.Security.Authentication.SslProtocols.None;
 
             _wsClient.OnMessage += _publicSocketClient_RessageReceived;
             _wsClient.OnError += Client_Error;
             _wsClient.OnClose += Client_Closed;
-            _wsClient.ConnectAsync();
+            _wsClient.Connect();
 
             _wsStreamsSecurityData.Add(security.Name, _wsClient);
         }
