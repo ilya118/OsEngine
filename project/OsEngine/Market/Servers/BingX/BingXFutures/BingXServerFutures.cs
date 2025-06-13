@@ -15,6 +15,7 @@ using System.Security.Cryptography;
 using OsEngine.Market.Servers.BingX.BingXFutures.Entity;
 using System.Globalization;
 using OsEngine.Entity.WebSocketOsEngine;
+using Com.Lmax.Api.Internal;
 
 namespace OsEngine.Market.Servers.BingX.BingXFutures
 {
@@ -1941,7 +1942,7 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
 
         private RateGate _cancelOrderRateGate = new RateGate(1, TimeSpan.FromMilliseconds(210)); // individual IP speed limit is 5 requests per 1 second
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             _generalRateGate3.WaitToProceed();
             _cancelOrderRateGate.WaitToProceed();
@@ -1975,24 +1976,43 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
                     ResponseFuturesBingXMessage<OrderData> response = JsonConvert.DeserializeObject<ResponseFuturesBingXMessage<OrderData>>(json.Content);
                     if (response.code == "0")
                     {
-
+                        return true;
                     }
                     else
                     {
-                        GetOrderStatus(order);
-                        SendLogMessage($"Order cancel error: code - {response.code} | message - {response.msg}", LogMessageType.Error);
+                        OrderStateType state = GetOrderStatus(order);
+
+                        if (state == OrderStateType.None)
+                        {
+                            SendLogMessage($"Order cancel error: code - {response.code} | message - {response.msg}", LogMessageType.Error);
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
                 }
                 else
                 {
-                    GetOrderStatus(order);
-                    SendLogMessage($"Http State Code: {json.StatusCode} - {json.Content}", LogMessageType.Error);
+                    OrderStateType state = GetOrderStatus(order);
+
+                    if (state == OrderStateType.None)
+                    {
+                        SendLogMessage($"Http State Code: {json.StatusCode} - {json.Content}", LogMessageType.Error); 
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
                 }
             }
             catch (Exception exception)
             {
                 SendLogMessage($"{exception.Message} {exception.StackTrace}", LogMessageType.Error);
             }
+            return false;
         }
 
         public void ChangeOrderPrice(Order order, decimal newPrice)
@@ -2111,11 +2131,13 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
             }
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-            GetOrderStatusBySecurity(order);
+            OrderStateType state = GetOrderStatusBySecurity(order);
 
             GetMyTradesBySecurity(order);
+
+            return state;
         }
 
         private RateGate _getMyTradesRateGate = new RateGate(1, TimeSpan.FromMilliseconds(210)); // individual IP speed limit is 5 requests per 1 second
@@ -2192,7 +2214,7 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
 
         private RateGate _getOrderStatusRateGate = new RateGate(1, TimeSpan.FromMilliseconds(210)); // individual IP speed limit is 5 requests per 1 second
 
-        private void GetOrderStatusBySecurity(Order order)
+        private OrderStateType GetOrderStatusBySecurity(Order order)
         {
             _generalRateGate2.WaitToProceed();
             _getOrderStatusRateGate.WaitToProceed();
@@ -2274,6 +2296,8 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
                         {
                             MyOrderEvent(openOrder);
                         }
+
+                        return openOrder.State;
                     }
                     else
                     {
@@ -2289,6 +2313,8 @@ namespace OsEngine.Market.Servers.BingX.BingXFutures
             {
                 SendLogMessage(exception.ToString(), LogMessageType.Error);
             }
+
+            return OrderStateType.None;
         }
 
         #endregion

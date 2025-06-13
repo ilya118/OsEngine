@@ -78,6 +78,7 @@ using OsEngine.Market.Proxy;
 using System.Net;
 using OsEngine.Market.Servers.BloFin;
 using OsEngine.Market.Servers.TelegramNews;
+using OsEngine.Market.Servers.Bitfinex.BitfinexFutures;
 
 
 namespace OsEngine.Market
@@ -289,6 +290,7 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.BitMex);
                 serverTypes.Add(ServerType.BitStamp);
                 serverTypes.Add(ServerType.BitfinexSpot);
+                serverTypes.Add(ServerType.BitfinexFutures);
                 serverTypes.Add(ServerType.Kraken);
                 serverTypes.Add(ServerType.KuCoinSpot);
                 serverTypes.Add(ServerType.KuCoinFutures);
@@ -310,7 +312,7 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.Woo);
 
                 serverTypes.Add(ServerType.Lmax);
-                serverTypes.Add(ServerType.BitMart);
+                serverTypes.Add(ServerType.BitMartSpot);
                 serverTypes.Add(ServerType.BitMartFutures);
                 serverTypes.Add(ServerType.MoexFixFastCurrency);
                 serverTypes.Add(ServerType.MoexFixFastTwimeFutures);
@@ -411,6 +413,7 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.BitMex);
                 serverTypes.Add(ServerType.BitStamp);
                 serverTypes.Add(ServerType.BitfinexSpot);
+                serverTypes.Add(ServerType.BitfinexFutures);
                 serverTypes.Add(ServerType.Kraken);
                 serverTypes.Add(ServerType.Exmo);
                 serverTypes.Add(ServerType.HTXFutures);
@@ -648,6 +651,10 @@ namespace OsEngine.Market
                 {
                     newServer = new BitfinexSpotServer(uniqueNum);
                 }
+                if (type == ServerType.BitfinexFutures)
+                {
+                    newServer = new BitfinexFuturesServer(uniqueNum);
+                }
                 if (type == ServerType.Binance)
                 {
                     newServer = new BinanceServerSpot(uniqueNum);
@@ -724,9 +731,9 @@ namespace OsEngine.Market
                 {
                     newServer = new HTXSwapServer(uniqueNum);
                 }
-                else if (type == ServerType.BitMart)
+                else if (type == ServerType.BitMartSpot)
                 {
-                    newServer = new BitMartServer();
+                    newServer = new BitMartSpotServer();
                 }
                 else if (type == ServerType.BitMartFutures)
                 {
@@ -1072,7 +1079,7 @@ namespace OsEngine.Market
                 {
                     bool isInArray = false;
 
-                    if(string.IsNullOrEmpty(serverName))
+                    if (string.IsNullOrEmpty(serverName))
                     {
                         serverName = type.ToString();
                     }
@@ -1085,11 +1092,11 @@ namespace OsEngine.Market
                             break;
                         }
                     }
-                    if(isInArray == false)
+                    if (isInArray == false)
                     {
                         _needServerNames.Add(serverName);
                     }
-                    
+
                     for (int i = 0; i < _needServerTypes.Count; i++)
                     {
                         if (_needServerTypes[i] == type)
@@ -1099,7 +1106,7 @@ namespace OsEngine.Market
                     }
 
                     _needServerTypes.Add(type);
-                
+
                 }
                 catch (Exception error)
                 {
@@ -1183,7 +1190,7 @@ namespace OsEngine.Market
 
                 _tryActivateServerTypes.Add(type);
 
-                if (GetServers() == null 
+                if (GetServers() == null
                     || GetServers().Find(server1 => server1.ServerType == type) == null)
                 { // if we don't have our server, create a new one / если у нас нашего сервера нет - создаём его
                     CreateServer(type, true);
@@ -1216,7 +1223,7 @@ namespace OsEngine.Market
                         }
                     }
 
-                    if(isInArray == false)
+                    if (isInArray == false)
                     {
                         continue;
                     }
@@ -1373,6 +1380,10 @@ namespace OsEngine.Market
                 {
                     serverPermission = new BitfinexSpotServerPermission();
                 }
+                else if (type == ServerType.BitfinexFutures)
+                {
+                    serverPermission = new BitfinexFuturesServerPermission();
+                }
                 else if (type == ServerType.Kraken)
                 {
                     serverPermission = new KrakenServerPermission();
@@ -1437,9 +1448,9 @@ namespace OsEngine.Market
                 {
                     serverPermission = new PlazaServerPermission();
                 }
-                else if (type == ServerType.BitMart)
+                else if (type == ServerType.BitMartSpot)
                 {
-                    serverPermission = new BitMartServerPermission();
+                    serverPermission = new BitMartSpotServerPermission();
                 }
                 else if (type == ServerType.BitMartFutures)
                 {
@@ -1544,7 +1555,7 @@ namespace OsEngine.Market
             }
             catch (Exception ex)
             {
-                SendNewLogMessage(ex.ToString(),LogMessageType.Error);
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
                 return null;
             }
         }
@@ -1570,7 +1581,7 @@ namespace OsEngine.Market
             }
             catch (Exception ex)
             {
-                SendNewLogMessage(ex.ToString(), LogMessageType.Error); 
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1786,6 +1797,12 @@ namespace OsEngine.Market
         BitfinexSpot,
 
         /// <summary>
+        /// cryptocurrency exchange BitfinexFutures
+        /// биржа криптовалют BitfinexFutures
+        /// </summary>
+        BitfinexFutures,
+
+        /// <summary>
         /// cryptocurrency exchange Binance
         /// биржа криптовалют Binance
         /// </summary>
@@ -1985,11 +2002,11 @@ namespace OsEngine.Market
         /// </summary>
         MoexFixFastSpot,
 
-        /// BitMart Spot exchange
+        /// BitMartSpot Spot exchange
         /// </summary>
-        BitMart,
+        BitMartSpot,
 
-        /// BitMart Futures exchange
+        /// BitMartSpot Futures exchange
         /// </summary>
         BitMartFutures,
 

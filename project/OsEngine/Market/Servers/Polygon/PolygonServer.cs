@@ -648,7 +648,7 @@ namespace OsEngine.Market.Servers.Polygon
 
         public void SendOrder(Order order) { }
 
-        public void CancelOrder(Order order){ }
+        public bool CancelOrder(Order order){ return false; }
 
         public void CancelAllOrdersToSecurity(Security security) { }
 
@@ -656,7 +656,10 @@ namespace OsEngine.Market.Servers.Polygon
 
         public void GetAllActivOrders() { }
 
-        public void GetOrderStatus(Order order) { }
+        public OrderStateType GetOrderStatus(Order order) 
+        {
+            return OrderStateType.None;
+        }
 
         public void ChangeOrderPrice(Order order, decimal newPrice) { }
 

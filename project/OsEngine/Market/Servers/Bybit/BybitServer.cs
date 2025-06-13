@@ -35,6 +35,7 @@ namespace OsEngine.Market.Servers.Bybit
             CreateParameterEnum(OsLocalization.Market.Label1, Net_type.MainNet.ToString(), new List<string>() { Net_type.MainNet.ToString(), Net_type.Demo.ToString() });
             CreateParameterEnum(OsLocalization.Market.ServerParam4, MarginMode.Cross.ToString(), new List<string>() { MarginMode.Cross.ToString(), MarginMode.Isolated.ToString() });
             CreateParameterEnum("Hedge Mode", "On", new List<string> { "On", "Off" });
+            CreateParameterString("Leverage", "");
         }
     }
 
@@ -117,6 +118,8 @@ namespace OsEngine.Market.Servers.Bybit
                 {
                     _hedgeMode = false;
                 }
+
+                _leverage = ((ServerParameterString)ServerParameters[5]).Value.Replace(",", ".");
 
                 if (!CheckApiKeyInformation(PublicKey))
                 {
@@ -328,13 +331,15 @@ namespace OsEngine.Market.Servers.Bybit
 
         private bool _hedgeMode;
 
+        private string _leverage;
+
         private List<string> _listLinearCurrency = new List<string>() { "USDC", "USDT" };
 
         private int marketDepthDeep
         {
             get
             {
-                if (((ServerParameterBool)ServerParameters[12]).Value)
+                if (((ServerParameterBool)ServerParameters[13]).Value)
                 {
                     return 50;
                 }
@@ -2016,6 +2021,8 @@ namespace OsEngine.Market.Servers.Bybit
                             SubscribeSecurityLinear.Add(security.Name);
                         }
                     }
+
+                    SetLeverage(security);
                 }
                 else if (security.Name.EndsWith(".I"))
                 {
@@ -3143,7 +3150,7 @@ namespace OsEngine.Market.Servers.Bybit
             }
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             Dictionary<string, object> parameters = new Dictionary<string, object>();
 
@@ -3191,35 +3198,29 @@ namespace OsEngine.Market.Servers.Bybit
                         order.TimeCancel = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(responseOrder.time)).UtcDateTime;
                         order.State = OrderStateType.Cancel;
                         MyOrderEvent?.Invoke(order);
-                        return;
+                        return true;
                     }
-                    else if (responseOrder.retCode == "110001" || responseOrder.retCode == "170213")   // "retCode":110001,"retMsg":"order not exists or too late to cancel"
-                                                                                                       //  retCode":170213,"retMsg":"Order does not exist."
-                                                                                                       // The order does not exist (maybe it has not yet been created) or has already been cancelled. Let's ask about its status
-                    {
-                        GetOrderStatus(order);
-                        return;
-                        /*DateTime TimeCancel = DateTimeOffset.FromUnixTimeMilliseconds(place_order_response.SelectToken("time").Value<long>()).UtcDateTime;
-                        if ((TimeCancel - order.TimeCreate) > TimeSpan.FromSeconds(minTimeCreateOrders))
-                        {
-                                order.TimeCancel = DateTimeOffset.FromUnixTimeMilliseconds(place_order_response.SelectToken("time").Value<long>()).UtcDateTime;   // gives an error - removes the previously executed order to canceled
-                                order.State = OrderStateType.Cancel;
-                                MyOrderEvent?.Invoke(order);
-                            return;
-                        }*/
+                }
 
-                        // If it turns out that the order doesn’t exist, and we created it a few seconds ago, then we don’t do anything with it.
+                OrderStateType state = GetOrderStatus(order);
 
-                    }
-                    SendLogMessage($" Cancel Order Error. Code: {responseOrder.retCode}.\n" +
-                        $" Order num {order.NumberUser}, {order.SecurityNameCode} {responseOrder.retMsg}", LogMessageType.Error);
+                if (state == OrderStateType.None)
+                {
+                    SendLogMessage($"Cancel Order Error. Code: {order.NumberUser}.", LogMessageType.Error);
+                    return false;
+                }
+                else
+                {
+                    return true;
                 }
             }
             catch
             {
                 SendLogMessage($" Cancel Order Error. Order num {order.NumberUser}, {order.SecurityNameCode}", LogMessageType.Error);
-                return;
+                return false;
             }
+
+            return false;
         }
 
         public void CancelAllOrdersToSecurity(Security security)
@@ -3296,7 +3297,7 @@ namespace OsEngine.Market.Servers.Bybit
             }
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
             try
             {
@@ -3348,7 +3349,7 @@ namespace OsEngine.Market.Servers.Bybit
 
                     if (newOrder == null)
                     {
-                        return;
+                        return OrderStateType.None;
                     }
                 }
 
@@ -3368,11 +3369,15 @@ namespace OsEngine.Market.Servers.Bybit
                         MyTradeEvent?.Invoke(myTrades[i]);
                     }
                 }
+
+                return newOrder.State;
             }
             catch (Exception ex)
             {
                 SendLogMessage($"GetOrderStatus>. Order error. {ex.Message} {ex.StackTrace}", LogMessageType.Error);
             }
+
+            return OrderStateType.None;
         }
 
         public void GetAllActivOrders()
@@ -4023,6 +4028,30 @@ namespace OsEngine.Market.Servers.Bybit
             byte[] signature = hmac.ComputeHash(Encoding.UTF8.GetBytes(data));
 
             return BitConverter.ToString(signature).Replace("-", "").ToLower();
+        }
+
+        private void SetLeverage(Security security)
+        {
+            try
+            {
+                if (_leverage == "")
+                {
+                    return;
+                }
+
+                Dictionary<string, object> parametrs = new Dictionary<string, object>();
+                parametrs.Clear();
+                parametrs["category"] = Category.linear.ToString();
+                parametrs["symbol"] = security.Name.Split(".")[0];
+                parametrs["buyLeverage"] = _leverage;
+                parametrs["sellLeverage"] = _leverage;
+
+                CreatePrivateQuery(parametrs, HttpMethod.Post, "/v5/position/set-leverage");
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage($"SetLeverage: {ex.Message} {ex.StackTrace}", LogMessageType.Error);
+            }
         }
 
         #endregion 12

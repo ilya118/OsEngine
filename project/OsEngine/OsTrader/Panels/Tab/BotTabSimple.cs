@@ -48,6 +48,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 _connector = new ConnectorCandles(TabName, startProgram, true);
                 _connector.OrderChangeEvent += _connector_OrderChangeEvent;
+                _connector.CancelOrderFailEvent += _connector_CancelOrderFailEvent;
                 _connector.MyTradeEvent += _connector_MyTradeEvent;
                 _connector.BestBidAskChangeEvent += _connector_BestBidAskChangeEvent;
                 _connector.PortfolioOnExchangeChangedEvent += _connector_PortfolioOnExchangeChangedEvent;
@@ -60,9 +61,6 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _connector.ConnectorStartedReconnectEvent += _connector_ConnectorStartedReconnectEvent;
                 _connector.SecuritySubscribeEvent += _connector_SecuritySubscribeEvent;
                 _connector.DialogClosed += _connector_DialogClosed;
-
-                _gridsMaster = new TradeGridsMaster(startProgram, name, this);
-                _gridsMaster.LogMessageEvent += SetNewLogMessage;
 
                 if (startProgram != StartProgram.IsOsOptimizer)
                 {
@@ -98,6 +96,9 @@ namespace OsEngine.OsTrader.Panels.Tab
                 ManualPositionSupport = new BotManualControl(TabName, this, startProgram);
                 ManualPositionSupport.LogMessageEvent += SetNewLogMessage;
                 ManualPositionSupport.DontOpenOrderDetectedEvent += _dealOpeningWatcher_DontOpenOrderDetectedEvent;
+
+                _gridsMaster = new TradeGridsMaster(startProgram, name, this);
+                _gridsMaster.LogMessageEvent += SetNewLogMessage;
 
                 _icebergMaker = new IcebergMaker();
                 _icebergMaker.NewOrderNeedToExecute += _icebergMaker_NewOrderNeedToExecute;
@@ -361,6 +362,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 if (_connector != null)
                 {
                     _connector.OrderChangeEvent -= _connector_OrderChangeEvent;
+                    _connector.CancelOrderFailEvent -= _connector_CancelOrderFailEvent;
                     _connector.MyTradeEvent -= _connector_MyTradeEvent;
                     _connector.BestBidAskChangeEvent -= _connector_BestBidAskChangeEvent;
                     _connector.GlassChangeEvent -= _connector_GlassChangeEvent;
@@ -1985,11 +1987,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <summary>
         /// Enter position Long at price intersection
         /// </summary>
-        /// <param name="volume">volum</param>
+        /// <param name="volume">volume</param>
         /// <param name="priceLimit">order price</param>
         /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
         /// <param name="activateType">activation type</param>
-        /// <param name="expiresBars">life time in candels count</param>
+        /// <param name="expiresBars">life time in candles count</param>
         /// <param name="signalType">the opening signal. It will be written to the position as SignalTypeOpen</param>
         /// <param name="lifeTimeType">order life type</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
@@ -2046,7 +2048,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <param name="priceLimit">order price</param>
         /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
         /// <param name="activateType">activation type</param>
-        /// /// <param name="expiresBars">life time in candels count</param>
+        /// /// <param name="expiresBars">life time in candles count</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine,
             StopActivateType activateType, int expiresBars, string signalType)
         {
@@ -2060,7 +2062,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <param name="priceLimit">order price</param>
         /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
         /// <param name="activateType">activation type</param>
-        /// /// <param name="expiresBars">life time in candels count</param>
+        /// /// <param name="expiresBars">life time in candles count</param>
         public void BuyAtStop(decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars)
         {
             BuyAtStop(volume, priceLimit, priceRedLine, activateType, expiresBars, "", PositionOpenerToStopLifeTimeType.CandlesCount);
@@ -2081,7 +2083,7 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <summary>
         /// Enter position Long at price intersection. work one candle
         /// </summary>
-        /// /// <param name="volume">volum</param>
+        /// /// <param name="volume">volume</param>
         /// <param name="priceLimit">order price</param>
         /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
         /// <param name="activateType">activation type</param>
@@ -2342,7 +2344,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     if (position.Direction == Side.Sell)
                     {
-                        ClosePeaceOfDeal(position, OrderPriceType.Limit, price, ManualPositionSupport.SecondToClose, volume, true);
+                        ClosePeaceOfDeal(position, OrderPriceType.Limit, price, ManualPositionSupport.SecondToClose, volume, true, false);
 
                         return;
                     }
@@ -2454,6 +2456,162 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 SetNewLogMessage(error.ToString(), LogMessageType.Error);
             }
+        }
+
+        /// <summary>
+        /// Add new limit order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void BuyAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars, PositionOpenerToStopLifeTimeType lifeTimeType)
+        {
+            try
+            {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
+
+                positionOpener.Volume = volume;
+                positionOpener.Security = Security.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.TabName = TabName;
+                positionOpener.LifeTimeType = lifeTimeType;
+
+                if (StartProgram == StartProgram.IsOsTrader)
+                {
+                    positionOpener.PriceOrder = priceLimit;
+                }
+                else
+                {
+                    positionOpener.PriceOrder = priceRedLine;
+                }
+
+                positionOpener.PriceRedLine = priceRedLine;
+                positionOpener.ActivateType = activateType;
+                positionOpener.Side = Side.Buy;
+                positionOpener.OrderPriceType = OrderPriceType.Limit;
+                positionOpener.PositionNumber = position.Number;
+
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Add new limit order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        public void BuyAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars)
+        {
+            BuyAtStopToPosition(position, volume, priceLimit, priceRedLine, activateType, expiresBars, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Add new limit order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        public void BuyAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType)
+        {
+            BuyAtStopToPosition(position, volume, priceLimit, priceRedLine, activateType, 1);
+        }
+
+        /// <summary>
+        /// Add new market order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void BuyAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType, int expiresBars, PositionOpenerToStopLifeTimeType lifeTimeType)
+        {
+            try
+            {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
+
+                positionOpener.Volume = volume;
+                positionOpener.Security = Security.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.TabName = TabName;
+                positionOpener.LifeTimeType = lifeTimeType;
+
+                positionOpener.PriceOrder = priceRedLine;
+                
+                positionOpener.PriceRedLine = priceRedLine;
+                positionOpener.ActivateType = activateType;
+                positionOpener.Side = Side.Buy;
+                positionOpener.OrderPriceType = OrderPriceType.Market;
+                positionOpener.PositionNumber = position.Number;
+
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Add new market order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        public void BuyAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType, int expiresBars)
+        {
+            BuyAtStopMarketToPosition(position, volume, priceRedLine, activateType, expiresBars, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Add new market order Buy to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a buy order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        public void BuyAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType)
+        {
+            BuyAtStopMarketToPosition(position, volume, priceRedLine, activateType, 1);
         }
 
         /// <summary>
@@ -3255,7 +3413,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     if (position.Direction == Side.Buy)
                     {
-                        ClosePeaceOfDeal(position, OrderPriceType.Limit, price, ManualPositionSupport.SecondToClose, volume, true);
+                        ClosePeaceOfDeal(position, OrderPriceType.Limit, price, ManualPositionSupport.SecondToClose, volume, true, false);
                         return;
                     }
 
@@ -3366,6 +3524,162 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 SetNewLogMessage(error.ToString(), LogMessageType.Error);
             }
+        }
+
+        /// <summary>
+        /// Add new limit order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void SellAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars, PositionOpenerToStopLifeTimeType lifeTimeType)
+        {
+            try
+            {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
+
+                positionOpener.Volume = volume;
+                positionOpener.Security = Security.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.TabName = TabName;
+                positionOpener.LifeTimeType = lifeTimeType;
+
+                if (StartProgram == StartProgram.IsOsTrader)
+                {
+                    positionOpener.PriceOrder = priceLimit;
+                }
+                else
+                {
+                    positionOpener.PriceOrder = priceRedLine;
+                }
+
+                positionOpener.PriceRedLine = priceRedLine;
+                positionOpener.ActivateType = activateType;
+                positionOpener.Side = Side.Sell;
+                positionOpener.OrderPriceType = OrderPriceType.Limit;
+                positionOpener.PositionNumber = position.Number;
+
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Add new limit order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        public void SellAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType, int expiresBars)
+        {
+            SellAtStopToPosition(position, volume, priceLimit, priceRedLine, activateType, expiresBars, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Add new limit order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceLimit">order price</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        public void SellAtStopToPosition(Position position, decimal volume, decimal priceLimit, decimal priceRedLine, StopActivateType activateType)
+        {
+            SellAtStopToPosition(position, volume, priceLimit, priceRedLine, activateType, 1);
+        }
+
+        /// <summary>
+        /// Add new market order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        /// <param name="lifeTimeType">order life type</param>
+        public void SellAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType, int expiresBars, PositionOpenerToStopLifeTimeType lifeTimeType)
+        {
+            try
+            {
+                if (_connector.IsConnected == false
+                   || _connector.IsReadyToTrade == false)
+                {
+                    SetNewLogMessage(OsLocalization.Trader.Label191, LogMessageType.Error);
+                    return;
+                }
+
+                PositionOpenerToStopLimit positionOpener = new PositionOpenerToStopLimit();
+
+                positionOpener.Volume = volume;
+                positionOpener.Security = Security.Name;
+                positionOpener.Number = NumberGen.GetNumberDeal(StartProgram);
+                positionOpener.ExpiresBars = expiresBars;
+                positionOpener.TimeCreate = TimeServerCurrent;
+                positionOpener.OrderCreateBarNumber = CandlesFinishedOnly.Count;
+                positionOpener.TabName = TabName;
+                positionOpener.LifeTimeType = lifeTimeType;
+
+                positionOpener.PriceOrder = priceRedLine;
+
+                positionOpener.PriceRedLine = priceRedLine;
+                positionOpener.ActivateType = activateType;
+                positionOpener.Side = Side.Sell;
+                positionOpener.OrderPriceType = OrderPriceType.Market;
+                positionOpener.PositionNumber = position.Number;
+
+                PositionOpenerToStop.Add(positionOpener);
+                UpdateStopLimits();
+            }
+            catch (Exception error)
+            {
+                SetNewLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        /// <summary>
+        /// Add new market order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        /// <param name="expiresBars">life time in candles count</param>
+        public void SellAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType, int expiresBars)
+        {
+            SellAtStopMarketToPosition(position, volume, priceRedLine, activateType, expiresBars, PositionOpenerToStopLifeTimeType.CandlesCount);
+        }
+
+        /// <summary>
+        /// Add new market order Sell to position at price intersection
+        /// </summary>
+        /// <param name="position">position</param>
+        /// <param name="volume">volume</param>
+        /// <param name="priceRedLine">the price of the line, after reaching which a sell order will be placed</param>
+        /// <param name="activateType">activation type</param>
+        public void SellAtStopMarketToPosition(Position position, decimal volume, decimal priceRedLine, StopActivateType activateType)
+        {
+            SellAtStopMarketToPosition(position, volume, priceRedLine, activateType, 1);
         }
 
         /// <summary>
@@ -3562,7 +3876,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                     }
                     else if (position.OpenVolume > volume)
                     {
-                        ClosePeaceOfDeal(position, OrderPriceType.Market, price, ManualPositionSupport.SecondToClose, volume, true);
+                        ClosePeaceOfDeal(position, OrderPriceType.Market, price, ManualPositionSupport.SecondToClose, volume, true, false);
                     }
                 }
                 else
@@ -3608,7 +3922,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
                 else if (position.OpenVolume > volume)
                 {
-                    ClosePeaceOfDeal(position, OrderPriceType.Limit, priceLimit, ManualPositionSupport.SecondToClose, volume, true);
+                    ClosePeaceOfDeal(position, OrderPriceType.Limit, priceLimit, ManualPositionSupport.SecondToClose, volume, true, false);
                 }
             }
             catch (Exception error)
@@ -3652,7 +3966,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
                 else if (position.OpenVolume > volume)
                 {
-                    ClosePeaceOfDeal(position, OrderPriceType.Limit, priceLimit, ManualPositionSupport.SecondToClose, volume, false);
+                    ClosePeaceOfDeal(position, OrderPriceType.Limit, priceLimit, ManualPositionSupport.SecondToClose, volume, false, false);
                 }
             }
             catch (Exception error)
@@ -4588,8 +4902,9 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// <param name="lifeTime">life time</param>
         /// <param name="volume">volume</param>
         /// <param name="safeRegime">if True - active orders to close the position will be withdrawn.</param>
+        /// <param name="isStopOrProfit">whether the order is a result of a stop or a profit</param>
         private void ClosePeaceOfDeal(Position position, OrderPriceType priceType, decimal price, TimeSpan lifeTime,
-            decimal volume, bool safeRegime)
+            decimal volume, bool safeRegime, bool isStopOrProfit)
         {
             try
             {
@@ -4651,6 +4966,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
 
                 closeOrder.Volume = volume;
+                closeOrder.IsStopOrProfit = isStopOrProfit;
+
                 position.AddNewCloseOrder(closeOrder);
 
                 if (position.OpenOrders[0].SecurityNameCode.EndsWith(" TestPaper"))
@@ -5427,14 +5744,49 @@ namespace OsEngine.OsTrader.Panels.Tab
                         if (PositionOpenerToStop[i].Side == Side.Buy)
                         {
                             PositionOpenerToStopLimit opener = PositionOpenerToStop[i];
-                            Position pos = LongCreate(PositionOpenerToStop[i].PriceOrder,
-                                PositionOpenerToStop[i].Volume, PositionOpenerToStop[i].OrderPriceType,
-                                ManualPositionSupport.SecondToOpen, true);
 
-                            if (pos != null
-                                && !string.IsNullOrEmpty(opener.SignalType))
+                            Position pos = null;
+
+                            if (opener.PositionNumber == 0)
                             {
-                                pos.SignalTypeOpen = opener.SignalType;
+                                 pos = LongCreate(PositionOpenerToStop[i].PriceOrder,
+                                  PositionOpenerToStop[i].Volume, PositionOpenerToStop[i].OrderPriceType,
+                                  ManualPositionSupport.SecondToOpen, true);
+
+                                if (pos != null
+                                    && !string.IsNullOrEmpty(opener.SignalType))
+                                {
+                                    pos.SignalTypeOpen = opener.SignalType;
+                                }
+                            }
+                            else
+                            {
+                                List<Position> openPoses = PositionsOpenAll;
+
+                                for(int f = 0;f < openPoses.Count;f++)
+                                {
+                                    if (openPoses[f].Number == opener.PositionNumber)
+                                    {
+                                        pos = openPoses[f];
+                                        break;
+                                    }
+                                }
+
+                                if(pos != null)
+                                {
+                                    if(pos.Direction == Side.Buy)
+                                    {
+                                        LongUpdate(pos, PositionOpenerToStop[i].PriceOrder,
+                                            PositionOpenerToStop[i].Volume, ManualPositionSupport.SecondToOpen, true,
+                                            PositionOpenerToStop[i].OrderPriceType, false);
+                                    }
+                                    else if(pos.Direction == Side.Sell)
+                                    {
+                                        ClosePeaceOfDeal(pos,PositionOpenerToStop[i].OrderPriceType,
+                                            PositionOpenerToStop[i].PriceOrder, ManualPositionSupport.SecondToClose, 
+                                            PositionOpenerToStop[i].Volume, true, true);
+                                    }
+                                }
                             }
 
                             if (PositionOpenerToStop.Count == 0)
@@ -5444,7 +5796,9 @@ namespace OsEngine.OsTrader.Panels.Tab
 
                             PositionOpenerToStop.RemoveAt(i);
                             i = -1;
-                            if (PositionBuyAtStopActivateEvent != null && pos != null)
+
+                            if (PositionBuyAtStopActivateEvent != null 
+                                && pos != null)
                             {
                                 PositionBuyAtStopActivateEvent(pos);
                             }
@@ -5454,14 +5808,49 @@ namespace OsEngine.OsTrader.Panels.Tab
                         else if (PositionOpenerToStop[i].Side == Side.Sell)
                         {
                             PositionOpenerToStopLimit opener = PositionOpenerToStop[i];
-                            Position pos = ShortCreate(PositionOpenerToStop[i].PriceOrder,
-                                PositionOpenerToStop[i].Volume, PositionOpenerToStop[i].OrderPriceType,
-                                ManualPositionSupport.SecondToOpen, true);
 
-                            if (pos != null
-                                && !string.IsNullOrEmpty(opener.SignalType))
+                            Position pos = null;
+
+                            if(opener.PositionNumber == 0)
                             {
-                                pos.SignalTypeOpen = opener.SignalType;
+                                pos = ShortCreate(PositionOpenerToStop[i].PriceOrder,
+                                    PositionOpenerToStop[i].Volume, PositionOpenerToStop[i].OrderPriceType,
+                                    ManualPositionSupport.SecondToOpen, true);
+
+                                if (pos != null
+                                    && !string.IsNullOrEmpty(opener.SignalType))
+                                {
+                                    pos.SignalTypeOpen = opener.SignalType;
+                                }
+                            }
+                            else
+                            {
+                                List<Position> openPoses = PositionsOpenAll;
+
+                                for (int f = 0; f < openPoses.Count; f++)
+                                {
+                                    if (openPoses[f].Number == opener.PositionNumber)
+                                    {
+                                        pos = openPoses[f];
+                                        break;
+                                    }
+                                }
+
+                                if (pos != null)
+                                {
+                                    if (pos.Direction == Side.Sell)
+                                    {
+                                        ShortUpdate(pos, PositionOpenerToStop[i].PriceOrder,
+                                            PositionOpenerToStop[i].Volume, ManualPositionSupport.SecondToOpen, true,
+                                            PositionOpenerToStop[i].OrderPriceType, false);
+                                    }
+                                    else if (pos.Direction == Side.Buy)
+                                    {
+                                        ClosePeaceOfDeal(pos, PositionOpenerToStop[i].OrderPriceType,
+                                            PositionOpenerToStop[i].PriceOrder, ManualPositionSupport.SecondToClose,
+                                            PositionOpenerToStop[i].Volume, true, true);
+                                    }
+                                }
                             }
 
                             if (PositionOpenerToStop.Count == 0)
@@ -5472,7 +5861,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                             PositionOpenerToStop.RemoveAt(i);
                             i = -1;
 
-                            if (PositionSellAtStopActivateEvent != null && pos != null)
+                            if (PositionSellAtStopActivateEvent != null 
+                                && pos != null)
                             {
                                 PositionSellAtStopActivateEvent(pos);
                             }
@@ -6326,6 +6716,30 @@ namespace OsEngine.OsTrader.Panels.Tab
             {
                 OrderUpdateEvent(orderInJournal);
             }
+            _chartMaster.SetPosition(PositionsAll);
+        }
+
+        /// <summary>
+        /// An attempt to revoke the order ended in an error
+        /// </summary>
+        private void _connector_CancelOrderFailEvent(Order order)
+        {
+            if (_isDelete)
+            {
+                return;
+            }
+
+            Order orderInJournal = _journal.IsMyOrder(order);
+
+            if (orderInJournal == null)
+            {
+                return;
+            }
+
+            if(CancelOrderFailEvent != null)
+            {
+                CancelOrderFailEvent(orderInJournal);
+            }
         }
 
         /// <summary>
@@ -6512,6 +6926,11 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// Updated order
         /// </summary>
         public event Action<Order> OrderUpdateEvent;
+
+        /// <summary>
+        /// An attempt to revoke the order ended in an error
+        /// </summary>
+        public event Action<Order> CancelOrderFailEvent;
 
         /// <summary>
         /// New trades

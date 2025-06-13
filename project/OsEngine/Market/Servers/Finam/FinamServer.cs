@@ -736,9 +736,9 @@ namespace OsEngine.Market.Servers.Finam
 
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
-
+            return false;
         }
 
         public void ChangeOrderPrice(Order order, decimal newPrice)
@@ -751,9 +751,9 @@ namespace OsEngine.Market.Servers.Finam
 
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-
+            return OrderStateType.None;
         }
 
         public bool SubscribeNews()

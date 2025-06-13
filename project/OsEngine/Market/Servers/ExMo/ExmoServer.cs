@@ -145,9 +145,10 @@ namespace OsEngine.Market.Servers.ExMo
         /// cancel order
         /// отозвать ордер
         /// </summary>
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             _client.CancelOrder(order);
+            return true;
         }
 
         /// <summary>
@@ -164,9 +165,9 @@ namespace OsEngine.Market.Servers.ExMo
 
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-
+            return OrderStateType.None;
         }
 
         /// <summary>

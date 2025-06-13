@@ -1529,7 +1529,7 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
             }
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             try
             {
@@ -1542,6 +1542,7 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
                 {
                     if (stateResponse.code.Equals("200000") == true)
                     {
+                        return true;
                         // ignore
                     }
                     else
@@ -1567,6 +1568,7 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
             {
                 SendLogMessage($"{ex.Message} {ex.StackTrace}", LogMessageType.Error);
             }
+            return false;
         }
 
         public void ResearchTradesToOrders(List<Order> orders)
@@ -1688,13 +1690,13 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
             return null;
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
             Order orderFromExchange = GetOrderFromExchange(order.SecurityNameCode, order.NumberMarket, order.NumberUser);
 
             if (orderFromExchange == null)
             {
-                return;
+                return OrderStateType.None;
             }
 
             Order orderOnMarket = null;
@@ -1714,7 +1716,7 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
 
             if (orderOnMarket == null)
             {
-                return;
+                return OrderStateType.None;
             }
 
             if (orderOnMarket != null &&
@@ -1728,6 +1730,8 @@ namespace OsEngine.Market.Servers.KuCoin.KuCoinFutures
             {
                 CreateQueryMyTrade(order.SecurityNameCode, order.NumberMarket);
             }
+
+            return orderOnMarket.State;
         }
 
         private Order GetOrderFromExchange(string securityNameCode, string numberMarket, int numberUser)

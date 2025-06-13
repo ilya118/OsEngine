@@ -4,20 +4,21 @@
 */
 
 using System.Collections.Generic;
-using System.Windows.Documents;
 
-namespace OsEngine.Market.Servers.BitMart.Json
+namespace OsEngine.Market.Servers.BitMartFutures.Json
 {
 
-    public class BitMartSpotPortfolioItems : List<BitMartSpotPortfolioItem> 
+    public class BitMartFuturesPortfolioItems : List<BitMartFuturesPortfolioItem>
     { }
 
-    public class BitMartSpotPortfolioItem
+    public class BitMartFuturesPortfolioItem
     {
-        public string id { get; set; }
-        public string available { get; set; }
-        public string name { get; set; }
-        public string frozen { get; set; }
+        public string currency { get; set; }
+        public string position_deposit { get; set; }
+        public string frozen_balance { get; set; }
+        public string available_balance { get; set; }
+        public string equity { get; set; }
+        public string unrealized { get; set; }
 
     }
 

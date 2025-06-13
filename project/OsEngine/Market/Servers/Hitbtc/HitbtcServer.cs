@@ -224,11 +224,11 @@ namespace OsEngine.Market.Servers.Hitbtc
         /// отозвать ордер из торговой системы
         /// </summary>
         /// <param name="order">order/ордер</param>
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             if (order == null)
             {
-                return;
+                return false;
             }
 
             var needCoupler = _couplers.Find(x => x.OsOrderNumberUser == order.NumberUser);
@@ -237,6 +237,7 @@ namespace OsEngine.Market.Servers.Hitbtc
             {
                 _client.CancelOrder(needCoupler.OrderNumberMarket);
             }
+            return true;
         }
 
         /// <summary>
@@ -253,9 +254,9 @@ namespace OsEngine.Market.Servers.Hitbtc
 
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-
+            return OrderStateType.None;
         }
 
         #endregion

@@ -70,6 +70,7 @@ namespace OsEngine.OsTrader.Grids
             TradeGrid newGrid = new TradeGrid(_startProgram, _tab);
             newGrid.NeedToSaveEvent += NewGrid_NeedToSaveEvent;
             newGrid.LogMessageEvent += SendNewLogMessage;
+            newGrid.RePaintSettingsEvent += NewGrid_UpdateTableEvent;
 
             int gridNum = 1;
 
@@ -120,6 +121,7 @@ namespace OsEngine.OsTrader.Grids
 
                     TradeGrids[i].NeedToSaveEvent -= NewGrid_NeedToSaveEvent;
                     TradeGrids[i].LogMessageEvent -= SendNewLogMessage;
+                    TradeGrids[i].RePaintSettingsEvent -= NewGrid_UpdateTableEvent;
                     TradeGrids.RemoveAt(i);
                     
                     break;
@@ -252,6 +254,7 @@ namespace OsEngine.OsTrader.Grids
 
                         newGrid.NeedToSaveEvent += NewGrid_NeedToSaveEvent;
                         newGrid.LogMessageEvent += SendNewLogMessage;
+                        newGrid.RePaintSettingsEvent += NewGrid_UpdateTableEvent;
 
                         newGrid.LoadFromString(settings);
                         TradeGrids.Add(newGrid);
@@ -418,8 +421,6 @@ namespace OsEngine.OsTrader.Grids
         {
             try
             {
-                return;
-
                 int row = e.RowIndex;
                 int column = e.ColumnIndex;
 
@@ -458,6 +459,11 @@ namespace OsEngine.OsTrader.Grids
             {
                 SendNewLogMessage(ex.ToString(), LogMessageType.Error);
             }
+        }
+
+        private void NewGrid_UpdateTableEvent()
+        {
+            PaintGridView();
         }
 
         #endregion

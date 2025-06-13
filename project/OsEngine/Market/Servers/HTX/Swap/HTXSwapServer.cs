@@ -1475,13 +1475,13 @@ namespace OsEngine.Market.Servers.HTX.Swap
         {
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             _rateGateCancelOrder.WaitToProceed();
 
             if (order.State == OrderStateType.Cancel)
             {
-                return;
+                return true;
             }
             try
             {
@@ -1501,19 +1501,31 @@ namespace OsEngine.Market.Servers.HTX.Swap
 
                 if (response.status != "ok")
                 {
-                    GetOrderStatus(order);
-                    SendLogMessage($"CancelOrder. Http State Code: {responseMessage.Content}", LogMessageType.Error);
+                    OrderStateType state = GetOrderStatus(order);
+
+                    if (state == OrderStateType.None)
+                    {
+                        SendLogMessage($"CancelOrder. Http State Code: {responseMessage.Content}", LogMessageType.Error);
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+                    
                 }
                 else
                 {
                     order.State = OrderStateType.Cancel;
                     MyOrderEvent(order);
+                    return true;
                 }
             }
             catch (Exception exception)
             {
                 SendLogMessage(exception.ToString(), LogMessageType.Error);
             }
+            return false;
         }
 
         public void CancelAllOrders()
@@ -1604,13 +1616,13 @@ namespace OsEngine.Market.Servers.HTX.Swap
             return orders;
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
             Order orderFromExchange = GetOrderFromExchange(order.SecurityNameCode, order.NumberMarket);
 
             if (orderFromExchange == null)
             {
-                return;
+                return OrderStateType.None;
             }
 
             Order orderOnMarket = null;
@@ -1630,7 +1642,7 @@ namespace OsEngine.Market.Servers.HTX.Swap
 
             if (orderOnMarket == null)
             {
-                return;
+                return OrderStateType.None;
             }
 
             if (orderOnMarket != null &&
@@ -1647,7 +1659,7 @@ namespace OsEngine.Market.Servers.HTX.Swap
 
                 if (tradesBySecurity == null)
                 {
-                    return;
+                    return orderOnMarket.State;
                 }
 
                 List<MyTrade> tradesByMyOrder = new List<MyTrade>();
@@ -1668,6 +1680,8 @@ namespace OsEngine.Market.Servers.HTX.Swap
                     }
                 }
             }
+
+            return orderOnMarket.State;
         }
 
         private Order GetOrderFromExchange(string securityNameCode, string numberMarket)

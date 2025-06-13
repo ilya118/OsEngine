@@ -3,13 +3,13 @@
  *Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
-namespace OsEngine.Market.Servers.BitMart
+namespace OsEngine.Market.Servers.Bitfinex.BitfinexFutures
 {
-    class BitMartServerPermission : IServerPermission
+    public class BitfinexFuturesServerPermission : IServerPermission
     {
         public ServerType ServerType
         {
-            get { return ServerType.BitMart; }
+            get { return ServerType.BitfinexFutures; }
         }
 
         #region DataFeedPermissions
@@ -41,20 +41,10 @@ namespace OsEngine.Market.Servers.BitMart
 
         public bool DataFeedTf20SecondCanLoad
         {
-            get { return false; ; }
+            get { return false; }
         }
 
         public bool DataFeedTf30SecondCanLoad
-        {
-            get { return false; }
-        }
-
-        public bool DataFeedTfTickCanLoad
-        {
-            get { return false; }
-        }
-
-        public bool DataFeedTfMarketDepthCanLoad
         {
             get { return false; }
         }
@@ -96,7 +86,7 @@ namespace OsEngine.Market.Servers.BitMart
 
         public bool DataFeedTf2HourCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf4HourCanLoad
@@ -106,7 +96,17 @@ namespace OsEngine.Market.Servers.BitMart
 
         public bool DataFeedTfDayCanLoad
         {
-            get { return false; }
+            get { return true; }
+        }
+
+        public bool DataFeedTfTickCanLoad
+        {
+            get { return true; }
+        }
+
+        public bool DataFeedTfMarketDepthCanLoad
+        {
+            get { return true; }
         }
 
         #endregion
@@ -115,18 +115,53 @@ namespace OsEngine.Market.Servers.BitMart
 
         public bool MarketOrdersIsSupport
         {
-            get { return false; }
+            get { return true; }
         }
 
-        public int WaitTimeSecondsAfterFirstStartToSendOrders
+        public bool IsTradeServer
         {
-            get { return 15; }
+            get { return true; }
         }
 
         public bool IsCanChangeOrderPrice
         {
-            get { return false; }
+            get { return true; }
         }
+
+        public TimeFramePermission TradeTimeFramePermission
+        {
+            get { return _tradeTimeFramePermission; }
+        }
+
+        public int WaitTimeSecondsAfterFirstStartToSendOrders
+        {
+            get { return 10; }
+        }
+
+        private TimeFramePermission _tradeTimeFramePermission
+            = new TimeFramePermission()
+            {
+                TimeFrameSec1IsOn = true,
+                TimeFrameSec2IsOn = true,
+                TimeFrameSec5IsOn = true,
+                TimeFrameSec10IsOn = true,
+                TimeFrameSec15IsOn = true,
+                TimeFrameSec20IsOn = true,
+                TimeFrameSec30IsOn = true,
+                TimeFrameMin1IsOn = true,
+                TimeFrameMin2IsOn = false,
+                TimeFrameMin3IsOn = false,
+                TimeFrameMin5IsOn = true,
+                TimeFrameMin10IsOn = false,
+                TimeFrameMin15IsOn = true,
+                TimeFrameMin20IsOn = false,
+                TimeFrameMin30IsOn = true,
+                TimeFrameMin45IsOn = false,
+                TimeFrameHour1IsOn = true,
+                TimeFrameHour2IsOn = false,
+                TimeFrameHour4IsOn = true,
+                TimeFrameDayIsOn = true
+            };
 
         public bool UseStandardCandlesStarter
         {
@@ -138,44 +173,9 @@ namespace OsEngine.Market.Servers.BitMart
             get { return false; }
         }
 
-        public bool IsTradeServer
-        {
-            get { return false; }
-        }
-
-        public TimeFramePermission TradeTimeFramePermission
-        {
-            get { return _tradeTimeFramePermission; }
-        }
-
-        private TimeFramePermission _tradeTimeFramePermission
-            = new TimeFramePermission()
-            {
-                TimeFrameSec1IsOn = false,
-                TimeFrameSec2IsOn = false,
-                TimeFrameSec5IsOn = false,
-                TimeFrameSec10IsOn = false,
-                TimeFrameSec15IsOn = false,
-                TimeFrameSec20IsOn = false,
-                TimeFrameSec30IsOn = false,
-                TimeFrameMin1IsOn = true,
-                TimeFrameMin2IsOn = false,
-                TimeFrameMin3IsOn = true,
-                TimeFrameMin5IsOn = true,
-                TimeFrameMin10IsOn = false,
-                TimeFrameMin15IsOn = true,
-                TimeFrameMin20IsOn = false,
-                TimeFrameMin30IsOn = true,
-                TimeFrameMin45IsOn = true,
-                TimeFrameHour1IsOn = true,
-                TimeFrameHour2IsOn = true,
-                TimeFrameHour4IsOn = true,
-                TimeFrameDayIsOn = true
-            };
-
         public bool ManuallyClosePositionOnBoard_IsOn
         {
-            get { return true; }
+            get { return false; }
         }
 
         public string[] ManuallyClosePositionOnBoard_ValuesForTrimmingName
@@ -219,12 +219,12 @@ namespace OsEngine.Market.Servers.BitMart
 
         public int CheckDataFeedLogic_NoDataMinutesToDisconnect
         {
-            get { return 10; }
+            get{return 10;}
         }
 
         public bool IsSupports_MultipleInstances
         {
-            get { return false; }
+            get{ return true; }
         }
 
         public bool IsSupports_ProxyFor_MultipleInstances

@@ -102,9 +102,11 @@ namespace OsEngine.Market.Servers.NinjaTrader
 
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             _client.CancelOrder(order);
+
+            return true;
         }
 
         public void CancelAllOrders()
@@ -117,9 +119,9 @@ namespace OsEngine.Market.Servers.NinjaTrader
 
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-
+            return OrderStateType.None;
         }
 
         public void Subscrible(Security security)

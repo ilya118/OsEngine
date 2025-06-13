@@ -1619,7 +1619,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
         {
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             _rateGateCancelOrder.WaitToProceed();
 
@@ -1637,23 +1637,43 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
                         SendLogMessage($"Order num {order.NumberUser} canceled.", LogMessageType.Trade);
                         order.State = OrderStateType.Cancel;
                         MyOrderEvent(order);
+                        return true;
                     }
                     else
                     {
-                        GetOrderStatus(order);
-                        SendLogMessage($"Error on order cancel num {order.NumberUser}", LogMessageType.Error);
+                        OrderStateType state = GetOrderStatus(order);
+
+                        if (state == OrderStateType.None)
+                        {
+                            SendLogMessage($"Error on order cancel num {order.NumberUser}", LogMessageType.Error);
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
                 }
                 else
                 {
-                    GetOrderStatus(order);
-                    SendLogMessage($"CancelOrder> Http State Code: {result.StatusCode}, {result.Content}", LogMessageType.Error);
+                    OrderStateType state = GetOrderStatus(order);
+
+                    if (state == OrderStateType.None)
+                    {
+                        SendLogMessage($"CancelOrder> Http State Code: {result.StatusCode}, {result.Content}", LogMessageType.Error);
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
                 }
             }
             catch (Exception exception)
             {
                 SendLogMessage(exception.Message, LogMessageType.Error);
             }
+            return false;
         }
 
         public void GetAllActivOrders()
@@ -1681,7 +1701,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
             }
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
             List<Order> orderFromExchange = GetOrderFromExchange(order.SecurityNameCode, "open");
 
@@ -1694,7 +1714,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
             if (orderFromExchange == null
                || orderFromExchange.Count == 0)
             {
-                return;
+                return OrderStateType.None;
             }
 
             Order orderOnMarket = null;
@@ -1721,7 +1741,7 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
 
             if (orderOnMarket == null)
             {
-                return;
+                return OrderStateType.None;
             }
 
             if (orderOnMarket != null &&
@@ -1735,6 +1755,8 @@ namespace OsEngine.Market.Servers.GateIo.GateIoFutures
             {
                 FindMyTradesToOrder(order.NumberUser);
             }
+
+            return orderOnMarket.State;
         }
 
         private List<Order> GetOrderFromExchange(string securityNameCode, string status)

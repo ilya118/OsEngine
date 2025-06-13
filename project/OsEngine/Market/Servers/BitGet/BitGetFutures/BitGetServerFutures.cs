@@ -2288,7 +2288,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             }
         }
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
             try
             {
@@ -2309,24 +2309,43 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                 {
                     if (stateResponse.code.Equals("00000") == true)
                     {
+                        return true;
                         // ignore
                     }
                     else
                     {
-                        GetOrderStatus(order);
-                        SendLogMessage($"Code: {stateResponse.code}\n"
-                            + $"Message: {stateResponse.msg}", LogMessageType.Error);
+                        OrderStateType state = GetOrderStatus(order);
+
+                        if (state == OrderStateType.None)
+                        {
+                            SendLogMessage($"Code: {stateResponse.code}\n"
+                                + $"Message: {stateResponse.msg}", LogMessageType.Error);
+                            return false;
+                        }
+                        else
+                        {
+                            return true;
+                        }
                     }
                 }
                 else
                 {
-                    GetOrderStatus(order);
-                    SendLogMessage($"Http State Code: {response.StatusCode}", LogMessageType.Error);
+                    OrderStateType state = GetOrderStatus(order);
 
-                    if (stateResponse != null && stateResponse.code != null)
+                    if (state == OrderStateType.None)
                     {
-                        SendLogMessage($"Code: {stateResponse.code}\n"
-                            + $"Message: {stateResponse.msg}", LogMessageType.Error);
+                        SendLogMessage($"Http State Code: {response.StatusCode}", LogMessageType.Error);
+
+                        if (stateResponse != null && stateResponse.code != null)
+                        {
+                            SendLogMessage($"Code: {stateResponse.code}\n"
+                                + $"Message: {stateResponse.msg}", LogMessageType.Error);
+                        }
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
                     }
                 }
             }
@@ -2334,6 +2353,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             {
                 SendLogMessage(ex.Message, LogMessageType.Error);
             }
+
+            return false;
         }
 
         public void GetAllActivOrders()
@@ -2354,7 +2375,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             }
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
             try
             {
@@ -2399,6 +2420,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                         {
                             FindMyTradesToOrder(newOrder);
                         }
+
+                        return newOrder.State;
                     }
                     else
                     {
@@ -2411,6 +2434,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             {
                 SendLogMessage(ex.Message, LogMessageType.Error);
             }
+
+            return OrderStateType.None;
         }
 
         private void FindMyTradesToOrder(Order order)

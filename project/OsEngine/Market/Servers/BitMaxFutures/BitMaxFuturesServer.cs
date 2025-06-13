@@ -261,9 +261,9 @@ namespace OsEngine.Market.Servers.BitMaxFutures
 
         #region Trade
 
-        public void CancelOrder(Order order)
+        public bool CancelOrder(Order order)
         {
-
+            return true;
         }
 
         public void CancelAllOrders()
@@ -331,9 +331,9 @@ namespace OsEngine.Market.Servers.BitMaxFutures
 
         }
 
-        public void GetOrderStatus(Order order)
+        public OrderStateType GetOrderStatus(Order order)
         {
-
+            return OrderStateType.None;
         }
 
         #endregion

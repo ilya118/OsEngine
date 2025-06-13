@@ -3,13 +3,13 @@
  *Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
-namespace OsEngine.Market.Servers.BitMartFutures
+namespace OsEngine.Market.Servers.BitMart
 {
-    class BitMartFuturesServerPermission : IServerPermission
+    class BitMartSpotServerPermission : IServerPermission
     {
         public ServerType ServerType
         {
-            get { return ServerType.BitMartFutures; }
+            get { return ServerType.BitMartSpot; }
         }
 
         #region DataFeedPermissions
@@ -71,7 +71,7 @@ namespace OsEngine.Market.Servers.BitMartFutures
 
         public bool DataFeedTf5MinuteCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf10MinuteCanLoad
@@ -81,27 +81,27 @@ namespace OsEngine.Market.Servers.BitMartFutures
 
         public bool DataFeedTf15MinuteCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf30MinuteCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf1HourCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf2HourCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTf4HourCanLoad
         {
-            get { return true; }
+            get { return false; }
         }
 
         public bool DataFeedTfDayCanLoad
@@ -120,7 +120,7 @@ namespace OsEngine.Market.Servers.BitMartFutures
 
         public int WaitTimeSecondsAfterFirstStartToSendOrders
         {
-            get { return 5; }
+            get { return 15; }
         }
 
         public bool IsCanChangeOrderPrice
@@ -151,13 +151,13 @@ namespace OsEngine.Market.Servers.BitMartFutures
         private TimeFramePermission _tradeTimeFramePermission
             = new TimeFramePermission()
             {
-                TimeFrameSec1IsOn = false,
-                TimeFrameSec2IsOn = false,
-                TimeFrameSec5IsOn = false,
-                TimeFrameSec10IsOn = false,
-                TimeFrameSec15IsOn = false,
-                TimeFrameSec20IsOn = false,
-                TimeFrameSec30IsOn = false,
+                TimeFrameSec1IsOn = true,
+                TimeFrameSec2IsOn = true,
+                TimeFrameSec5IsOn = true,
+                TimeFrameSec10IsOn = true,
+                TimeFrameSec15IsOn = true,
+                TimeFrameSec20IsOn = true,
+                TimeFrameSec30IsOn = true,
                 TimeFrameMin1IsOn = true,
                 TimeFrameMin2IsOn = false,
                 TimeFrameMin3IsOn = true,
@@ -168,9 +168,9 @@ namespace OsEngine.Market.Servers.BitMartFutures
                 TimeFrameMin30IsOn = true,
                 TimeFrameMin45IsOn = false,
                 TimeFrameHour1IsOn = true,
-                TimeFrameHour2IsOn = true,
-                TimeFrameHour4IsOn = true,
-                TimeFrameDayIsOn = true
+                TimeFrameHour2IsOn = false,
+                TimeFrameHour4IsOn = false,
+                TimeFrameDayIsOn = false
             };
 
         public bool ManuallyClosePositionOnBoard_IsOn
@@ -180,17 +180,7 @@ namespace OsEngine.Market.Servers.BitMartFutures
 
         public string[] ManuallyClosePositionOnBoard_ValuesForTrimmingName
         {
-            get
-            {
-                string[] values = new string[]
-                {
-                    "_LONG",
-                    "_SHORT",
-                    "_BOTH"
-                };
-
-                return values;
-            }
+            get { return null; }
         }
 
         public string[] ManuallyClosePositionOnBoard_ExceptionPositionNames
@@ -199,9 +189,7 @@ namespace OsEngine.Market.Servers.BitMartFutures
             {
                 string[] values = new string[]
                 {
-                    "USDT",
-                    "BTC",
-                    "ETH"
+                    "USDT"
                 };
 
                 return values;
