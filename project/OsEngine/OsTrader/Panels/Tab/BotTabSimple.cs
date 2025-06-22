@@ -97,8 +97,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                 ManualPositionSupport.LogMessageEvent += SetNewLogMessage;
                 ManualPositionSupport.DontOpenOrderDetectedEvent += _dealOpeningWatcher_DontOpenOrderDetectedEvent;
 
-                _gridsMaster = new TradeGridsMaster(startProgram, name, this);
-                _gridsMaster.LogMessageEvent += SetNewLogMessage;
+                GridsMaster = new TradeGridsMaster(startProgram, name, this);
+                GridsMaster.LogMessageEvent += SetNewLogMessage;
 
                 _icebergMaker = new IcebergMaker();
                 _icebergMaker.NewOrderNeedToExecute += _icebergMaker_NewOrderNeedToExecute;
@@ -206,7 +206,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _marketDepthPainter?.StartPaint(hostGlass, textBoxLimitPrice, textBoxVolume);
                 _journal?.StartPaint(hostOpenDeals, hostCloseDeals);
                 _alerts?.StartPaint(hostAlerts);
-                _gridsMaster?.StartPaint(hostGrids);
+                GridsMaster?.StartPaint(hostGrids);
 
                 _chartMaster?.StartPaintChartControlPanel(gridChartControlPanel);
             }
@@ -227,7 +227,7 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _marketDepthPainter?.StopPaint();
                 _journal?.StopPaint();
                 _alerts?.StopPaint();
-                _gridsMaster?.StopPaint();
+                GridsMaster?.StopPaint();
             }
             catch (Exception error)
             {
@@ -281,8 +281,12 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
 
                 Connector.EventsIsOn = value;
-            }
 
+                if(value == false)
+                {
+                    _chartMaster.EventIsOn = value;
+                }
+            }
         }
 
         /// <summary>
@@ -334,9 +338,9 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _chartMaster.Clear();
                 }
 
-                if (_gridsMaster != null)
+                if (GridsMaster != null)
                 {
-                    _gridsMaster.Clear();
+                    GridsMaster.Clear();
                 }
 
                 _lastTradeTime = DateTime.MinValue;
@@ -422,11 +426,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _chartMaster = null;
                 }
 
-                if (_gridsMaster != null)
+                if (GridsMaster != null)
                 {
-                    _gridsMaster.Delete();
-                    _gridsMaster.LogMessageEvent -= SetNewLogMessage;
-                    _gridsMaster = null;
+                    GridsMaster.Delete();
+                    GridsMaster.LogMessageEvent -= SetNewLogMessage;
+                    GridsMaster = null;
                 }
 
                 if (_marketDepthPainter != null)
@@ -676,14 +680,14 @@ namespace OsEngine.OsTrader.Panels.Tab
         }
 
         /// <summary>
+        /// Automatic trading grids
+        /// </summary>
+        public TradeGridsMaster GridsMaster;
+
+        /// <summary>
         /// Chart drawing master
         /// </summary>
         private ChartCandleMaster _chartMaster;
-
-        /// <summary>
-        /// Automatic trading grids
-        /// </summary>
-        private TradeGridsMaster _gridsMaster;
 
         /// <summary>
         /// Class drawing a marketDepth
@@ -3923,6 +3927,11 @@ namespace OsEngine.OsTrader.Panels.Tab
                 else if (position.OpenVolume > volume)
                 {
                     ClosePeaceOfDeal(position, OrderPriceType.Limit, priceLimit, ManualPositionSupport.SecondToClose, volume, true, false);
+                }
+
+                if (position.CloseOrders[^1].State == OrderStateType.None)
+                {
+
                 }
             }
             catch (Exception error)

@@ -436,12 +436,36 @@ namespace OsEngine.Journal
                     {
                         PaintClosePositionGrid();
                     }
+
+                    PaintTitleAbsProfit(allSortPoses);
+                    
                 }
             }
             catch (Exception error)
             {
                 SendNewLogMessage(error.ToString(),LogMessageType.Error);
             }
+        }
+
+        private void PaintTitleAbsProfit(List<Position> positionsAll)
+        {
+            decimal absProfit = PositionStatisticGenerator.GetAllProfitInAbsolute(positionsAll.ToArray());
+
+            if (absProfit != 0)
+            {
+                absProfit = Math.Round(absProfit, 3);
+
+                Title = OsLocalization.Journal.TitleJournalUi
+                    + ".  " + OsLocalization.Journal.Label1 + ": " + absProfit;
+            }
+            else
+            {
+                if(Title != OsLocalization.Journal.TitleJournalUi)
+                {
+                    Title = OsLocalization.Journal.TitleJournalUi;
+                }
+            }
+
         }
 
         private string _paintLocker = "journalPainterLocker";
@@ -672,7 +696,7 @@ namespace OsEngine.Journal
                 _chartEquity.BackColor = Color.FromArgb(17, 18, 23);
 
                 ChartArea areaLineProfit = new ChartArea("ChartAreaProfit");
-                areaLineProfit.Position.Height = 70;
+                areaLineProfit.Position.Height = 80;
                 areaLineProfit.Position.Width = 100;
                 areaLineProfit.Position.Y = 0;
                 areaLineProfit.CursorX.IsUserSelectionEnabled = true; //allow the user to change the view scope/ разрешаем пользователю изменять рамки представления
@@ -682,7 +706,7 @@ namespace OsEngine.Journal
 
                 ChartArea areaLineProfitBar = new ChartArea("ChartAreaProfitBar");
                 areaLineProfitBar.AlignWithChartArea = "ChartAreaProfit";
-                areaLineProfitBar.Position.Height = 30;
+                areaLineProfitBar.Position.Height = 20;
                 areaLineProfitBar.Position.Width = 100;
                 areaLineProfitBar.Position.Y = 70;
                 areaLineProfitBar.AxisX.Enabled = AxisEnabled.False;
@@ -2966,7 +2990,7 @@ namespace OsEngine.Journal
                 //column0.CellTemplate = cell0;
                 column0.HeaderText = OsLocalization.Journal.Label9;
                 column0.ReadOnly = false;
-                column0.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                column0.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
 
                 _gridLeftBotsPanel.Columns.Add(column0);
 
@@ -2975,6 +2999,7 @@ namespace OsEngine.Journal
                 column1.HeaderText = @"#";
                 column1.ReadOnly = true;
                 column1.Width = 75;
+                column1.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 _gridLeftBotsPanel.Columns.Add(column1);
 
                 DataGridViewColumn column2 = new DataGridViewColumn();
@@ -2994,14 +3019,14 @@ namespace OsEngine.Journal
                 DataGridViewCheckBoxColumn column4 = new DataGridViewCheckBoxColumn();
                 column4.HeaderText = OsLocalization.Journal.Label12;
                 column4.ReadOnly = false;
-                column4.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                column4.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 _gridLeftBotsPanel.Columns.Add(column4);
 
                 DataGridViewColumn column5 = new DataGridViewColumn();
                 column5.CellTemplate = cell0;
                 column5.HeaderText = @"Mult %";
                 column5.ReadOnly = false;
-                column5.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+                column5.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                 _gridLeftBotsPanel.Columns.Add(column5);
 
                 HostBotsSelected.Child = _gridLeftBotsPanel;
@@ -3656,8 +3681,8 @@ namespace OsEngine.Journal
                 ButtonShowLeftPanel.Visibility = Visibility.Visible;
                 GridTabPrime.Margin = new Thickness(0, 0, -0.333, -0.333);
 
-                this.MinWidth = 950;
-                this.MinHeight = 300;
+                //this.MinWidth = 950;
+                //this.MinHeight = 300;
                 _leftPanelIsHide = true;
             }
             catch (Exception ex)
@@ -3674,8 +3699,8 @@ namespace OsEngine.Journal
                 ButtonShowLeftPanel.Visibility = Visibility.Hidden;
                 GridTabPrime.Margin = new Thickness(510, 0, -0.333, -0.333);
 
-                this.MinWidth = 1450;
-                this.MinHeight = 500;
+                //this.MinWidth = 1450;
+                //this.MinHeight = 500;
                 _leftPanelIsHide = false;
             }
             catch (Exception ex)

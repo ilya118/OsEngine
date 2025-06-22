@@ -12,6 +12,8 @@ namespace OsEngine.OsTrader.Grids
 {
     public class TradeGridNonTradePeriods
     {
+        #region Service
+
         public TradeGridNonTradePeriods()
         {
             NonTradePeriod1Start = new TimeOfDay();
@@ -35,27 +37,103 @@ namespace OsEngine.OsTrader.Grids
         public bool NonTradePeriod1OnOff;
         public TimeOfDay NonTradePeriod1Start;
         public TimeOfDay NonTradePeriod1End;
-        public TradeGridRegime NonTradePeriod1Regime; 
+        public TradeGridRegime NonTradePeriod1Regime = TradeGridRegime.Off; 
 
         public bool NonTradePeriod2OnOff;
         public TimeOfDay NonTradePeriod2Start;
         public TimeOfDay NonTradePeriod2End;
-        public TradeGridRegime NonTradePeriod2Regime;
+        public TradeGridRegime NonTradePeriod2Regime = TradeGridRegime.Off;
 
         public bool NonTradePeriod3OnOff;
         public TimeOfDay NonTradePeriod3Start;
         public TimeOfDay NonTradePeriod3End;
-        public TradeGridRegime NonTradePeriod3Regime;
+        public TradeGridRegime NonTradePeriod3Regime = TradeGridRegime.Off;
 
         public bool NonTradePeriod4OnOff;
         public TimeOfDay NonTradePeriod4Start;
         public TimeOfDay NonTradePeriod4End;
-        public TradeGridRegime NonTradePeriod4Regime;
+        public TradeGridRegime NonTradePeriod4Regime = TradeGridRegime.Off;
 
         public bool NonTradePeriod5OnOff;
         public TimeOfDay NonTradePeriod5Start;
         public TimeOfDay NonTradePeriod5End;
-        public TradeGridRegime NonTradePeriod5Regime;
+        public TradeGridRegime NonTradePeriod5Regime = TradeGridRegime.Off;
+
+        public string GetSaveString()
+        {
+            string result = "";
+
+            result += NonTradePeriod1OnOff + "@";
+            result += NonTradePeriod1Start + "@";
+            result += NonTradePeriod1End + "@";
+            result += NonTradePeriod1Regime + "@";
+            result += NonTradePeriod2OnOff + "@";
+            result += NonTradePeriod2Start + "@";
+            result += NonTradePeriod2End + "@";
+            result += NonTradePeriod2Regime + "@";
+            result += NonTradePeriod3OnOff + "@";
+            result += NonTradePeriod3Start + "@";
+            result += NonTradePeriod3End + "@";
+            result += NonTradePeriod3Regime + "@";
+            result += NonTradePeriod4OnOff + "@";
+            result += NonTradePeriod4Start + "@";
+            result += NonTradePeriod4End + "@";
+            result += NonTradePeriod4Regime + "@";
+            result += NonTradePeriod5OnOff + "@";
+            result += NonTradePeriod5Start + "@";
+            result += NonTradePeriod5End + "@";
+            result += NonTradePeriod5Regime + "@";
+
+            result += "@";
+            result += "@";
+            result += "@";
+            result += "@";
+            result += "@"; // пять пустых полей в резерв
+
+            return result;
+        }
+
+        public void LoadFromString(string value)
+        {
+            try
+            {
+                string[] values = value.Split('@');
+
+                NonTradePeriod1OnOff = Convert.ToBoolean(values[0]);
+                NonTradePeriod1Start.LoadFromString(values[1]);
+                NonTradePeriod1End.LoadFromString(values[2]);
+                Enum.TryParse(values[3], out NonTradePeriod1Regime);
+
+                NonTradePeriod2OnOff = Convert.ToBoolean(values[4]);
+                NonTradePeriod2Start.LoadFromString(values[5]);
+                NonTradePeriod2End.LoadFromString(values[6]);
+                Enum.TryParse(values[7], out NonTradePeriod2Regime);
+
+                NonTradePeriod3OnOff = Convert.ToBoolean(values[8]);
+                NonTradePeriod3Start.LoadFromString(values[9]);
+                NonTradePeriod3End.LoadFromString(values[10]);
+                Enum.TryParse(values[11], out NonTradePeriod3Regime);
+
+                NonTradePeriod4OnOff = Convert.ToBoolean(values[12]);
+                NonTradePeriod4Start.LoadFromString(values[13]);
+                NonTradePeriod4End.LoadFromString(values[14]);
+                Enum.TryParse(values[15], out NonTradePeriod4Regime);
+
+                NonTradePeriod5OnOff = Convert.ToBoolean(values[16]);
+                NonTradePeriod5Start.LoadFromString(values[17]);
+                NonTradePeriod5End.LoadFromString(values[18]);
+                Enum.TryParse(values[19], out NonTradePeriod5Regime);
+
+            }
+            catch (Exception e)
+            {
+                SendNewLogMessage(e.ToString(),LogMessageType.Error);
+            }
+        }
+
+        #endregion
+
+        #region Logic
 
         public TradeGridRegime GetNonTradePeriodsRegime(DateTime curTime)
         {
@@ -152,77 +230,7 @@ namespace OsEngine.OsTrader.Grids
             return TradeGridRegime.On;
         }
 
-        public string GetSaveString()
-        {
-            string result = "";
-
-            result += NonTradePeriod1OnOff + "@";
-            result += NonTradePeriod1Start + "@";
-            result += NonTradePeriod1End + "@";
-            result += NonTradePeriod1Regime + "@";
-            result += NonTradePeriod2OnOff + "@";
-            result += NonTradePeriod2Start + "@";
-            result += NonTradePeriod2End + "@";
-            result += NonTradePeriod2Regime + "@";
-            result += NonTradePeriod3OnOff + "@";
-            result += NonTradePeriod3Start + "@";
-            result += NonTradePeriod3End + "@";
-            result += NonTradePeriod3Regime + "@";
-            result += NonTradePeriod4OnOff + "@";
-            result += NonTradePeriod4Start + "@";
-            result += NonTradePeriod4End + "@";
-            result += NonTradePeriod4Regime + "@";
-            result += NonTradePeriod5OnOff + "@";
-            result += NonTradePeriod5Start + "@";
-            result += NonTradePeriod5End + "@";
-            result += NonTradePeriod5Regime + "@";
-
-            result += "@";
-            result += "@";
-            result += "@";
-            result += "@";
-            result += "@"; // пять пустых полей в резерв
-
-            return result;
-        }
-
-        public void LoadFromString(string value)
-        {
-            try
-            {
-                string[] values = value.Split('@');
-
-                NonTradePeriod1OnOff = Convert.ToBoolean(values[0]);
-                NonTradePeriod1Start.LoadFromString(values[1]);
-                NonTradePeriod1End.LoadFromString(values[2]);
-                Enum.TryParse(values[3], out NonTradePeriod1Regime);
-
-                NonTradePeriod2OnOff = Convert.ToBoolean(values[4]);
-                NonTradePeriod2Start.LoadFromString(values[5]);
-                NonTradePeriod2End.LoadFromString(values[6]);
-                Enum.TryParse(values[7], out NonTradePeriod2Regime);
-
-                NonTradePeriod3OnOff = Convert.ToBoolean(values[8]);
-                NonTradePeriod3Start.LoadFromString(values[9]);
-                NonTradePeriod3End.LoadFromString(values[10]);
-                Enum.TryParse(values[11], out NonTradePeriod3Regime);
-
-                NonTradePeriod4OnOff = Convert.ToBoolean(values[12]);
-                NonTradePeriod4Start.LoadFromString(values[13]);
-                NonTradePeriod4End.LoadFromString(values[14]);
-                Enum.TryParse(values[15], out NonTradePeriod4Regime);
-
-                NonTradePeriod5OnOff = Convert.ToBoolean(values[16]);
-                NonTradePeriod5Start.LoadFromString(values[17]);
-                NonTradePeriod5End.LoadFromString(values[18]);
-                Enum.TryParse(values[19], out NonTradePeriod5Regime);
-
-            }
-            catch (Exception e)
-            {
-                SendNewLogMessage(e.ToString(),LogMessageType.Error);
-            }
-        }
+        #endregion
 
         #region Log
 

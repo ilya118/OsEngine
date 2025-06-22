@@ -53,9 +53,6 @@
     </ItemGroup>
   </Target>
   <ItemGroup>
-    <Compile Remove="Robots\A_Strategy_MACD_5.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Reference Include="BytesRoad.Net.Ftp">
       <HintPath>bin\Debug\BytesRoad.Net.Ftp.dll</HintPath>
     </Reference>

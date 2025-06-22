@@ -18,6 +18,7 @@ namespace OsEngine.OsTrader.Grids
 {
     public class TradeGridsMaster
     {
+        #region Service
 
         public TradeGridsMaster(StartProgram startProgram, string botName, BotTabSimple tab)
         {
@@ -61,11 +62,13 @@ namespace OsEngine.OsTrader.Grids
             }
         }
 
+        #endregion
+
         #region TradeGrid management
 
         public List<TradeGrid> TradeGrids = new List<TradeGrid>();
 
-        public void CreateNewTradeGrid()
+        public TradeGrid CreateNewTradeGrid()
         {
             TradeGrid newGrid = new TradeGrid(_startProgram, _tab);
             newGrid.NeedToSaveEvent += NewGrid_NeedToSaveEvent;
@@ -87,6 +90,9 @@ namespace OsEngine.OsTrader.Grids
             TradeGrids.Add(newGrid);
 
             SaveGrids();
+            PaintGridView();
+
+            return newGrid;
         }
 
         private void NewGrid_NeedToSaveEvent()
@@ -94,15 +100,18 @@ namespace OsEngine.OsTrader.Grids
             SaveGrids();
         }
 
-        public void DeleteAtNum(int num)
+        public void DeleteAtNum(int num, bool isAuto = true)
         {
-            AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Trader.Label443);
-
-            ui.ShowDialog();
-
-            if (ui.UserAcceptAction == false)
+            if(isAuto == false)
             {
-                return;
+                AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Trader.Label443);
+
+                ui.ShowDialog();
+
+                if (ui.UserAcceptAction == false)
+                {
+                    return;
+                }
             }
 
             for(int i = 0;i < TradeGrids.Count;i++)
@@ -122,6 +131,7 @@ namespace OsEngine.OsTrader.Grids
                     TradeGrids[i].NeedToSaveEvent -= NewGrid_NeedToSaveEvent;
                     TradeGrids[i].LogMessageEvent -= SendNewLogMessage;
                     TradeGrids[i].RePaintSettingsEvent -= NewGrid_UpdateTableEvent;
+                    TradeGrids[i].Delete();
                     TradeGrids.RemoveAt(i);
                     
                     break;
@@ -132,7 +142,7 @@ namespace OsEngine.OsTrader.Grids
             PaintGridView();
         }
 
-        List<TradeGridUi> _tradeGridUis = new List<TradeGridUi>();
+        private List<TradeGridUi> _tradeGridUis = new List<TradeGridUi>();
 
         public void ShowDialog(int num)
         {
@@ -228,7 +238,8 @@ namespace OsEngine.OsTrader.Grids
 
         private void LoadGrids()
         {
-            if (_startProgram == StartProgram.IsOsOptimizer)
+            if (_startProgram == StartProgram.IsOsOptimizer
+                || _startProgram == StartProgram.IsTester)
             {
                 return;
             }
@@ -443,7 +454,7 @@ namespace OsEngine.OsTrader.Grids
 
                     int number = Convert.ToInt32(_gridViewInstances.Rows[row].Cells[0].Value.ToString());
 
-                    DeleteAtNum(number);
+                    DeleteAtNum(number, false);
                 }
 
                 if (row < _gridViewInstances.Rows.Count - 1

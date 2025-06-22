@@ -12,29 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Threading;
-
-
-// Разные базовые сути сеток:
-// 1) По каждому открытию отдельный выход. Как маркет-мейкинг инструмента в одну сторону.     // MarketMaking
-// 2) Как способ открытия позиции. Возможен выход по всей сетке через общий профит и стоп.    // OpenPosition
-
-// Какие бывают общие настройки у сеток
-// Объём: Мартингейл / Равномерно
-// Объём в: Контракты / Валюта контракта / Процент депозита
-// Размер сетки: Равномерный / с мультипликатором
-// Количество ордеров в рынке: int
-// Шаг сетки указывать: Абсолют / Проценты
-// Не торговые периоды: Временная блокировка по не торговым периодам + торговые дни + торговля по отведённому времени.
-// Способ входа в логику: Раз в N секунд / На каждом трейде
-// Автоочистка журнала: вкл/выкл / кол-во закрытых позиций в журнале
-
-// Переход сетки в режим только закрытие:
-// 1) Бесконечная (Циклическая). По умолчанию. Вообще не останавливается.
-// 2) В количестве сработавших ордеров / 3) Движение вверх /
-// 4) Движение вниз / 5) По времени
-
-// Переход сетки в режим выключена
-// 0) При отсутствии позиции в режиме "только закрытии". По умолчанию
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace OsEngine.OsTrader.Grids
 {
@@ -55,6 +33,8 @@ namespace OsEngine.OsTrader.Grids
             Tab.PositionOpeningSuccesEvent += Tab_PositionOpeningSuccesEvent; 
             Tab.PositionStopActivateEvent += Tab_PositionStopActivateEvent;
             Tab.PositionProfitActivateEvent += Tab_PositionProfitActivateEvent;
+            Tab.Connector.TestStartEvent += Connector_TestStartEvent;
+
             StartProgram = startProgram;
 
             NonTradePeriods = new TradeGridNonTradePeriods();
@@ -93,6 +73,7 @@ namespace OsEngine.OsTrader.Grids
                 RegimeLogicEntry = TradeGridLogicEntryRegime.OnTrade;
             }
         }
+
 
         public StartProgram StartProgram;
 
@@ -189,7 +170,7 @@ namespace OsEngine.OsTrader.Grids
                 MaxClosePositionsInJournal = Convert.ToInt32(values[5]);
                 MaxOpenOrdersInMarket = Convert.ToInt32(values[6]);
                 MaxCloseOrdersInMarket = Convert.ToInt32(values[7]);
-                _firstTradePrice = Convert.ToInt32(values[8]);
+                _firstTradePrice = values[8].ToDecimal();
                 _openPositionsBySession = Convert.ToInt32(values[9]);
                 _firstTradeTime = Convert.ToDateTime(values[10], CultureInfo.InvariantCulture);
 
@@ -225,12 +206,15 @@ namespace OsEngine.OsTrader.Grids
 
         public void Delete()
         {
+            _isDeleted = true;
+
             if (Tab != null)
             {
                 Tab.NewTickEvent -= Tab_NewTickEvent;
                 Tab.PositionOpeningSuccesEvent -= Tab_PositionOpeningSuccesEvent;
                 Tab.PositionStopActivateEvent -= Tab_PositionStopActivateEvent;
                 Tab.PositionProfitActivateEvent -= Tab_PositionProfitActivateEvent;
+                Tab.Connector.TestStartEvent -= Connector_TestStartEvent;
                 Tab = null;
             }
 
@@ -307,6 +291,23 @@ namespace OsEngine.OsTrader.Grids
             {
                 FullRePaintGridEvent();
             }
+        }
+
+        private void Connector_TestStartEvent()
+        {
+            List<TradeGridLine> lines = GridCreator.Lines;
+
+            if(lines == null)
+            {
+                return;
+            }
+
+            for(int i = 0;i < lines.Count;i++)
+            {
+                lines[i].Position = null;
+                lines[i].PositionNum = 0;
+            }
+
         }
 
         public event Action NeedToSaveEvent;
@@ -533,6 +534,11 @@ namespace OsEngine.OsTrader.Grids
                         return;
                     }
 
+                    if(Tab == null)
+                    {
+                        return;
+                    }
+
                     if(RegimeLogicEntry == TradeGridLogicEntryRegime.OncePerSecond)
                     {
                         Process();
@@ -555,8 +561,25 @@ namespace OsEngine.OsTrader.Grids
         {
             if (Regime == TradeGridRegime.On)
             {
-                _openPositionsBySession++;
-                _needToSave = true;
+                bool isInArray = false;
+
+                for(int i = 0;i < GridCreator.Lines.Count;i++)
+                {
+                    TradeGridLine line = GridCreator.Lines[i];
+
+                    if(line.Position != null 
+                        && line.Position.Number == position.Number)
+                    {
+                        isInArray = true;
+                        break;
+                    }
+                }
+
+                if(isInArray)
+                {
+                    _openPositionsBySession++;
+                    _needToSave = true;
+                }
             }
         }
 
@@ -584,6 +607,11 @@ namespace OsEngine.OsTrader.Grids
 
             if(GridCreator.Lines == null 
                 || GridCreator.Lines.Count == 0)
+            {
+                return;
+            }
+
+            if(Tab.EventsIsOn == false)
             {
                 return;
             }
@@ -1339,6 +1367,17 @@ namespace OsEngine.OsTrader.Grids
 
             decimal lastPrice = candles[candles.Count - 1].Close;
 
+            if(lastPrice == 0)
+            {
+                return;
+            }
+
+            if(Tab.PriceBestAsk == 0
+                || Tab.PriceBestBid == 0)
+            {
+                return;
+            }
+
             List<TradeGridLine> linesAll = GridCreator.Lines;
 
             // 1 берём текущие линии с позициями
@@ -1596,6 +1635,8 @@ namespace OsEngine.OsTrader.Grids
         }
 
         #endregion
+
+        #region Public interface
 
         public decimal FirstPriceReal
         {
@@ -1895,6 +1936,8 @@ namespace OsEngine.OsTrader.Grids
             }
             return linesWithOpenOrder;
         }
+
+        #endregion
 
         #region Log
 
