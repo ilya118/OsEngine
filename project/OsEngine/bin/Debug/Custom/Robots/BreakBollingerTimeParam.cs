@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -20,18 +21,23 @@ Example for optimizing the parameter entry and exit times for a position
 
 The trend robot on BreakBollinger
 
-Buy: the price is above the upper Bollinger band.
+Buy:
+the price is above the upper Bollinger band.
 
-Sell: the price is below the lower Bollinger band.
+Sell:
+the price is below the lower Bollinger band.
 
-Exit: reverse side of the channel.
+Exit:
+reverse side of the channel.
 */
 
 namespace OsEngine.Robots
 {
+    // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     [Bot("BreakBollingerTimeParam")]
     internal class BreakBollingerTimeParam : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -54,6 +60,7 @@ namespace OsEngine.Robots
 
         public BreakBollingerTimeParam(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -79,17 +86,14 @@ namespace OsEngine.Robots
             ((IndicatorParameterDecimal)_bollinger.Parameters[1]).ValueDecimal = _bollingerDeviation.ValueDecimal;
             _bollinger.Save();
 
-            ParametrsChangeByUser += BreakBollingerTimeParam_ParametrsChangeByUser;
+            ParametrsChangeByUser += _breakBollingerTimeParam_ParametrsChangeByUser;
 
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Example for optimizing the parameter entry and exit times for a position on BreakBollinger. " +
-                "Buy: the price is above the upper Bollinger band. " +
-                "Sell: the price is below the lower Bollinger band. " +
-                "Exit: reverse side of the channel.";
+            Description = OsLocalization.Description.DescriptionLabel139;
         }
 
-        private void BreakBollingerTimeParam_ParametrsChangeByUser()
+        private void _breakBollingerTimeParam_ParametrsChangeByUser()
         {
             ((IndicatorParameterInt)_bollinger.Parameters[0]).ValueInt = _bollingerLength.ValueInt;
             ((IndicatorParameterDecimal)_bollinger.Parameters[1]).ValueDecimal = _bollingerDeviation.ValueDecimal;
@@ -101,6 +105,7 @@ namespace OsEngine.Robots
         {
             return "BreakBollingerTimeParam";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
             
@@ -158,8 +163,8 @@ namespace OsEngine.Robots
         // Close the position forcibly at the end of the trading time
         private void ClosePosition(Position pos)
         {
-            if (pos.State == PositionStateType.Closing
-                || pos.CloseActiv == true)
+            if (pos.State == PositionStateType.Closing ||
+                pos.CloseActive == true)
             {
                 return;
             }

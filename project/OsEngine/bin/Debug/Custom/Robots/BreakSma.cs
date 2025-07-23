@@ -14,6 +14,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -93,10 +94,7 @@ namespace OsEngine.Robots.SMA
             _stopValue = CreateParameter("Stop percent", 0.5m, 1, 10, 1, "Exit settings");
             _profitValue = CreateParameter("Profit percent", 0.5m, 1, 10, 1, "Exit settings");
 
-            Description = "The trend robot on intersection SMA with price " +
-                "Buy: the price of the instrument is above Sma " +
-                "Sell: the price of the instrument is below Sma " +
-                "Exit: stop and profit in % of the entry price";
+            Description = OsLocalization.Description.DescriptionLabel168;
         }
 
         // Indicator Update event
@@ -105,7 +103,6 @@ namespace OsEngine.Robots.SMA
             ((IndicatorParameterInt)_sma.Parameters[0]).ValueInt = _periodSma.ValueInt;
             _sma.Save();
             _sma.Reload();
-
         }
 
         // The name of the robot in OsEngine
@@ -172,10 +169,12 @@ namespace OsEngine.Robots.SMA
                 _lastSma = _sma.DataSeries[0].Last;
                 
                 decimal _slippage = this._slippage.ValueDecimal * _tab.Securiti.PriceStep;
+
                 // Long
                 if (_regime.ValueString != "OnlyShort") // If the mode is not only short, then we enter long
                 {
                     decimal lastPrice = candles[candles.Count - 1].Close;
+
                     if (lastPrice > _lastSma)
                     {
                         _tab.BuyAtLimit(GetVolume(_tab), _tab.PriceBestAsk + _slippage);
@@ -186,6 +185,7 @@ namespace OsEngine.Robots.SMA
                 if (_regime.ValueString != "OnlyLong") // If the mode is not only long, then we enter short
                 {
                     decimal lastPrice = candles[candles.Count - 1].Close;
+
                     if (lastPrice < _lastSma)
                     {
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
@@ -251,7 +251,7 @@ namespace OsEngine.Robots.SMA
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -324,4 +324,3 @@ namespace OsEngine.Robots.SMA
         }
     }
 }
-

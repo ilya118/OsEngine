@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -96,12 +97,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend strategy on Bulls Power Divergence." +
-                "Buy:" +
-                "1.Bulls Power columns must be higher than 0;" +
-                "2.The highs on the chart are rising, and on the indicator they are decreasing" +
-                "Exit:" +
-                "The Bulls Power indicator has gone below 0.";
+            Description = OsLocalization.Description.DescriptionLabel174;
         }
 
         // Indicator Update event
@@ -174,6 +170,7 @@ namespace OsEngine.Robots
         private void LogicOpenPosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
+
             List<decimal> zzHigh = _zz.DataSeries[2].Values;
             List<decimal> zzBullsPowerLow = _zzBullsPower.DataSeries[4].Values;
             List<decimal> zzBullsPowerHigh = _zzBullsPower.DataSeries[3].Values;
@@ -334,7 +331,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

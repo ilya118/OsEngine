@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -29,7 +30,7 @@ Exit: on the opposite signal.
 [Bot("IntersectionOfThreeSsma")] // We create an attribute so that we don't write anything in the Boot factory
  public class IntersectionOfThreeSsma : BotPanel
  {
-    BotTabSimple _tab;
+    private BotTabSimple _tab;
 
     // Basic Settings
     private StrategyParameterString _regime;
@@ -108,10 +109,7 @@ Exit: on the opposite signal.
         // Subscribe to the candle completion event
         _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-        Description = "Trend robot at the intersection of three smoothed averages. " +
-            "Buy: Fast Ssma is higher than slow Ssma. " +
-            "Sell: Fast Ssma is lower than slow Ssma. " +
-            "Exit: on the opposite signal.";
+        Description = OsLocalization.Description.DescriptionLabel208;
     }
 
     // Indicator Update event
@@ -238,6 +236,7 @@ Exit: on the opposite signal.
             {
                 continue;
             }
+
             if (openPositions[i].Direction == Side.Buy) // If the direction of the position is long
             {
                 if (_lastSsmaFast < _lastSsmaMiddle && _lastSsmaMiddle < _lastSsmaSlow)
@@ -275,7 +274,7 @@ Exit: on the opposite signal.
 
                 if (serverPermission != null &&
                     serverPermission.IsUseLotToCalculateProfit &&
-                tab.Security.Lot != 0 &&
+                    tab.Security.Lot != 0 &&
                     tab.Security.Lot > 1)
                 {
                     volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -347,5 +346,3 @@ Exit: on the opposite signal.
         return volume;
     }
  }
-
-

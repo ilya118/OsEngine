@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -31,7 +32,7 @@ opposite channel boundary.
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakChannelVwmaATR")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakChannelVwmaATR")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakChannelVwmaATR : BotPanel
     {
         // Reference to the main trading tab
@@ -111,10 +112,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on channel Vwma and ATR. " +
-                "Buy: price above top Vwma + MultAtr * Atr. " +
-                "Sell: price below lower Vwma - MultAtr * Atr. " +
-                "Exit: opposite channel boundary.";
+            Description = OsLocalization.Description.DescriptionLabel144;
         }
 
         private void BreakChannelVwmaATR_ParametrsChangeByUser()

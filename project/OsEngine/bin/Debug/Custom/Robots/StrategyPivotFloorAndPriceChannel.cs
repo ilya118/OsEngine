@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -27,17 +28,20 @@ Sell:
 1. The candle closed below the S1 level.
 2. The price is below the bottom line of the PC.
 
-Exit from buy: The trailing stop is placed at the minimum for the period specified for the trailing
+Exit from buy:
+The trailing stop is placed at the minimum for the period specified for the trailing
 stop and transferred (slides) to new price lows, also for the specified period.
-Exit from sell: The trailing stop is placed at the maximum for the period specified for the trailing
+Exit from sell:
+The trailing stop is placed at the maximum for the period specified for the trailing
 stop and is transferred (slides) to the new maximum of the price, also for the specified period.
- */
+*/
 
 namespace OsEngine.Robots
 {
-    [Bot("StrategyPivotFloorAndPriceChannel")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("StrategyPivotFloorAndPriceChannel")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class StrategyPivotFloorAndPriceChannel : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -75,6 +79,7 @@ namespace OsEngine.Robots
 
         public StrategyPivotFloorAndPriceChannel(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -112,29 +117,20 @@ namespace OsEngine.Robots
             _trailCandlesShort = CreateParameter("Trail Candles Short", 5, 5, 200, 5, "Exit");
 
             // Subscribe to the indicator update event
-            ParametrsChangeByUser += StrategyPivotFloorAndPriceChannel_ParametrsChangeByUser; ;
+            ParametrsChangeByUser += _strategyPivotFloorAndPriceChannel_ParametrsChangeByUser; ;
 
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Strategy PivotFloor And PriceChannel. " +
-                "Buy: " +
-                "1. The candle closed above the R1 level. " +
-                "2. The price is above the top line of the PC. " +
-                "Sell: " +
-                "1. The candle closed below the S1 level. " +
-                "2. The price is below the bottom line of the PC. " +
-                "Exit from buy: The trailing stop is placed at the minimum for the period specified for the trailing " +
-                "stop and transferred (slides) to new price lows, also for the specified period. " +
-                "Exit from sell: The trailing stop is placed at the maximum for the period specified for the trailing " +
-                "stop and is transferred (slides) to the new maximum of the price, also for the specified period.";
+            Description = OsLocalization.Description.DescriptionLabel268;
         }
 
-        private void StrategyPivotFloorAndPriceChannel_ParametrsChangeByUser()
+        private void _strategyPivotFloorAndPriceChannel_ParametrsChangeByUser()
         {
             ((IndicatorParameterString)_pivotFloor.Parameters[0]).ValueString = _pivotFloorPeriod.ValueString;
             _pivotFloor.Save();
             _pivotFloor.Reload();
+
             ((IndicatorParameterInt)_PC.Parameters[0]).ValueInt = _pcUpLength.ValueInt;
             ((IndicatorParameterInt)_PC.Parameters[1]).ValueInt = _pcDownLength.ValueInt;
             _PC.Save();
@@ -146,6 +142,7 @@ namespace OsEngine.Robots
         {
             return "StrategyPivotFloorAndPriceChannel";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -164,8 +161,8 @@ namespace OsEngine.Robots
 
             // If there are not enough candles to build an indicator, we exit
             if (_lastR1 == 0 ||
-                candles.Count < _pcUpLength.ValueInt ||
-                candles.Count < _pcDownLength.ValueInt)
+                candles.Count <= _pcUpLength.ValueInt + 2 ||
+                candles.Count <= _pcDownLength.ValueInt + 2)
             {
                 return;
             }

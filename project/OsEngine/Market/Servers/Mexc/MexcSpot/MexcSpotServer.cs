@@ -1784,9 +1784,16 @@ namespace OsEngine.Market.Servers.Mexc
                 }
                 else
                 {
-                    GetOrderStatus(order);
-                    SendLogMessage("Cancel order failed. Status: "
-                        + response.StatusCode + "  " + order.SecurityNameCode + ", " + content, LogMessageType.Error);
+                    if (content.Contains("-2011"))
+                    {
+                        GetOrderStatus(order);
+                    }
+                    else
+                    {
+                        GetOrderStatus(order);
+                        SendLogMessage("Cancel order failed. Status: "
+                            + response.StatusCode + "  " + order.SecurityNameCode + ", " + content, LogMessageType.Error);
+                    }    
                 }
             }
             catch (Exception exception)
@@ -2290,6 +2297,10 @@ namespace OsEngine.Market.Servers.Mexc
         }
 
         public event Action<string, LogMessageType> LogMessageEvent;
+
+        public event Action<Funding> FundingUpdateEvent;
+
+        public event Action<SecurityVolumes> Volume24hUpdateEvent;
 
         #endregion
     }

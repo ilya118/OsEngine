@@ -2,18 +2,91 @@
 
 namespace OsEngine.Market.Servers.HTX.Swap.Entity
 {
-    public class ResponseMessageSecurities
+    public class ResponseRestMessage<T>
     {
-        public List<Data> data { get; set; }
+        public string status { get; set; }
+        public string errcode { get; set; }
+        public string errmsg { get; set; }
+        public T data { get; set; }
+        public string ts { get; set; }
+    }
 
-        public class Data
-        {
-            public string symbol { get; set; }
-            public string contract_code { get; set; }
-            public string contract_size { get; set; }
-            public string price_tick { get; set; }
-            public string contract_status { get; set; }
-        }
+    public class SecuritiesInfo
+    {
+        public string symbol { get; set; }
+        public string contract_code { get; set; }
+        public string contract_size { get; set; }
+        public string price_tick { get; set; }
+        public string delivery_date { get; set; }
+        public string delivery_time { get; set; }
+        public string create_date { get; set; }
+        public string contract_status { get; set; }
+        public List<string> adjust { get; set; }
+        public List<string> price_estimated { get; set; }
+        public string settlement_date { get; set; }
+        public string support_margin_mode { get; set; }
+        public string business_type { get; set; }
+        public string pair { get; set; }
+        public string contract_type { get; set; }
+        public string trade_partition { get; set; }
+    }
+
+    public class ResponseRest<T>
+    {
+        public string code { get; set; }
+        public T data { get; set; }
+        public string msg { get; set; }
+        public string ts { get; set; }
+    }
+
+    public class PortfoliosUsdt
+    {
+        public List<CrossFutureRest> cross_future { get; set; }
+        public string cross_margin_static { get; set; }
+        public string cross_profit_unreal { get; set; }
+        public string cross_risk_rate { get; set; }
+        public List<CrossSwapRest> cross_swap { get; set; }
+        public List<IsolatedSwapRest> isolated_swap { get; set; }
+        public string margin_asset { get; set; }
+        public string margin_balance { get; set; }
+        public string margin_frozen { get; set; }
+        public string margin_static { get; set; }
+        public string userId { get; set; }
+        public string withdraw_available { get; set; }
+    }
+
+    public class CrossFutureRest
+    {
+        public string business_type { get; set; }
+        public string contract_code { get; set; }
+        public string contract_type { get; set; }
+        public string cross_max_available { get; set; }
+        public string lever_rate { get; set; }
+        public string margin_available { get; set; }
+        public string margin_mode { get; set; }
+        public string symbol { get; set; }
+    }
+
+    public class CrossSwapRest
+    {
+        public string business_type { get; set; }
+        public string contract_code { get; set; }
+        public string contract_type { get; set; }
+        public string cross_max_available { get; set; }
+        public string lever_rate { get; set; }
+        public string margin_available { get; set; }
+        public string margin_mode { get; set; }
+        public string symbol { get; set; }
+    }
+
+    public class IsolatedSwapRest
+    {
+        public string contract_code { get; set; }
+        public string lever_rate { get; set; }
+        public string margin_available { get; set; }
+        public string margin_mode { get; set; }
+        public string symbol { get; set; }
+        public string withdraw_available { get; set; }
     }
 
     public class ResponseMessagePortfoliosCoin
@@ -47,33 +120,17 @@ namespace OsEngine.Market.Servers.HTX.Swap.Entity
         }
     }
 
-    public class ResponseMessagePortfoliosUsdt
+    public class ResponseCandles
     {
-        public List<Data> data { get; set; }
-
-        public class Data
-        {
-            public string margin_static { get; set; }
-            public string margin_asset { get; set; }
-            public string margin_frozen { get; set; }
-            public string margin_balance { get; set; }
-            public string cross_profit_unreal { get; set; }
-        }
-    }
-
-    public class ResponseMessageCandles
-    {
-        public List<Data> data { get; set; }
-
-        public class Data
-        {
-            public string open { get; set; }
-            public string close { get; set; }
-            public string high { get; set; }
-            public string low { get; set; }
-            public string vol { get; set; }
-            public string id { get; set; } //timestamp
-        }
+        public string amount { get; set; }
+        public string close { get; set; }
+        public string count { get; set; }
+        public string high { get; set; }
+        public string id { get; set; }
+        public string low { get; set; }
+        public string open { get; set; }
+        public string trade_turnover { get; set; }
+        public string vol { get; set; }
     }
 
     public class PlaceOrderResponse
@@ -89,7 +146,6 @@ namespace OsEngine.Market.Servers.HTX.Swap.Entity
 
     public class ResponseMessageAllOrders
     {
-
         public Data data { get; set; }
 
         public class Data
@@ -115,7 +171,6 @@ namespace OsEngine.Market.Servers.HTX.Swap.Entity
 
     public class ResponseMessageGetOrder
     {
-
         public List<Data> data { get; set; }
 
         public class Data
@@ -176,5 +231,50 @@ namespace OsEngine.Market.Servers.HTX.Swap.Entity
             public string amount { get; set; }
             public string direction { get; set; }
         }
+    }
+
+    public class OpenInterestInfo
+    {
+        public string volume { get; set; }
+        public string amount { get; set; }
+        public string symbol { get; set; }
+        public string value { get; set; }
+        public string contract_code { get; set; }
+        public string trade_amount { get; set; }
+        public string trade_volume { get; set; }
+        public string trade_turnover { get; set; }
+        public string business_type { get; set; }
+        public string pair { get; set; }
+        public string contract_type { get; set; }
+    }
+
+    public class FundingInfo
+    {
+        public string funding_rate { get; set; }
+        public string contract_code { get; set; }
+        public string symbol { get; set; }
+        public string fee_asset { get; set; }
+        public string funding_time { get; set; }
+        public string estimated_rate { get; set; }
+        public string next_funding_time { get; set; }
+    }
+
+    public class FundingData
+    {
+        public string total_page { get; set; }
+        public string current_page { get; set; }
+        public string total_size { get; set; }
+        public List<FundingItemHistory> data { get; set; }
+    }
+
+    public class FundingItemHistory
+    {
+        public string avg_premium_index { get; set; }
+        public string funding_rate { get; set; }
+        public string funding_time { get; set; }
+        public string realized_rate { get; set; }
+        public string contract_code { get; set; }
+        public string symbol { get; set; }
+        public string fee_asset { get; set; }
     }
 }

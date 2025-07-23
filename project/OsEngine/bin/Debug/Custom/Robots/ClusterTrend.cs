@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -23,7 +24,7 @@ Buy: When a pushing bullish cluster occurs.
 Exit: When a pushing bearish cluster occurs.
  */
 
-namespace OsEngine.Robots.Trend
+namespace OsEngine.Robots
 {
     [Bot("ClusterTrend")] // We create an attribute so that we don't write anything to the BotFactory
     public class ClusterTrend : BotPanel
@@ -65,9 +66,7 @@ namespace OsEngine.Robots.Trend
             // Subscribe to the candle finished event
             _tabToTrade.CandleFinishedEvent += TabToTradeCandleFinishedEvent;
 
-            Description = "The trend robot on ClusterTrend. " +
-                "Buy: When a pushing bullish cluster occurs. " +
-                "Exit: When a pushing bearish cluster occurs.";
+            Description = OsLocalization.Description.DescriptionLabel175;
         }
 
         private void TabClusterMaxBuyClusterChangeEvent(HorizontalVolumeCluster volumeCluster)
@@ -88,8 +87,7 @@ namespace OsEngine.Robots.Trend
             Candle lastCandle = candles.Last();
 
             // From the list of all clusters we get the one that is the profile of this candle.
-            HorizontalVolumeCluster lastCluster = _tabCluster.VolumeClusters
-                .FindLast(cluster => cluster.Time == lastCandle.TimeStart);
+            HorizontalVolumeCluster lastCluster = _tabCluster.VolumeClusters.FindLast(cluster => cluster.Time == lastCandle.TimeStart);
 
             // If there are no open positions.
             if (_tabToTrade.PositionOpenLong.Count == 0)
@@ -117,8 +115,7 @@ namespace OsEngine.Robots.Trend
         private bool PriceUpperMaxSumVolumeCluster(int count, Candle lastCandle)
         {
             // We find the section with the maximum total volume.
-            HorizontalVolumeCluster clusterWithMaxSumVolume = _tabCluster
-               .FindMaxVolumeCluster(count - _rollBackClusters.ValueInt, count, ClusterType.SummVolume);
+            HorizontalVolumeCluster clusterWithMaxSumVolume = _tabCluster.FindMaxVolumeCluster(count - _rollBackClusters.ValueInt, count, ClusterType.SummVolume);
 
             //If the price of an instrument exceeds the price with the maximum total volume. Returning true.
             if (lastCandle.Close > clusterWithMaxSumVolume.MaxSummVolumeLine.Price)
@@ -216,7 +213,7 @@ namespace OsEngine.Robots.Trend
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

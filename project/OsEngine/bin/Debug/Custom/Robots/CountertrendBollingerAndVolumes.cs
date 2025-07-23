@@ -14,6 +14,7 @@ using System.Drawing;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -137,19 +138,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The Countertrend robot on Bollinger And Volumes. " +
-                "Buy: " +
-                "1. During the CandlesCountLow period, the candle's loy was below the lower Bollinger line, then the candle closed above the lower line. " +
-                "2. During the same period, there was a maximum surge in volumes (Volume), as well as the values of the Eom and OBV indicators were minimal. " +
-                "That is, when the price returned to the channel (closed above the lower Bollinger line), the Volume indicator should be below its highs, and " +
-                "Eom and OBV should be above their lows for the CandlesCountLow period. " +
-                "Sell: " +
-                "1. During the CandlesCountHigh period, the high of the candle was above the upper Bollinger line, then the candle closed below the upper line. " +
-                "2. During the same period, there was a maximum surge in volumes (Volume), as well as the values of the Eom and OBV indicators were maximum. " +
-                "That is, when the price returned to the channel (closed below the upper Bollinger line), the Volume, Eom and OBV indicators should be below  " +
-                "their highs for the CandlesCountHigh period. " +
-                "Exit from buy: The trailing stop is placed at the minimum for the period specified for the trailing stop and is transferred, (slides), to new price lows, also for the specified period. " +
-                "Exit from sell: The trailing stop is placed at the maximum for the period specified for the trailing stop and is transferred (slides) to the new maximum of the price, also for the specified period.";
+            Description = OsLocalization.Description.DescriptionLabel186;
         }
 
         private void BreakChannelVwmaATR_ParametrsChangeByUser()
@@ -210,6 +199,7 @@ namespace OsEngine.Robots
             {
                 return;
             }
+
             // If there are no positions, then go to the position opening method
             if (openPositions == null || openPositions.Count == 0)
             {
@@ -305,19 +295,23 @@ namespace OsEngine.Robots
                 if (position.Direction == Side.Buy) // If the direction of the position is long
                 {
                     decimal price = GetPriceStop(Side.Buy, candles, candles.Count - 1);
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price - _slippage);
                 }
                 else // If the direction of the position is short
                 {
                     decimal price = GetPriceStop(Side.Sell, candles, candles.Count - 1);
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
                 }
             }
@@ -341,6 +335,7 @@ namespace OsEngine.Robots
                         price = candles[i].Low;
                     }
                 }
+
                 return price;
             }
 
@@ -358,12 +353,14 @@ namespace OsEngine.Robots
 
                 return price;
             }
+
             return 0;
         }
 
         private decimal MaxValueOnPeriodInddicator(List<decimal> Value, int period)
         {
             decimal max = 0;
+
             for (int i = 2; i <= period; i++)
             {
                 if(max < Value[Value.Count - i])
@@ -371,12 +368,14 @@ namespace OsEngine.Robots
                     max = Value[Value.Count - i];
                 }
             }
+
             return max;
         }
 
         private decimal MinValueOnPeriodInddicator(List<decimal> Value, int period)
         {
             decimal min = 99999;
+
             for (int i = 2; i <= period; i++)
             {
                 if (min > Value[Value.Count - i])
@@ -384,6 +383,7 @@ namespace OsEngine.Robots
                     min = Value[Value.Count - i];
                 }
             }
+
             return min;
         }
 
@@ -395,6 +395,7 @@ namespace OsEngine.Robots
             {
                 sum += Volume[Volume.Count - i];
             }
+
             if (sum > 0)
             {
                 return sum / period;
@@ -411,6 +412,7 @@ namespace OsEngine.Robots
             {
                 sum += Volume[Volume.Count - i];
             }
+
             if (sum > 0)
             {
                 return sum / period;

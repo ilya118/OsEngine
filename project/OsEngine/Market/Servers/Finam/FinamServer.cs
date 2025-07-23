@@ -154,7 +154,7 @@ namespace OsEngine.Market.Servers.Finam
         public void GetSecurities()
         {
             SendLogMessage("Downloading the list of securities...", LogMessageType.System);
-
+             
             string response = "";
             bool errorOnPage = false;
 
@@ -768,6 +768,10 @@ namespace OsEngine.Market.Servers.Finam
         public event Action<Order> MyOrderEvent;
         public event Action<MyTrade> MyTradeEvent;
         public event Action<OptionMarketDataForConnector> AdditionalMarketDataEvent;
+
+        public event Action<Funding> FundingUpdateEvent;
+
+        public event Action<SecurityVolumes> Volume24hUpdateEvent;
 
         #endregion
 

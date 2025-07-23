@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -36,7 +37,7 @@ namespace OsEngine.Robots
     [Bot("StrategyWilliamsRangeWithParabolic")] //We create an attribute so that we don't write anything in the Boot factory
     public class StrategyWilliamsRangeWithParabolic : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -112,15 +113,7 @@ namespace OsEngine.Robots
             // subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on Strategy WilliamsRange With Parabolic. " +
-                "Buy: " +
-                "1. The price is higher than the indicator value. For the next candle, the price crosses the indicator from bottom to top. " +
-                "2. WPR > -45. (the signal should be generated at the first three points of the parabolic). " +
-                "Sell: " +
-                "1. The price is lower than the indicator value. For the next candle, the price crosses the snzu indicator-up. " +
-                "2. WPR < -55. (the signal should be generated at the first three points of the parabolic). " +
-                "Exit from buy: trailing stop in % of the loy of the candle on which you entered. " +
-                "Exit from sell: trailing stop in % of the high of the candle on which you entered.";
+            Description = OsLocalization.Description.DescriptionLabel290;
         }
 
         // Indicator Update event
@@ -253,6 +246,7 @@ namespace OsEngine.Robots
                     decimal high = candles[candles.Count - 1].High;
                     stopPrice = high + high * _trailingValue.ValueDecimal / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPrice, stopPrice);
             }
         }
@@ -277,7 +271,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

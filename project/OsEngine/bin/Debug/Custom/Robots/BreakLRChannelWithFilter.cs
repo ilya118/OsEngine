@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Your rights to use code governed by this license http://o-s-a.net/doc/license_simple_engine.pdf
+ *Ваши права на использования кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+using System;
 using System.Collections.Generic;
 using OsEngine.Entity;
 using OsEngine.Indicators;
@@ -7,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -29,7 +35,6 @@ Exit from sell:
 The trailing stop is placed at the maximum for the period specified for the trailing 
 stop and is transferred(slides) to the new maximum of the price, also for the specified period.
  */
-
 
 namespace OsEngine.Robots
 {
@@ -110,19 +115,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Break Linear Regression Channel." +
-                "Buy: " +
-                "1. The price is above the upper line of the linear regression channel." +
-                "2. The channel is directed upwards. " +
-                "Sell: " +
-                "1. The price is below the lower line of the linear regression channel." +
-                "2. The channel is directed downwards. " +
-                "Exit from buy:" +
-                "The trailing stop is placed at the minimum for the period specified for the trailing" +
-                "stop and is transferred,(slides), to new price lows, also for the specified period." +
-                "Exit from sell:" +
-                "The trailing stop is placed at the maximum for the period specified for the trailing" +
-                "stop and is transferred(slides) to the new maximum of the price, also for the specified period.";
+            Description = OsLocalization.Description.DescriptionLabel154;
         }
 
         private void BreakLRChannel_ParametrsChangeByUser()
@@ -213,8 +206,6 @@ namespace OsEngine.Robots
                 // Long
                 if (_regime.ValueString != "OnlyShort") // If the mode is not only short, then we enter long
                 {
-
-
                     if (_lastUpLine < lastPrice && _lastCenterLine > _prevCenterLine)
                     {
                         _tab.BuyAtLimit(GetVolume(_tab), _tab.PriceBestAsk + _slippage);
@@ -224,7 +215,6 @@ namespace OsEngine.Robots
                 // Short
                 if (_regime.ValueString != "OnlyLong") // If the mode is not only long, then we enter short
                 {
-
                     if (_lastDownLine > lastPrice && _lastCenterLine < _prevCenterLine)
                     {
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
@@ -260,7 +250,6 @@ namespace OsEngine.Robots
                     }
 
                     _tab.CloseAtTrailingStop(position, price, price - _slippage);
-                
                 }
                 else // If the direction of the position is sale
                 {
@@ -271,9 +260,7 @@ namespace OsEngine.Robots
                     }
 
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
-                
                 }
-
             }
         }
 
@@ -297,7 +284,6 @@ namespace OsEngine.Robots
                 }
 
                 return price;
-
             }
 
             if (side == Side.Sell)
@@ -316,7 +302,6 @@ namespace OsEngine.Robots
             }
 
             return 0;
-
         }
 
         // Method for calculating the volume of entry into a position
@@ -409,8 +394,6 @@ namespace OsEngine.Robots
             }
 
             return volume;
-
         }
-
     }
 }

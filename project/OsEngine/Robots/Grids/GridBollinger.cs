@@ -6,6 +6,7 @@
 using System.Collections.Generic;
 using OsEngine.Entity;
 using OsEngine.Indicators;
+using OsEngine.Language;
 using OsEngine.OsTrader.Grids;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
@@ -51,20 +52,17 @@ namespace OsEngine.Robots.Grids
             _tab.Connector.TestStartEvent += Connector_TestStartEvent;
 
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On" }, "Base");
-            
-            _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
-            _endTradeTime = CreateParameterTimeOfDay("End Trade Time", 24, 0, 0, 0, "Base");
+            _startTradeTime = CreateParameterTimeOfDay("Start trade time", 0, 0, 0, 0, "Base");
+            _endTradeTime = CreateParameterTimeOfDay("End trade time", 24, 0, 0, 0, "Base");
+            _bollingerLength = CreateParameter("Bollinger length", 21, 7, 48, 1, "Base");
+            _bollingerDeviation = CreateParameter("Bollinger deviation", 1.0m, 1, 5, 0.1m, "Base");
 
             _linesCount = CreateParameter("Grid lines count", 10, 10, 300, 10, "Grid");
-            _linesStep = CreateParameter("Grid lines step", 0.1m, 10m, 300, 10, "Grid");
-            _profitValue = CreateParameter("Profit percent", 0.05m, 1, 5, 0.1m, "Grid");
+            _linesStep = CreateParameter("Grid lines step", 0.05m, 1, 2, 0.1m, "Grid");
+            _profitValue = CreateParameter("Profit percent", 0.05m, 1, 2, 0.1m, "Grid");
             _volumeType = CreateParameter("Volume type", "Contracts", new[] { "Contracts", "Contract currency", "Deposit percent" }, "Grid");
             _volume = CreateParameter("Volume on one line", 1, 1.0m, 50, 4, "Grid");
             _tradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime", "Grid");
-
-            // Indicator settings
-            _bollingerLength = CreateParameter("Bollinger Length", 21, 7, 48, 7, "Indicator");
-            _bollingerDeviation = CreateParameter("Bollinger Deviation", 1.0m, 1, 5, 0.1m, "Indicator");
 
             // Create indicator Bollinger
             _bollinger = IndicatorsFactory.CreateIndicatorByName("Bollinger", name + "Bollinger", false);
@@ -75,10 +73,7 @@ namespace OsEngine.Robots.Grids
 
             ParametrsChangeByUser += ParametersChangeByUser;
 
-            Description = "A robot demonstrating grid operation in countertrend. Throws out a grid of \"MarketMaking\" type" +
-                "Bollinger indicator serves as a signal for grid throwing. " +
-                "When the candlestick closing price is above the upper channel line of the indicator - the grid is thrown into the SHORT. " +
-                "When the candlestick closing price is below the lower line of the indicator channel - the grid is thrown to LONG.";
+            Description = OsLocalization.Description.DescriptionLabel34;
         }
 
         private void ParametersChangeByUser()
@@ -132,13 +127,14 @@ namespace OsEngine.Robots.Grids
                 return;
             }
 
+            if (_tab.GridsMaster.TradeGrids.Count != 0)
+            {
+                LogicCloseGrid(candles);
+            }
+
             if (_tab.GridsMaster.TradeGrids.Count == 0)
             {
                 LogicCreateGrid(candles);
-            }
-            else
-            {
-                LogicCloseGrid(candles);
             }
 
         }
@@ -196,7 +192,9 @@ namespace OsEngine.Robots.Grids
                     grid.GridCreator.GridSide = Side.Buy;
                 }
                 grid.GridCreator.CreateNewGrid(_tab, TradeGridPrimeType.MarketMaking);
+
                 grid.Save();
+
                 grid.Regime = TradeGridRegime.On;
             }
         }

@@ -17,6 +17,7 @@ using System.Linq;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -69,7 +70,6 @@ namespace OsEngine.Robots.AO
         private decimal _lastEmaHigh;
         private decimal _lastEmaLow;
 
-
         public IntersectionKalmanWithChannelEma(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
@@ -118,15 +118,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Intersection Kalman With ChannelEma. " +
-                "Buy: " +
-                "1. The price is above the Kalman and above the upper line of the Ema channel. " +
-                "2. Kalman is above the upper line of the Ema channel. " +
-                "Sell: " +
-                "1. The price is below the Kalman and below the lower line of the Ema channel. " +
-                "2. The Kalman is below the lower line of the Ema channel. " +
-                "Exit from buy: the kalman is below the upper line. " +
-                "Exit from sell: Kalman is above the bottom line.";
+            Description = OsLocalization.Description.DescriptionLabel321;
         }
 
         private void IntersectionKalmanWithChannelEma_ParametrsChangeByUser()
@@ -295,7 +287,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

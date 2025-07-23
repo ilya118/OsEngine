@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -30,7 +31,7 @@ namespace OsEngine.Robots
     [Bot("IntersectionTwoWilliamsRange")] //We create an attribute so that we don't write anything in the Boot factory
     public class IntersectionTwoWilliamsRange : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -94,10 +95,7 @@ namespace OsEngine.Robots
             // subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on Intersection Two WilliamsRange. " +
-                "Buy: Fast (red) WPR is higher than slow (blue). " +
-                "Sell: fast (red) WPR below slow (blue). " +
-                "Exit: by the reverse intersection.";
+            Description = OsLocalization.Description.DescriptionLabel220;
         }
 
         // Indicator Update event
@@ -257,7 +255,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

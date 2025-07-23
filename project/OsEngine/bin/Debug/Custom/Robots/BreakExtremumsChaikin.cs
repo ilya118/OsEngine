@@ -14,6 +14,7 @@ using System.Drawing;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -29,9 +30,10 @@ Exit: stop and profit in % of the entry price.
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakExtremumsChaikin")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakExtremumsChaikin")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakExtremumsChaikin : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -65,6 +67,7 @@ namespace OsEngine.Robots
 
         public BreakExtremumsChaikin(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -104,10 +107,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Break Extremums Chaikin. " +
-                "Buy: breakout of the high for a certain number of candles. " +
-                "Sell: breakout of the low for a certain number of candles. " +
-                "Exit: stop and profit in % of the entry price.";
+            Description = OsLocalization.Description.DescriptionLabel149;
         }
 
         private void BreakExtremumsChaikin_ParametrsChangeByUser()
@@ -123,6 +123,7 @@ namespace OsEngine.Robots
         {
             return "BreakExtremumsChaikin";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 

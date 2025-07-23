@@ -3,9 +3,9 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
-using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Indicators;
+using OsEngine.Language;
 using OsEngine.Market;
 using OsEngine.Market.Servers;
 using OsEngine.OsTrader.Panels;
@@ -13,8 +13,6 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
 
 /* Description
 trading robot for osengine
@@ -99,17 +97,7 @@ namespace OsEngine.Robots.VolatilityStageRotationSamples
             // Subscribe to the indicator update event
             ParametrsChangeByUser += Event_ParametrsChangeByUser;
 
-            Description = "The trend robot on PriceChannel and AtrFilter." +
-                "Buy:" +
-                "1.The price has broken above the upper line of the Price Channel " +
-                "2.ATR has grown compared to AtrGrowLookBack candles ago. " +
-                "Sell: " +
-                "1.The price has broken below the lower line of the Price Channel " +
-                "2.ATR has grown compared to AtrGrowLookBack candles ago. " +
-                "Exit for long: " +
-                "Exit using a trailing stop set to the lower line of the Price Channel. " +
-                "Exit for short: " +
-                "Exit using a trailing stop set to the upper line of the Price Channel.";
+            Description = OsLocalization.Description.DescriptionLabel123;
         }
 
         void Event_ParametrsChangeByUser()
@@ -225,6 +213,7 @@ namespace OsEngine.Robots.VolatilityStageRotationSamples
 
                 _tab.BuyAtMarket(GetVolume(_tab));
             }
+
             if (lastPrice < lastPcDown
                 && _regime.ValueString != "OnlyLong") // If the mode is not only long, then we enter short
             {
@@ -294,7 +283,7 @@ namespace OsEngine.Robots.VolatilityStageRotationSamples
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

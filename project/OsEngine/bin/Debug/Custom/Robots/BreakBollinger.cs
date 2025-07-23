@@ -13,24 +13,29 @@ using System.Collections.Generic;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
 
 The trend robot on BreakBollinger
 
-Buy: the price is above the upper Bollinger band.
+Buy:
+the price is above the upper Bollinger band.
 
-Sell: the price is below the lower Bollinger band.
+Sell:
+the price is below the lower Bollinger band.
 
-Exit: reverse side of the channel.
- */
+Exit:
+reverse side of the channel.
+*/
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakBollinger")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakBollinger")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakBollinger : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -57,6 +62,7 @@ namespace OsEngine.Robots
 
         public BreakBollinger(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -73,7 +79,7 @@ namespace OsEngine.Robots
 
             // Indicator settings
             _bollingerLength = CreateParameter("Bollinger Length", 21, 7, 48, 7, "Indicator");
-            _bollingerDeviation = CreateParameter("Bollinger Deviation", 1.0m, 1, 5, 0.1m,"Indicator");
+            _bollingerDeviation = CreateParameter("Bollinger Deviation", 1.0m, 1, 5, 0.1m, "Indicator");
 
             // Create indicator Bollinger
             _bollinger = IndicatorsFactory.CreateIndicatorByName("Bollinger", name + "Bollinger", false);
@@ -83,18 +89,15 @@ namespace OsEngine.Robots
             _bollinger.Save();
 
             // Subscribe to the indicator update event
-            ParametrsChangeByUser += BreakBollinger_ParametrsChangeByUser; ;
+            ParametrsChangeByUser += _breakBollinger_ParametrsChangeByUser;
 
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on BreakBollinger. " +
-                "Buy: the price is above the upper Bollinger band. " +
-                "Sell: the price is below the lower Bollinger band. " +
-                "Exit: reverse side of the channel.";
+            Description = OsLocalization.Description.DescriptionLabel138;
         }
 
-        private void BreakBollinger_ParametrsChangeByUser()
+        private void _breakBollinger_ParametrsChangeByUser()
         {
             ((IndicatorParameterInt)_bollinger.Parameters[0]).ValueInt = _bollingerLength.ValueInt;
             ((IndicatorParameterDecimal)_bollinger.Parameters[1]).ValueDecimal = _bollingerDeviation.ValueDecimal;
@@ -107,6 +110,7 @@ namespace OsEngine.Robots
         {
             return "BreakBollinger";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -122,7 +126,7 @@ namespace OsEngine.Robots
             }
 
             // If there are not enough candles to build an indicator, we exit
-            if (candles.Count < _bollingerLength.ValueInt)
+            if (candles.Count <= _bollingerLength.ValueInt + 1)
             {
                 return;
             }
@@ -195,7 +199,7 @@ namespace OsEngine.Robots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+
             // The last value of the indicator
             _lastUpLine = _bollinger.DataSeries[0].Last;
             _lastDownLine = _bollinger.DataSeries[1].Last;

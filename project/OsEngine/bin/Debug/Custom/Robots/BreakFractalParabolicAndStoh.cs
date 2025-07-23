@@ -14,6 +14,7 @@ using System.Drawing;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -35,9 +36,10 @@ Exit: by the opposite signal of the parabolic.
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakFractalParabolicAndStoh")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakFractalParabolicAndStoh")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakFractalParabolicAndStoh : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -76,6 +78,7 @@ namespace OsEngine.Robots
 
         public BreakFractalParabolicAndStoh(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -89,7 +92,7 @@ namespace OsEngine.Robots
             _volumeType = CreateParameter("Volume type", "Deposit percent", new[] { "Contracts", "Contract currency", "Deposit percent" });
             _volume = CreateParameter("Volume", 20, 1.0m, 50, 4);
             _tradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime");
-            
+
             // Indicator settings
             _step = CreateParameter("Step", 0.1m, 0.01m, 0.1m, 0.01m, "Indicator");
             _maxStep = CreateParameter("Max Step", 0.1m, 0.01m, 0.1m, 0.01m, "Indicator");
@@ -123,16 +126,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Break Fractal, Parabolic And Stoh. " +
-                "Buy: " +
-                "1. The price is higher than the Parabolic value. For the next candle, the price crosses the indicator from the bottom up. " +
-                "2. Stochastic is directed up and below the 80 level. " +
-                "3. The price is higher than the last ascending fractal. " +
-                "Sell: " +
-                "1. The price is lower than the Parabolic value. For the next candle, the price crosses the indicator from top to bottom. " +
-                "2. Stochastic is directed down and above the level of 20. " +
-                "3. the price is lower than the last descending fractal. " +
-                "Exit: by the opposite signal of the parabolic.";
+            Description = OsLocalization.Description.DescriptionLabel151;
         }
 
         private void BreakFractalParabolicAndStoh_ParametrsChangeByUser()
@@ -141,6 +135,7 @@ namespace OsEngine.Robots
             ((IndicatorParameterDecimal)_parabolic.Parameters[1]).ValueDecimal = _maxStep.ValueDecimal;
             _parabolic.Save();
             _parabolic.Reload();
+
             ((IndicatorParameterInt)_stoh.Parameters[0]).ValueInt = _stochPeriod1.ValueInt;
             ((IndicatorParameterInt)_stoh.Parameters[1]).ValueInt = _stochPeriod1.ValueInt;
             ((IndicatorParameterInt)_stoh.Parameters[2]).ValueInt = _stochPeriod1.ValueInt;
@@ -153,6 +148,7 @@ namespace OsEngine.Robots
         {
             return "BreakFractalParabolicAndStoh";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -268,7 +264,7 @@ namespace OsEngine.Robots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+
             // The last value of the indicator
             _lastParabolic = _parabolic.DataSeries[0].Last;
 

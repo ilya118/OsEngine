@@ -1,5 +1,7 @@
-﻿using Newtonsoft.Json;
+﻿
+using Newtonsoft.Json;
 using OsEngine.Entity;
+using OsEngine.Entity.WebSocketOsEngine;
 using OsEngine.Language;
 using OsEngine.Logging;
 using OsEngine.Market.Servers.BitGet.BitGetFutures.Entity;
@@ -12,7 +14,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
-using OsEngine.Entity.WebSocketOsEngine;
+
 
 namespace OsEngine.Market.Servers.BitGet.BitGetFutures
 {
@@ -30,6 +32,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             CreateParameterEnum("Hedge Mode", "On", new List<string> { "On", "Off" });
             CreateParameterEnum("Margin Mode", "Crossed", new List<string> { "Crossed", "Isolated" });
             CreateParameterBoolean("Demo Trading", false);
+            CreateParameterBoolean("Extended Data", false);
         }
     }
 
@@ -59,6 +62,11 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             threadGetPortfolios.IsBackground = true;
             threadGetPortfolios.Name = "ThreadBitGetFuturesPortfolios";
             threadGetPortfolios.Start();
+
+            Thread threadExtendedData = new Thread(ThreadExtendedData);
+            threadExtendedData.IsBackground = true;
+            threadExtendedData.Name = "ThreadBitGetFuturesExtendedData";
+            threadExtendedData.Start();
         }
 
         private WebProxy _myProxy;
@@ -97,8 +105,6 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                 _hedgeMode = false;
             }
 
-            SetPositionMode();
-
             if (((ServerParameterEnum)ServerParameters[4]).Value == "Crossed")
             {
                 _marginMode = "crossed";
@@ -108,11 +114,14 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                 _marginMode = "isolated";
             }
 
-            //ServicePointManager.SecurityProtocol =
-            //    SecurityProtocolType.Tls11
-            //    | SecurityProtocolType.Tls12
-            //    | SecurityProtocolType.Tls13
-            //    | SecurityProtocolType.Tls;
+            if (((ServerParameterBool)ServerParameters[6]).Value == true)
+            {
+                _extendedMarketData = true;
+            }
+            else
+            {
+                _extendedMarketData = false;
+            }
 
             try
             {
@@ -134,7 +143,6 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                     FIFOListWebSocketPrivateMessage = new ConcurrentQueue<string>();
                     CreatePublicWebSocketConnect();
                     CreatePrivateWebSocketConnect();
-                    CheckSocketsActivate();
                     _lastConnectionStartTime = DateTime.Now;
                 }
                 else
@@ -227,6 +235,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
         private bool _hedgeMode;
 
         private string _marginMode = "crossed";
+
+        private bool _extendedMarketData;
 
         private Dictionary<string, List<string>> _allPositions = new Dictionary<string, List<string>>();
 
@@ -1271,6 +1281,8 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                     {
                         ConnectEvent();
                     }
+
+                    SetPositionMode();
                 }
             }
         }
@@ -1635,11 +1647,118 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                 {
                     webSocketPublic.Send($"{{\"op\": \"subscribe\",\"args\": [{{\"instType\": \"{security.NameClass}\",\"channel\": \"books15\",\"instId\": \"{security.Name}\"}}]}}");
                     webSocketPublic.Send($"{{\"op\": \"subscribe\",\"args\": [{{ \"instType\": \"{security.NameClass}\",\"channel\": \"trade\",\"instId\": \"{security.Name}\"}}]}}");
+
+                    if (_extendedMarketData)
+                    {
+                        webSocketPublic.Send($"{{\"op\": \"subscribe\",\"args\": [{{ \"instType\": \"{security.NameClass}\",\"channel\": \"ticker\",\"instId\": \"{security.Name}\"}}]}}");
+                        GetFundingData(security.Name, security.NameClass);
+                        GetFundingHistory(security.Name, security.NameClass);
+                    }
                 }
             }
             catch (Exception ex)
             {
                 SendLogMessage(ex.Message, LogMessageType.Error);
+            }
+        }
+
+        private readonly RateGate _rgFunding = new RateGate(1, TimeSpan.FromMilliseconds(110));
+
+        private void GetFundingData(string securityName, string productType)
+        {
+            _rgFunding.WaitToProceed();
+
+            try
+            {
+                string requestStr = $"/api/v2/mix/market/current-fund-rate?symbol={securityName}&productType={productType}";
+                RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+                RestClient client = new RestClient(BaseUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    ResponseRestMessage<List<FundingItem>> responseFunding = JsonConvert.DeserializeAnonymousType(response.Content, new ResponseRestMessage<List<FundingItem>>());
+
+                    if (responseFunding.code == "00000")
+                    {
+                        FundingItem item = responseFunding.data[0];
+
+                        Funding data = new Funding();
+
+                        data.SecurityNameCode = item.symbol;
+                        data.MaxFundingRate = item.maxFundingRate.ToDecimal();
+                        data.MinFundingRate = item.minFundingRate.ToDecimal();
+                        data.FundingIntervalHours = int.Parse(item.fundingRateInterval);
+
+                        FundingUpdateEvent?.Invoke(data);
+                    }
+                    else
+                    {
+                        SendLogMessage($"GetFundingData error. Code:{responseFunding.code} || msg: {responseFunding.msg}", LogMessageType.Error);
+                    }
+                }
+                else
+                {
+                    SendLogMessage($"GetFundingData error. Code: {response.StatusCode} || msg: {response.Content}", LogMessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage($"GetFundingData error. {ex.ToString()}", LogMessageType.Error);
+            }
+        }
+
+        private void GetFundingHistory(string securityName, string productType)
+        {
+            _rgFunding.WaitToProceed();
+
+            try
+            {
+                string requestStr = $"/api/v2/mix/market/history-fund-rate?symbol={securityName}&productType={productType}";
+                RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+                RestClient client = new RestClient(BaseUrl);
+
+                if (_myProxy != null)
+                {
+                    client.Proxy = _myProxy;
+                }
+
+                IRestResponse response = client.Execute(requestRest);
+
+                if (response.StatusCode == HttpStatusCode.OK)
+                {
+                    ResponseRestMessage<List<FundingItemHistory>> responseFunding = JsonConvert.DeserializeAnonymousType(response.Content, new ResponseRestMessage<List<FundingItemHistory>>());
+
+                    if (responseFunding.code == "00000")
+                    {
+                        FundingItemHistory item = responseFunding.data[0];
+
+                        Funding data = new Funding();
+
+                        data.SecurityNameCode = item.symbol;
+                        data.PreviousFundingTime = TimeManager.GetDateTimeFromTimeStamp((long)item.fundingTime.ToDecimal());
+
+                        FundingUpdateEvent?.Invoke(data);
+                    }
+                    else
+                    {
+                        SendLogMessage($"GetFundingHistory error. Code:{responseFunding.code} || msg: {responseFunding.msg}", LogMessageType.Error);
+                    }
+                }
+                else
+                {
+                    SendLogMessage($"GetFundingHistory error. Code: {response.StatusCode} || msg: {response.Content}", LogMessageType.Error);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage($"GetFundingHistory error. {ex.ToString()}", LogMessageType.Error);
             }
         }
 
@@ -1679,8 +1798,13 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                                 {
                                     for (int i2 = 0; i2 < _subscribledSecutiries.Count; i2++)
                                     {
-                                        webSocketPublic.Send($"{{\"op\": \"unsubscribe\",\"args\": [{{\"instType\": \"{_subscribledSecutiries[i].NameClass}\",\"channel\": \"books15\",\"instId\": \"{_subscribledSecutiries[i].Name}\"}}]}}");
-                                        webSocketPublic.Send($"{{\"op\": \"unsubscribe\",\"args\": [{{\"instType\": \"{_subscribledSecutiries[i].NameClass}\",\"channel\": \"trade\",\"instId\": \"{_subscribledSecutiries[i].Name}\"}}]}}");
+                                        webSocketPublic.Send($"{{\"op\": \"unsubscribe\",\"args\": [{{\"instType\": \"{_subscribledSecutiries[i2].NameClass}\",\"channel\": \"books15\",\"instId\": \"{_subscribledSecutiries[i2].Name}\"}}]}}");
+                                        webSocketPublic.Send($"{{\"op\": \"unsubscribe\",\"args\": [{{\"instType\": \"{_subscribledSecutiries[i2].NameClass}\",\"channel\": \"trade\",\"instId\": \"{_subscribledSecutiries[i2].Name}\"}}]}}");
+
+                                        if (_extendedMarketData)
+                                        {
+                                            webSocketPublic.Send($"{{\"op\": \"unsubscribe\",\"args\": [{{\"instType\": \"{_subscribledSecutiries[i2].NameClass}\",\"channel\": \"ticker\",\"instId\": \"{_subscribledSecutiries[i2].Name}\"}}]}}");
+                                        }
                                     }
                                 }
                             }
@@ -1800,9 +1924,16 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                                 UpdateDepth(message);
                                 continue;
                             }
+
                             if (action.arg.channel.Equals("trade"))
                             {
                                 UpdateTrade(message);
+                                continue;
+                            }
+
+                            if (action.arg.channel.Equals("ticker"))
+                            {
+                                UpdateTicker(message);
                                 continue;
                             }
                         }
@@ -1867,7 +1998,7 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                                 SubscribleState.msg, LogMessageType.Error);
 
                             if (_lastConnectionStartTime.AddMinutes(5) > DateTime.Now)
-                            { // если на старте вёб-сокета проблемы, то надо его перезапускать
+                            { // if there are problems with the web socket startup, you need to restart it
                                 ServerStatus = ServerConnectStatus.Disconnect;
                                 DisconnectEvent();
                             }
@@ -2229,12 +2360,36 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                 trade.Volume = responseTrade.data[0].size.ToDecimal();
                 trade.Side = responseTrade.data[0].side.Equals("buy") ? Side.Buy : Side.Sell;
 
+                if (_extendedMarketData)
+                {
+                    trade.OpenInterest = GetOpenInterestValue(trade.SecurityNameCode);
+                }
+
                 NewTradesEvent(trade);
             }
             catch (Exception ex)
             {
                 SendLogMessage(ex.Message, LogMessageType.Error);
             }
+        }
+
+        private decimal GetOpenInterestValue(string securityNameCode)
+        {
+            if (_openInterest.Count == 0
+                 || _openInterest == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < _openInterest.Count; i++)
+            {
+                if (_openInterest[i].SecutityName == securityNameCode)
+                {
+                    return _openInterest[i].OpenInterestValue.ToDecimal();
+                }
+            }
+
+            return 0;
         }
 
         private void UpdateDepth(string message)
@@ -2319,6 +2474,44 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             }
         }
 
+        private void UpdateTicker(string message)
+        {
+            try
+            {
+                ResponseWebSocketMessageAction<List<ResponseTicker>> responseTicker = JsonConvert.DeserializeAnonymousType(message, new ResponseWebSocketMessageAction<List<ResponseTicker>>());
+
+                if (responseTicker == null
+                    || responseTicker.data == null
+                    || responseTicker.data[0] == null)
+                {
+                    return;
+                }
+
+                Funding funding = new Funding();
+
+                ResponseTicker item = responseTicker.data[0];
+
+                funding.SecurityNameCode = item.instId;
+                funding.CurrentValue = item.fundingRate.ToDecimal() * 100;
+                funding.NextFundingTime = TimeManager.GetDateTimeFromTimeStamp((long)item.nextFundingTime.ToDecimal());
+                funding.TimeUpdate = TimeManager.GetDateTimeFromTimeStamp((long)responseTicker.ts.ToDecimal());
+
+                FundingUpdateEvent?.Invoke(funding);
+
+                SecurityVolumes volume = new SecurityVolumes();
+
+                volume.SecurityNameCode = item.instId;
+                volume.Volume24h = item.baseVolume.ToDecimal();
+                volume.Volume24hUSDT = item.quoteVolume.ToDecimal();
+
+                Volume24hUpdateEvent?.Invoke(volume);
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.Message, LogMessageType.Error);
+            }
+        }
+
         private DateTime _lastTimeMd = DateTime.MinValue;
 
         public event Action<Order> MyOrderEvent;
@@ -2330,6 +2523,10 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
         public event Action<Trade> NewTradesEvent;
 
         public event Action<OptionMarketDataForConnector> AdditionalMarketDataEvent;
+
+        public event Action<Funding> FundingUpdateEvent;
+
+        public event Action<SecurityVolumes> Volume24hUpdateEvent;
 
         #endregion
 
@@ -2869,8 +3066,130 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
             }
         }
 
+        private List<OpenInterestData> _openInterest = new List<OpenInterestData>();
+
+        private DateTime _timeLastUpdateExtendedData = DateTime.Now;
+
+        private readonly RateGate _rgOpenInterest = new RateGate(1, TimeSpan.FromMilliseconds(110));
+
+        private void ThreadExtendedData()
+        {
+            while (true)
+            {
+                if (ServerStatus == ServerConnectStatus.Disconnect)
+                {
+                    Thread.Sleep(3000);
+                    continue;
+                }
+
+                try
+                {
+                    if (_subscribledSecutiries != null
+                    && _subscribledSecutiries.Count > 0
+                    && _extendedMarketData)
+                    {
+                        if (_timeLastUpdateExtendedData.AddSeconds(20) < DateTime.Now)
+                        {
+                            GetOpenInterest();
+                            _timeLastUpdateExtendedData = DateTime.Now;
+                        }
+                        else
+                        {
+                            Thread.Sleep(1000);
+                        }
+                    }
+                    else
+                    {
+                        Thread.Sleep(1000);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Thread.Sleep(5000);
+                    SendLogMessage(ex.Message, LogMessageType.Error);
+                }
+            }
+        }
+
+        private void GetOpenInterest()
+        {
+            _rgOpenInterest.WaitToProceed();
+
+            try
+            {
+                for (int i = 0; i < _subscribledSecutiries.Count; i++)
+                {
+                    string requestStr = $"/api/v2/mix/market/open-interest?symbol={_subscribledSecutiries[i].Name}&productType={_subscribledSecutiries[i].NameClass.ToLower()}";
+                    RestRequest requestRest = new RestRequest(requestStr, Method.GET);
+
+                    RestClient client = new RestClient(BaseUrl);
+
+                    if (_myProxy != null)
+                    {
+                        client.Proxy = _myProxy;
+                    }
+
+                    IRestResponse response = client.Execute(requestRest);
+
+                    if (response.StatusCode == HttpStatusCode.OK)
+                    {
+                        ResponseRestMessage<OIData> oiResponse = JsonConvert.DeserializeAnonymousType(response.Content, new ResponseRestMessage<OIData>());
+
+                        if (oiResponse.code == "00000")
+                        {
+                            for (int j = 0; j < oiResponse.data.openInterestList.Count; j++)
+                            {
+                                OpenInterestData openInterestData = new OpenInterestData();
+
+                                openInterestData.SecutityName = oiResponse.data.openInterestList[j].symbol;
+
+                                if (oiResponse.data.openInterestList[j].size != null)
+                                {
+                                    openInterestData.OpenInterestValue = oiResponse.data.openInterestList[j].size;
+
+                                    bool isInArray = false;
+
+                                    for (int k = 0; k < _openInterest.Count; k++)
+                                    {
+                                        if (_openInterest[k].SecutityName == openInterestData.SecutityName)
+                                        {
+                                            _openInterest[k].OpenInterestValue = openInterestData.OpenInterestValue;
+                                            isInArray = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (isInArray == false)
+                                    {
+                                        _openInterest.Add(openInterestData);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            SendLogMessage($"GetOpenInterest> - Code: {oiResponse.code} - {oiResponse.msg}", LogMessageType.Error);
+                        }
+                    }
+                    else
+                    {
+                        SendLogMessage($"GetOpenInterest> - Code: {response.StatusCode} - {response.Content}", LogMessageType.Error);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                SendLogMessage(e.Message, LogMessageType.Error);
+            }
+        }
+
         private void SetPositionMode()
         {
+            if (ServerStatus == ServerConnectStatus.Disconnect)
+            {
+                return;
+            }
+
             try
             {
                 for (int i = 0; i < _listCoin.Count; i++)
@@ -2883,10 +3202,11 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                     string jsonRequest = JsonConvert.SerializeObject(jsonContent);
 
                     IRestResponse responseMessage = CreatePrivateQueryOrders("/api/v2/mix/account/set-position-mode", Method.POST, null, jsonRequest);
-                    ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new ResponseRestMessage<object>());
 
                     if (responseMessage.StatusCode == HttpStatusCode.OK)
                     {
+                        ResponseRestMessage<object> stateResponse = JsonConvert.DeserializeAnonymousType(responseMessage.Content, new ResponseRestMessage<object>());
+
                         if (stateResponse.code.Equals("00000") == true)
                         {
                             // ignore
@@ -2899,13 +3219,14 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
                     }
                     else
                     {
-                        SendLogMessage($"SetPositionMode - Http State Code: {responseMessage.StatusCode}", LogMessageType.Error);
-
-                        if (stateResponse != null && stateResponse.code != null)
+                        if (responseMessage.Content.Contains("\"sign signature error\"")
+                            || (responseMessage.Content.Contains("\"Apikey does not exist\""))
+                            || (responseMessage.Content.Contains("\"apikey/password is incorrect\"")))
                         {
-                            SendLogMessage($"SetPositionMode - Code: {stateResponse.code}\n"
-                                + $"Message: {stateResponse.msg}", LogMessageType.Error);
+                            Disconnect();
                         }
+
+                        SendLogMessage($"SetPositionMode - Http State Code: {responseMessage.StatusCode} || msg: {responseMessage.Content}", LogMessageType.Error);
                     }
                 }
             }
@@ -2927,5 +3248,11 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures
         public event Action<string, LogMessageType> LogMessageEvent;
 
         #endregion
+    }
+
+    public class OpenInterestData
+    {
+        public string SecutityName { get; set; }
+        public string OpenInterestValue { get; set; }
     }
 }

@@ -17,6 +17,7 @@ using System.Linq;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -32,7 +33,7 @@ Exit from buy: the oscillator rose above 50, and then fell below 45 or entered t
 Exit from sell: the oscillator rose above 65 or entered the oversold zone (below 30).
  */
 
-namespace OsEngine.Robots.AO
+namespace OsEngine.Robots
 {
     [Bot("DevergenceUltimate")] // We create an attribute so that we don't write anything to the BotFactory
     public class DevergenceUltimate : BotPanel
@@ -106,11 +107,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy Devergence Ultimate. " +
-                "Buy: The lows on the chart are falling, while the lows are rising on the indicator. " +
-                "Sell: the highs on the chart are rising, while the indicator is falling. " +
-                "Exit from buy: the oscillator rose above 50, and then fell below 45 or entered the overbought zone (above 70), and then began to fall. " +
-                "Exit from sell: the oscillator rose above 65 or entered the oversold zone (below 30).";
+            Description = OsLocalization.Description.DescriptionLabel311;
         }
 
         private void DevergenceMACD_ParametrsChangeByUser()
@@ -460,7 +457,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

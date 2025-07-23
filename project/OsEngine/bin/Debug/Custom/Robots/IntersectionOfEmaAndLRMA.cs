@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -66,7 +67,6 @@ namespace OsEngine.Robots.My_bots
 
         public IntersectionOfEmaAndLRMA(string name, StartProgram startProgram) : base(name, startProgram)
         {
-
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -106,15 +106,7 @@ namespace OsEngine.Robots.My_bots
             // Subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on the intersection of EMA and LRMA." +
-                "Buy:" +
-                "The Ema is higher than the LRMA." +
-                "Sale:" +
-                "The Ema is lower than the LRMA." +
-                "Exit from the buy: " +
-                "Trailing stop in % of the loy of the candle on which you entered." +
-                "Exit from the sell:" +
-                "Trailing stop in % of the high of the candle on which you entered.";
+            Description = OsLocalization.Description.DescriptionLabel322;
         }
 
         // Indicator Update event
@@ -241,6 +233,7 @@ namespace OsEngine.Robots.My_bots
                     decimal high = candles[candles.Count - 1].High;
                     stopPriсe = high + high * _trailingValue.ValueDecimal / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPriсe, stopPriсe);
             }
         }
@@ -265,7 +258,7 @@ namespace OsEngine.Robots.My_bots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

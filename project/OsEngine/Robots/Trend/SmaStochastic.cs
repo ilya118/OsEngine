@@ -6,6 +6,7 @@
 using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Indicators;
+using OsEngine.Language;
 using OsEngine.Market;
 using OsEngine.Market.Servers;
 using OsEngine.OsTrader.Panels;
@@ -18,13 +19,13 @@ using System.IO;
 /* Description
 Trading robot for osengine.
 
-Trend strategy based on 2 indicators Sma and RSI. 
+Trend strategy based on 2 indicators Sma and Stohastic. 
 
 Buy:
-If lastClose > lastSma + Step and secondLastRsi <= Downline and firstLastRsi >= Downline - Enter Long. 
+If lastClose > lastSma + Step and secondLastStoh <= Downline and firstLastStoh >= Downline - Enter Long. 
 
 Sell: 
-If lastClose < lastSma - Step and secondLastRsi >= Upline and firstLastRsi <= Upline - Enter Short. 
+If lastClose < lastSma - Step and secondLastStoh >= Upline and firstLastStoh <= Upline - Enter Short. 
 
 Exit Long: lastClose < lastSma - Step.
 Exit Short: lastClose > lastSma + Step.
@@ -86,11 +87,7 @@ namespace OsEngine.Robots.Trend
             // Subscribe to the strategy delete event
             DeleteEvent += Strategy_DeleteEvent;
 
-            Description = "Trend strategy based on 2 indicators Sma and RSI. " +
-                "if lastClose > lastSma + Step and secondLastRsi <= Downline and firstLastRsi >= Downline - Enter Long. " +
-                "if lastClose < lastSma - Step and secondLastRsi >= Upline and firstLastRsi <= Upline - Enter Short. " +
-                "Exit Long: lastClose < lastSma - Step. " +
-                "Exit Short: lastClose > lastSma + Step.";
+            Description = OsLocalization.Description.DescriptionLabel118;
         }
 
         // The name of the robot in OsEngine

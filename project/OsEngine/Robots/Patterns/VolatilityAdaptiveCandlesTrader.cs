@@ -11,80 +11,102 @@ using OsEngine.Market;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Language;
+
+/* Description
+trading robot for osengine
+
+The trend robot on Volatility Adaptive Candles Trader.
+
+Buy:
+1. If the difference between the opening and closing price of the current candle relative
+to its price is less than the specified threshold (HeightSignalCandle), then no entry is made.  
+2. The current candle is bullish (the closing price is higher than the opening price).  
+
+Sell: 
+1. If the difference between the opening and closing price of the current candle relative 
+to its price is less than the specified threshold (HeightSignalCandle), then no entry is made.  
+2. The current candle is bearish (the closing price is lower than the opening price).  
+
+Exit: by trailing stop.
+ */
 
 namespace OsEngine.Robots.Patterns
 {
-    [Bot("VolatilityAdaptiveCandlesTrader")]
+    [Bot("VolatilityAdaptiveCandlesTrader")] // We create an attribute so that we don't write anything to the BotFactory
     public class VolatilityAdaptiveCandlesTrader : BotPanel
     {
-        public VolatilityAdaptiveCandlesTrader(string name, StartProgram startProgram)
-            : base(name, startProgram)
+        private BotTabSimple _tab;
+
+        // Basic settings
+        private StrategyParameterString _regime;
+        private StrategyParameterDecimal _heightSignalCandle;
+        private StrategyParameterDecimal _slippage;
+
+        // GetVolume settings
+        private StrategyParameterString _volumeType;
+        private StrategyParameterDecimal _volume;
+        private StrategyParameterString _tradeAssetInPortfolio;
+
+        // Volatility settings
+        private StrategyParameterInt _daysVolatilityAdaptive;
+        private StrategyParameterDecimal _heightSignalCandleVolaPercent;
+        private StrategyParameterDecimal _trailingStopVolaPercent;
+
+        // Exit setting
+        private StrategyParameterDecimal _trailingStopPercent;
+
+        public VolatilityAdaptiveCandlesTrader(string name, StartProgram startProgram) : base(name, startProgram)
         {
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
+            // Basic settings
+            _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" });
+            _slippage = CreateParameter("Slippage %", 0, 0, 20, 1m);
+            _heightSignalCandle = CreateParameter("Height signal candle %", 1, 0, 20, 1m);
+
+            // Volatility settings
+            _daysVolatilityAdaptive = CreateParameter("Days volatility adaptive", 1, 0, 20, 1);
+            _trailingStopVolaPercent = CreateParameter("Height trail stop volatility percent", 10, 0, 20, 1m);
+            _heightSignalCandleVolaPercent = CreateParameter("Height signal candle volatility percent", 20, 0, 20, 1m);
+            
+            // GetVolume settings
+            _volumeType = CreateParameter("Volume type", "Contracts", new[] { "Contracts", "Contract currency", "Deposit percent" });
+            _volume = CreateParameter("Volume", 1, 1.0m, 50, 4);
+            _tradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime");
+
+            // Exit setting
+            _trailingStopPercent = CreateParameter("Trail stop %", 20m, 0, 20, 1m);
+
+            // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" });
-
-            VolumeType = CreateParameter("Volume type", "Contracts", new[] { "Contracts", "Contract currency", "Deposit percent" });
-
-            Volume = CreateParameter("Volume", 1, 1.0m, 50, 4);
-
-            TradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime");
-
-            Slippage = CreateParameter("Slippage %", 0, 0, 20, 1m);
-
-            HeightSignalCandle = CreateParameter("Height signal candle %", 1, 0, 20, 1m);
-
-            TrailingStopPercent = CreateParameter("Trail stop %", 20m, 0, 20, 1m);
-
-            DaysVolatilityAdaptive = CreateParameter("Days volatility adaptive", 1, 0, 20, 1);
-
-            HeightSignalCandleVolaPercent = CreateParameter("Height signal candle volatility percent", 20, 0, 20, 1m);
-
-            TrailingStopVolaPercent = CreateParameter("Height trail stop volatility percent", 10, 0, 20, 1m);
-
-            Description = "Trading robot for adaptive candles by volatility";
+            Description = OsLocalization.Description.DescriptionLabel78;
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "VolatilityAdaptiveCandlesTrader";
         }
 
+        // Show settings GUI
         public override void ShowIndividualSettingsDialog()
         {
 
         }
 
-        private BotTabSimple _tab;
-
-        // settings
-
-        public StrategyParameterString Regime;
-        public StrategyParameterDecimal HeightSignalCandle;
-        public StrategyParameterDecimal TrailingStopPercent;
-        public StrategyParameterDecimal Slippage;
-        public StrategyParameterString VolumeType;
-        public StrategyParameterDecimal Volume;
-        public StrategyParameterString TradeAssetInPortfolio;
-
-        public StrategyParameterInt DaysVolatilityAdaptive;
-        public StrategyParameterDecimal HeightSignalCandleVolaPercent;
-        public StrategyParameterDecimal TrailingStopVolaPercent;
-
-        // volatility adaptation
-
+        // Volatility adaptation
         private void AdaptSignalCandleHeight(List<Candle> candles)
         {
-            if (DaysVolatilityAdaptive.ValueInt <= 0
-                || HeightSignalCandleVolaPercent.ValueDecimal <= 0)
+            if (_daysVolatilityAdaptive.ValueInt <= 0
+                || _heightSignalCandleVolaPercent.ValueDecimal <= 0)
             {
                 return;
             }
 
-            // 1 рассчитываем движение от хая до лоя внутри N дней
+            // 1 we calculate the movement from high to low within N days
 
             decimal minValueInDay = decimal.MaxValue;
             decimal maxValueInDay = decimal.MinValue;
@@ -109,12 +131,11 @@ namespace OsEngine.Robots.Patterns
 
                     volaInDaysPercent.Add(volaPercentToday);
 
-
                     minValueInDay = decimal.MaxValue;
                     maxValueInDay = decimal.MinValue;
                 }
 
-                if (days >= DaysVolatilityAdaptive.ValueInt)
+                if (days >= _daysVolatilityAdaptive.ValueInt)
                 {
                     break;
                 }
@@ -123,6 +144,7 @@ namespace OsEngine.Robots.Patterns
                 {
                     maxValueInDay = curCandle.High;
                 }
+
                 if (curCandle.Low < minValueInDay)
                 {
                     minValueInDay = curCandle.Low;
@@ -143,7 +165,7 @@ namespace OsEngine.Robots.Patterns
                 return;
             }
 
-            // 2 усредняем это движение. Нужна усреднённая волатильность. процент
+            // 2 we average this movement. We need average volatility percentage
 
             decimal volaPercentSma = 0;
 
@@ -154,20 +176,19 @@ namespace OsEngine.Robots.Patterns
 
             volaPercentSma = volaPercentSma / volaInDaysPercent.Count;
 
-            // 3 считаем размер параметров с учётом этой волатильности
+            // 3 we calculate the size of the parameters taking this volatility into account
 
-            decimal signalCandleHeight = volaPercentSma * (HeightSignalCandleVolaPercent.ValueDecimal / 100);
-            HeightSignalCandle.ValueDecimal = signalCandleHeight;
+            decimal signalCandleHeight = volaPercentSma * (_heightSignalCandleVolaPercent.ValueDecimal / 100);
+            _heightSignalCandle.ValueDecimal = signalCandleHeight;
 
-            decimal trailStopHeight = volaPercentSma * (TrailingStopVolaPercent.ValueDecimal / 100);
-            TrailingStopPercent.ValueDecimal = trailStopHeight;
+            decimal trailStopHeight = volaPercentSma * (_trailingStopVolaPercent.ValueDecimal / 100);
+            _trailingStopPercent.ValueDecimal = trailStopHeight;
         }
 
-        // logic
-
+        // Logic
         private void _tab_CandleFinishedEvent(List<Candle> candles)
         {
-            if (Regime.ValueString == "Off")
+            if (_regime.ValueString == "Off")
             {
                 return;
             }
@@ -187,10 +208,11 @@ namespace OsEngine.Robots.Patterns
 
             if (openPositions == null || openPositions.Count == 0)
             {
-                if (Regime.ValueString == "OnlyClosePosition")
+                if (_regime.ValueString == "OnlyClosePosition")
                 {
                     return;
                 }
+
                 LogicOpenPosition(candles);
             }
             else
@@ -199,43 +221,45 @@ namespace OsEngine.Robots.Patterns
             }
         }
 
+        // Opening logic
         private void LogicOpenPosition(List<Candle> candles)
         {
             decimal _lastPrice = candles[candles.Count - 1].Close;
 
             if (Math.Abs(candles[candles.Count - 1].Open - candles[candles.Count - 1].Close)
-                / (candles[candles.Count - 1].Close / 100) < HeightSignalCandle.ValueDecimal)
+                / (candles[candles.Count - 1].Close / 100) < _heightSignalCandle.ValueDecimal)
             {
                 return;
             }
 
             //  long
-            if (Regime.ValueString != "OnlyShort")
+            if (_regime.ValueString != "OnlyShort")
             {
                 if (candles[candles.Count - 1].Open < candles[candles.Count - 1].Close)
                 {
-                    _tab.BuyAtLimit(GetVolume(_tab), _lastPrice + _lastPrice * (Slippage.ValueDecimal / 100));
+                    _tab.BuyAtLimit(GetVolume(_tab), _lastPrice + _lastPrice * (_slippage.ValueDecimal / 100));
                 }
             }
 
             // Short
-            if (Regime.ValueString != "OnlyLong")
+            if (_regime.ValueString != "OnlyLong")
             {
                 if (candles[candles.Count - 1].Open > candles[candles.Count - 1].Close)
                 {
-                    _tab.SellAtLimit(GetVolume(_tab), _lastPrice - _lastPrice * (Slippage.ValueDecimal / 100));
+                    _tab.SellAtLimit(GetVolume(_tab), _lastPrice - _lastPrice * (_slippage.ValueDecimal / 100));
                 }
             }
 
             return;
-
         }
 
+        // Logic close position
         private void LogicClosePosition(List<Candle> candles)
         {
             decimal _lastPrice = candles[candles.Count - 1].Close;
 
             List<Position> openPositions = _tab.PositionsOpenAll;
+
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {
                 if (openPositions[i].State != PositionStateType.Open)
@@ -245,29 +269,30 @@ namespace OsEngine.Robots.Patterns
 
                 if (openPositions[i].Direction == Side.Buy)
                 {
-                    decimal priceStop = _lastPrice - (_lastPrice * TrailingStopPercent.ValueDecimal) / 100;
-                    _tab.CloseAtTrailingStop(openPositions[i], priceStop, priceStop - priceStop * (Slippage.ValueDecimal / 100));
+                    decimal priceStop = _lastPrice - (_lastPrice * _trailingStopPercent.ValueDecimal) / 100;
+                    _tab.CloseAtTrailingStop(openPositions[i], priceStop, priceStop - priceStop * (_slippage.ValueDecimal / 100));
                 }
                 else //if (openPositions[i].Direction == Side.Sell)
                 {
-                    decimal priceStop = _lastPrice + (_lastPrice * TrailingStopPercent.ValueDecimal) / 100;
-                    _tab.CloseAtTrailingStop(openPositions[i], priceStop, priceStop + priceStop * (Slippage.ValueDecimal / 100));
+                    decimal priceStop = _lastPrice + (_lastPrice * _trailingStopPercent.ValueDecimal) / 100;
+                    _tab.CloseAtTrailingStop(openPositions[i], priceStop, priceStop + priceStop * (_slippage.ValueDecimal / 100));
                 }
             }
         }
 
+        // Method for calculating the volume of entry into a position
         private decimal GetVolume(BotTabSimple tab)
         {
             decimal volume = 0;
 
-            if (VolumeType.ValueString == "Contracts")
+            if (_volumeType.ValueString == "Contracts")
             {
-                volume = Volume.ValueDecimal;
+                volume = _volume.ValueDecimal;
             }
-            else if (VolumeType.ValueString == "Contract currency")
+            else if (_volumeType.ValueString == "Contract currency")
             {
                 decimal contractPrice = tab.PriceBestAsk;
-                volume = Volume.ValueDecimal / contractPrice;
+                volume = _volume.ValueDecimal / contractPrice;
 
                 if (StartProgram == StartProgram.IsOsTrader)
                 {
@@ -278,7 +303,7 @@ namespace OsEngine.Robots.Patterns
                     tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
-                        volume = Volume.ValueDecimal / (contractPrice * tab.Security.Lot);
+                        volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
                     }
 
                     volume = Math.Round(volume, tab.Security.DecimalsVolume);
@@ -288,7 +313,7 @@ namespace OsEngine.Robots.Patterns
                     volume = Math.Round(volume, 6);
                 }
             }
-            else if (VolumeType.ValueString == "Deposit percent")
+            else if (_volumeType.ValueString == "Deposit percent")
             {
                 Portfolio myPortfolio = tab.Portfolio;
 
@@ -299,7 +324,7 @@ namespace OsEngine.Robots.Patterns
 
                 decimal portfolioPrimeAsset = 0;
 
-                if (TradeAssetInPortfolio.ValueString == "Prime")
+                if (_tradeAssetInPortfolio.ValueString == "Prime")
                 {
                     portfolioPrimeAsset = myPortfolio.ValueCurrent;
                 }
@@ -314,7 +339,7 @@ namespace OsEngine.Robots.Patterns
 
                     for (int i = 0; i < positionOnBoard.Count; i++)
                     {
-                        if (positionOnBoard[i].SecurityNameCode == TradeAssetInPortfolio.ValueString)
+                        if (positionOnBoard[i].SecurityNameCode == _tradeAssetInPortfolio.ValueString)
                         {
                             portfolioPrimeAsset = positionOnBoard[i].ValueCurrent;
                             break;
@@ -324,11 +349,11 @@ namespace OsEngine.Robots.Patterns
 
                 if (portfolioPrimeAsset == 0)
                 {
-                    SendNewLogMessage("Can`t found portfolio " + TradeAssetInPortfolio.ValueString, Logging.LogMessageType.Error);
+                    SendNewLogMessage("Can`t found portfolio " + _tradeAssetInPortfolio.ValueString, Logging.LogMessageType.Error);
                     return 0;
                 }
 
-                decimal moneyOnPosition = portfolioPrimeAsset * (Volume.ValueDecimal / 100);
+                decimal moneyOnPosition = portfolioPrimeAsset * (_volume.ValueDecimal / 100);
 
                 decimal qty = moneyOnPosition / tab.PriceBestAsk / tab.Security.Lot;
 

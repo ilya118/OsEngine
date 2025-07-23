@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 Trading robot for osengine.
@@ -138,17 +139,7 @@ namespace OsEngine.Robots.My_bots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Envelopes and VWMA channel." +
-                "Buy:" +
-                " The lower line of Envelopes is above the upper line of the Vwma channel." +
-                "Sell:" +
-                "The upper line Envelopes below the lower line of the Vwma channel." +
-                "Exit from the buy: " +
-                "The trailing stop is placed at the minimum for the period specified for the trailing stop and is transferred" +
-                "(slides), over the new price minimums, also for the specified period - IvashovRange * MuItIvashov." +
-                "Exit from the sell:" +
-                "The trailing stop is placed at the maximum for the period specified for the trailing stop and is transferred(slides)," +
-                "to the new maximum of the price, also for the specified period + IvashovRange * MuItIvashov.";
+            Description = OsLocalization.Description.DescriptionLabel201;
         }
 
         private void IntersectionOfEnvelopesAndVWMAСhannel_ParametrsChangeByUser()
@@ -219,6 +210,7 @@ namespace OsEngine.Robots.My_bots
             {
                 return;
             }
+
             // If there are no positions, then go to the position opening method
             if (openPositions == null || openPositions.Count == 0)
             {
@@ -268,6 +260,7 @@ namespace OsEngine.Robots.My_bots
         private void LogicClosePosition(List<Candle> candles)
         {
             _lastRangeIvashov = _rangeIvashov.DataSeries[0].Last;
+
             List<Position> openPositions = _tab.PositionsOpenAll;
 
             decimal _slippage = this._slippage.ValueDecimal * _tab.Securiti.PriceStep;
@@ -286,19 +279,23 @@ namespace OsEngine.Robots.My_bots
                 if (position.Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     decimal price = GetPriceStop(Side.Buy, candles, candles.Count - 1) - _lastRangeIvashov * _multIvashov.ValueDecimal;
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price - _slippage);
                 }
                 else // If the direction of the position is sale
                 {
                     decimal price = GetPriceStop(Side.Sell, candles, candles.Count - 1) + _lastRangeIvashov * _multIvashov.ValueDecimal; 
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
                 }
             }
@@ -322,6 +319,7 @@ namespace OsEngine.Robots.My_bots
                         price = candles[i].Low;
                     }
                 }
+
                 return price;
             }
 
@@ -339,6 +337,7 @@ namespace OsEngine.Robots.My_bots
 
                 return price;
             }
+
             return 0;
         }
 
@@ -362,7 +361,7 @@ namespace OsEngine.Robots.My_bots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

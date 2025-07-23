@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 Trading robot for osengine.
@@ -70,7 +71,7 @@ namespace OsEngine.Robots
         private decimal _lastSma;
         private decimal _lastRangeIvashov;
 
-        // Exit
+        // Exit settings
         private StrategyParameterInt _trailCandlesLong;
         private StrategyParameterInt _trailCandlesShort;
 
@@ -80,7 +81,7 @@ namespace OsEngine.Robots
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
-            // Basic setting
+            // Basic settings
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" }, "Base");
             _slippage = CreateParameter("Slippage %", 0m, 0, 20, 1, "Base");
             _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
@@ -104,7 +105,6 @@ namespace OsEngine.Robots
             ((IndicatorParameterInt)_sma.Parameters[0]).ValueInt = _lengthSma.ValueInt;
             _sma.Save();
 
-
             // Create indicator Momentum
             _momentum = IndicatorsFactory.CreateIndicatorByName("Momentum", name + "Momentum Length", false);
             _momentum = (Aindicator)_tab.CreateCandleIndicator(_momentum, "NewArea0");
@@ -118,7 +118,7 @@ namespace OsEngine.Robots
             ((IndicatorParameterInt)_rangeIvashov.Parameters[1]).ValueInt = _lengthRangeIvashov.ValueInt;
             _rangeIvashov.Save();
 
-            // Exit
+            // Exit settings
             _trailCandlesLong = CreateParameter("Stop Value Long", 5, 10, 500, 10, "Exit");
             _trailCandlesShort = CreateParameter("Stop Value Short", 1, 15, 200, 5, "Exit");
 
@@ -128,17 +128,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on the Momentum breakdown with SMA ." +
-                "Buy:" +
-                "1. The value of the Momentum indicator broke through the maximum for a certain number of candles and closed higher." +
-                "2. The price is higher than Sma." +
-                "Sell:" +
-                "1. The value of the Momentum indicator broke through the minimum for a certain number of candles and closed lower." +
-                "2. The price is lower than Sma." +
-                "Exit from buy:" +
-                "Trailing stop = Lowest low (SMA period) – IvashovRange × MultIvashov" +
-                "Exit from sell:" +
-                "Trailing stop = Highest high (SMA period) + IvashovRange × MultIvashov";
+            Description = OsLocalization.Description.DescriptionLabel157;
         }
 
         private void BreakMomentumWithSmaTrading_ParametrsChangeByUser()
@@ -217,6 +207,7 @@ namespace OsEngine.Robots
             }
         }
 
+        // Opening position logic
         private void LogicOpenPosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
@@ -292,7 +283,6 @@ namespace OsEngine.Robots
 
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
                 }
-
             }
         }
 
@@ -334,7 +324,6 @@ namespace OsEngine.Robots
             }
 
             return 0;
-
         }
 
         private string EnterLongAndShort(List<decimal> values, int period)
@@ -373,7 +362,6 @@ namespace OsEngine.Robots
             }
 
             return "nope";
-
         }
 
         // Method for calculating the volume of entry into a position
@@ -467,7 +455,6 @@ namespace OsEngine.Robots
             }
 
             return volume;
-
         }
     }
 }

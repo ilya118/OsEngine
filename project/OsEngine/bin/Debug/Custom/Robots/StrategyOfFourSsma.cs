@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine
@@ -35,7 +36,7 @@ namespace OsEngine.Robots
     [Bot("StrategyOfFourSsma")]// We create an attribute so that we don't write anything in the Boot factory
     public class StrategyOfFourSsma : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -133,14 +134,7 @@ namespace OsEngine.Robots
             // subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot at the stratege  with two Ssma channels. " +
-                "Buy: " +
-                "1. The price is above the slow channel (above the upper line) and above the fast (upper line); " +
-                "2. The bottom line of the fast channel is higher than the top line of the slow channel. " +
-                "Sell: " +
-                "1. The price is below the slow channel (below the lower line) and below the fast channel (below the lower line); " +
-                "2. The upper line of the fast channel is lower than the lower line of the slow channel. " +
-                "Exit: stop and profit.";
+            Description = OsLocalization.Description.DescriptionLabel260;
         }
        
         // Indicator Update event
@@ -402,7 +396,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

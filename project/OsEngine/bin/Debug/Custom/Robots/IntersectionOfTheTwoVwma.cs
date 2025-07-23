@@ -14,6 +14,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -96,10 +97,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on intersection of two VWMA " +
-                "Buy: Fast Sma is higher than slow Vwma " +
-                "Sell: Fast Sma below slow Vwma " +
-                "Exit: on the opposite signal";
+            Description = OsLocalization.Description.DescriptionLabel205;
         }
 
         // Indicator Update event
@@ -179,6 +177,7 @@ namespace OsEngine.Robots
                 _lastVWMASlow = _VWMASlow.DataSeries[0].Last;
 
                 decimal _slippage = this._slippage.ValueDecimal * _tab.Securiti.PriceStep;
+
                 // Long
                 if (_regime.ValueString != "OnlyShort") // If the mode is not only short, then we enter long
                 {
@@ -222,15 +221,16 @@ namespace OsEngine.Robots
                     if (_lastVWMAFast < _lastVWMASlow)
                     {
                         decimal lastPrice = candles[candles.Count - 1].Close;
+
                         _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
                     }
-
                 }
                 else // If the direction of the position is short
                 {
                     if (_lastVWMAFast > _lastVWMASlow)
                     {
                         decimal lastPrice = candles[candles.Count - 1].Close;
+
                         _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
                     }
                 }
@@ -257,7 +257,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 Trading robot for osengine.
@@ -35,7 +36,7 @@ Exit from the sell:
 Trailing stop in % of the high of the candle on which you entered.
  */
 
-namespace OsEngine.Robots.My_bots
+namespace OsEngine.Robots
 {
     [Bot("EnvelopsAndSmaCountertrend")] // We create an attribute so that we don't write anything to the BotFactory
     public class EnvelopsAndSmaCountertrend : BotPanel
@@ -116,20 +117,9 @@ namespace OsEngine.Robots.My_bots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The countertrend robot on Envelops and Ema." +
-                    "Buy:" +
-                    "1.The price is below the lower Envelop line." +
-                    "2.Sma below the lower Envelop line." +
-                    "3.Sma growing." +
-                    "Sell: " +
-                    "1.The price is above the upper Envelop line." +
-                    "2.Sma above the upper Envelop line." +
-                    "3.Sma falling." +
-                    "Exit from the buy: " +
-                    "Trailing stop in % of the loy of the candle on which you entered." +
-                    "Exit from the sell:" +
-                    "Trailing stop in % of the high of the candle on which you entered.";
+            Description = OsLocalization.Description.DescriptionLabel315;
         }
+
         private void EnvelopsAndSmaCountertrend_ParametrsChangeByUser()
         {
             ((IndicatorParameterInt)_envelops.Parameters[0]).ValueInt = _envelopsLength.ValueInt;
@@ -261,6 +251,7 @@ namespace OsEngine.Robots.My_bots
                     decimal high = candles[candles.Count - 1].High;
                     stopPrice = high + high * _trailCandles.ValueInt / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPrice, stopPrice);
             }
         }
@@ -285,7 +276,7 @@ namespace OsEngine.Robots.My_bots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

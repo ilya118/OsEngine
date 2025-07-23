@@ -13,6 +13,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine
@@ -121,15 +122,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on the intersection of two Linear Regression Line and RSI." +
-                "Buy:" +
-                "1.The fast EMA crosses the slow ONE from bottom to top." +
-                "2.The RSI is above 50 and growing." +
-                "Sale:" +
-                "1.The fast EMA crosses the slow ONE from top to bottom." +
-                "2.The RSI is above 50 and growing." +
-                "Exit:" +
-                "Stop and profit in % of the entry price.";
+            Description = OsLocalization.Description.DescriptionLabel210;
         }
 
         // Indicator Update event
@@ -225,7 +218,6 @@ namespace OsEngine.Robots
                     if (_lastLRMAFast > _prevLRMAFast && _prevLRMAFast > _prevLRMASlow
                         && _lastLRMAFast > _lastLRMASlow && _lastRsi > 50 && _prevRsi < _lastRsi)
                     {
-
                         _tab.BuyAtLimit(GetVolume(_tab), _tab.PriceBestAsk + _slippage);
                     }
                 }
@@ -236,7 +228,6 @@ namespace OsEngine.Robots
                     if( _lastLRMAFast < _prevLRMAFast && _prevLRMAFast < _prevLRMASlow
                         && _lastLRMAFast < _lastLRMASlow && _lastRsi > 50 && _prevRsi < _lastRsi)
                     {
-
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
                     }
                 }
@@ -300,7 +291,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -373,4 +364,3 @@ namespace OsEngine.Robots
         }
     }
 }
-

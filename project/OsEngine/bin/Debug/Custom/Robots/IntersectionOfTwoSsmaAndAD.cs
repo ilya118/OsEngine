@@ -13,6 +13,7 @@ using OsEngine.OsTrader.Panels.Tab;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -29,7 +30,7 @@ From buy: fast Ssma below slow Ssma;
 From sell: fast Ssma is higher than slow Ssma.
  */
 
-namespace OsEngine.Robots.Mybots
+namespace OsEngine.Robots
 {
     [Bot("IntersectionOfTwoSsmaAndAD")] // We create an attribute so that we don't write anything to the BotFactory
     public class IntersectionOfTwoSsmaAndAD : BotPanel
@@ -37,32 +38,32 @@ namespace OsEngine.Robots.Mybots
         private BotTabSimple _tab;
 
         // Basic Settings
-        StrategyParameterString _regime;
-        StrategyParameterDecimal _slippage;
-        StrategyParameterTimeOfDay _startTradeTime;
-        StrategyParameterTimeOfDay _endTradeTime;
+        private StrategyParameterString _regime;
+        private StrategyParameterDecimal _slippage;
+        private StrategyParameterTimeOfDay _startTradeTime;
+        private StrategyParameterTimeOfDay _endTradeTime;
 
         // GetVolume Settings
-        StrategyParameterString _volumeType;
-        StrategyParameterDecimal _volume;
-        StrategyParameterString _tradeAssetInPortfolio;
+        private StrategyParameterString _volumeType;
+        private StrategyParameterDecimal _volume;
+        private StrategyParameterString _tradeAssetInPortfolio;
 
         // Indicator settings
-        StrategyParameterInt _periodSsmaFast;
-        StrategyParameterInt _periodSsmaSlow;
+        private StrategyParameterInt _periodSsmaFast;
+        private StrategyParameterInt _periodSsmaSlow;
 
         // Indicator
-        Aindicator _AD;
-        Aindicator _FastSsma;
-        Aindicator _SlowSsma;
+        private Aindicator _AD;
+        private Aindicator _FastSsma;
+        private Aindicator _SlowSsma;
 
         // The last value of the indicators
-        decimal _lastFastSsma;
-        decimal _lastSlowSsma;
-        decimal _lastAD;
+        private decimal _lastFastSsma;
+        private decimal _lastSlowSsma;
+        private decimal _lastAD;
 
         // The prevlast value of the indicator
-        decimal _prevAD;
+        private decimal _prevAD;
 
         public IntersectionOfTwoSsmaAndAD(string name, StartProgram startProgram) : base(name, startProgram)
         {
@@ -109,12 +110,7 @@ namespace OsEngine.Robots.Mybots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy for two Ssma and Accumulation Distribution. " +
-                "Buy: fast Ssma above slow Ssma and AD rising. " +
-                "Sell: fast Ssma below slow Ssma and AD falling. " +
-                "Exit: " +
-                "From buy: fast Ssma below slow Ssma; " +
-                "From sell: fast Ssma is higher than slow Ssma.";
+            Description = OsLocalization.Description.DescriptionLabel213;
         }
 
         // Indicator Update event
@@ -217,6 +213,7 @@ namespace OsEngine.Robots.Mybots
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
                     }
                 }
+
                 return;
             }
         }
@@ -280,7 +277,7 @@ namespace OsEngine.Robots.Mybots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -353,4 +350,3 @@ namespace OsEngine.Robots.Mybots
         }
     }
 }
-

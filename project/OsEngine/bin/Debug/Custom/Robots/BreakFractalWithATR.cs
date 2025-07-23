@@ -14,6 +14,7 @@ using System.Drawing;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -35,9 +36,10 @@ The stop is placed at the maximum for the period specified for the stop (StopCan
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakFractalWithATR")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakFractalWithATR")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakFractalWithATR : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -51,11 +53,11 @@ namespace OsEngine.Robots
         private StrategyParameterDecimal _volume;
         private StrategyParameterString _tradeAssetInPortfolio;
 
-        // Indicator settings
+        // Indicators settings
         private StrategyParameterInt _lengthAtr;
         private StrategyParameterDecimal _coefAtr;
 
-        // Indicator
+        // Indicators
         private Aindicator _ATR;
         private Aindicator _fractal;
 
@@ -72,6 +74,7 @@ namespace OsEngine.Robots
 
         public BreakFractalWithATR(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -111,15 +114,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Break Fractal With ATR. " +
-                "Buy:  " +
-                "If an upper fractal has formed on the chart, set BuyAtStop + lastAtr * CoefAtr.ValueDecimal. " +
-                "Sell: " +
-                "If a lower fractal has formed on the chart, set SellAtStop - lastAtr * CoefAtr.ValueDecimal. " +
-                "Exit: " +
-                "The stop is placed at the minimum for the period specified for the stop (StopCandles). The profit is equal to the size of the stop * CoefProfit. " +
-                "Exit: " +
-                "The stop is placed at the maximum for the period specified for the stop (StopCandles). The profit is equal to the size of the stop * CoefProfit.";
+            Description = OsLocalization.Description.DescriptionLabel152;
         }
 
         private void BreakFractalWithATR_ParametrsChangeByUser()
@@ -134,6 +129,7 @@ namespace OsEngine.Robots
         {
             return "BreakFractalWithATR";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -216,13 +212,14 @@ namespace OsEngine.Robots
             {
                 _tab.BuyAtStopCancel();
                 _tab.SellAtStopCancel();
+
                 // long
                 if (_regime.ValueString != "OnlyShort") // if the mode is not only short, then we enter long
                 {
-                    if(_lastUpFract > lastPrice && _lastIndexUp > _lastIndexDown)
+                    if (_lastUpFract > lastPrice && _lastIndexUp > _lastIndexDown)
                     {
                         decimal priceEnter = lastPrice + _lastAtr * _coefAtr.ValueDecimal;
-                    
+
                         _tab.BuyAtStop(GetVolume(_tab),
                         priceEnter + _slippage.ValueDecimal * _tab.Securiti.PriceStep,
                         priceEnter, StopActivateType.HigherOrEqual);
@@ -232,13 +229,13 @@ namespace OsEngine.Robots
                 // Short
                 if (_regime.ValueString != "OnlyLong") // if the mode is not only long, we enter short
                 {
-                    if(_lastDownFract < lastPrice && _lastIndexDown > _lastIndexUp) 
+                    if (_lastDownFract < lastPrice && _lastIndexDown > _lastIndexUp)
                     {
                         decimal priceEnter = lastPrice - _lastAtr * _coefAtr.ValueDecimal;
 
                         _tab.SellAtStop(GetVolume(_tab),
                         priceEnter - _slippage.ValueDecimal * _tab.Securiti.PriceStep,
-                        priceEnter, StopActivateType.LowerOrEqyal);
+                        priceEnter, StopActivateType.LowerOrEqual);
                     }
                 }
                 return;
@@ -249,7 +246,7 @@ namespace OsEngine.Robots
         private void LogicClosePosition(List<Candle> candles)
         {
             List<Position> openPositions = _tab.PositionsOpenAll;
-            
+
             decimal _slippage = this._slippage.ValueDecimal * _tab.Securiti.PriceStep;
 
             decimal profitActivation;

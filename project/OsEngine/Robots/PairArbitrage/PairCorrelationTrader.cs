@@ -4,6 +4,7 @@
 */
 
 using OsEngine.Entity;
+using OsEngine.Language;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
@@ -12,12 +13,10 @@ using OsEngine.OsTrader.Panels.Tab;
 Description
 
 Trading robot for osengine
-if the correlation is higher than 0.9 and we are on some side of the cointegration - enter, counting on the pair convergence
-Exit by the inverse cointegration signal
+if the correlation is higher than 0.9 and we are on some
+side of the cointegration - enter, counting on the pair convergence
 
-Ru
-Суть - если корреляция выше 0.9 и мы с какой - то стороны коинтеграции - входим, рассчитывая на схождение пар
-Выход по обратному сигналу коинтеграции
+Exit by the inverse cointegration signal
 */
 
 namespace OsEngine.Robots.PairArbitrage
@@ -25,44 +24,44 @@ namespace OsEngine.Robots.PairArbitrage
     [Bot("PairCorrelationTrader")]
     public class PairCorrelationTrader : BotPanel
     {
+        BotTabPair _pairTrader;
+
+        // Basic settings
+        private StrategyParameterString _regime;
+        private StrategyParameterInt _maxPositionsCount;
+        
         public PairCorrelationTrader(string name, StartProgram startProgram)
            : base(name, startProgram)
         {
             TabCreate(BotTabType.Pair);
             _pairTrader = this.TabsPair[0];
 
+            // Subscribe to the cointegration change event
             _pairTrader.CorrelationChangeEvent += _pairTrader_CorrelationChangeEvent;
 
-            Regime = CreateParameter("Regime", "Off", new[] { "Off", "On" });
+            // Basic settings
+            _regime = CreateParameter("Regime", "Off", new[] { "Off", "On" });
+            _maxPositionsCount = CreateParameter("max poses count", 5, 5, 5, 5);
 
-            MaxPositionsCount = CreateParameter("max poses count", 5, 5, 5, 5);
-
-            Description = "if the correlation is higher than 0.9 and we are " +
-                "on some side of the cointegration - enter," +
-                " counting on the pair convergence " +
-                "Exit by the inverse cointegration signal";
-
+            Description = OsLocalization.Description.DescriptionLabel71;
         }
 
-        BotTabPair _pairTrader;
-
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "PairCorrelationTrader";
         }
 
+        // Show settings GUI
         public override void ShowIndividualSettingsDialog()
         {
 
         }
 
-        private StrategyParameterInt MaxPositionsCount;
-
-        public StrategyParameterString Regime;
-
+        // Logic
         private void _pairTrader_CorrelationChangeEvent(System.Collections.Generic.List<PairIndicatorValue> correlation, PairToTrade pair)
         {
-            if (Regime.ValueString == "Off")
+            if (_regime.ValueString == "Off")
             {
                 return;
             }
@@ -77,6 +76,7 @@ namespace OsEngine.Robots.PairArbitrage
             }
         }
 
+        // Position close logic
         private void ClosePositionLogic(PairToTrade pair)
         {
             if (pair.SideCointegrationValue == CointegrationLineSide.Up
@@ -91,6 +91,7 @@ namespace OsEngine.Robots.PairArbitrage
             }
         }
 
+        // Position open logic
         private void OpenPositionLogic(PairToTrade pair)
         {
             if(pair.CorrelationLast < 0.9m)
@@ -98,7 +99,7 @@ namespace OsEngine.Robots.PairArbitrage
                 return;
             }
 
-            if (_pairTrader.PairsWithPositionsCount >= MaxPositionsCount.ValueInt)
+            if (_pairTrader.PairsWithPositionsCount >= _maxPositionsCount.ValueInt)
             {
                 return;
             }
@@ -112,6 +113,5 @@ namespace OsEngine.Robots.PairArbitrage
                 pair.BuySec1SellSec2();
             }
         }
-
     }
 }

@@ -14,6 +14,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -108,10 +109,7 @@ namespace OsEngine.Robots.Vwma
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on intersection of three Vwma " +
-                "Buy: Fast Vwma above average Vwma and medium above slow. " +
-                "Sell: Fast Vwma below average Vwma and medium below slow. " +
-                "Exit: on the opposite signal.";
+            Description = OsLocalization.Description.DescriptionLabel204;
         }
 
         // Indicator Update event
@@ -240,6 +238,7 @@ namespace OsEngine.Robots.Vwma
                     if (_lastVwmaFast < _lastVwmaMiddle && _lastVwmaMiddle < _lastVwmaSlow)
                     {
                         decimal lastPrice = candles[candles.Count - 1].Close;
+
                         _tab.CloseAtLimit(openPositions[i], lastPrice - _slippage, openPositions[i].OpenVolume);
                     }
                 }
@@ -248,6 +247,7 @@ namespace OsEngine.Robots.Vwma
                     if (_lastVwmaFast > _lastVwmaMiddle && _lastVwmaMiddle > _lastVwmaSlow)
                     {
                         decimal lastPrice = candles[candles.Count - 1].Close;
+
                         _tab.CloseAtLimit(openPositions[i], lastPrice + _slippage, openPositions[i].OpenVolume);
                     }
                 }
@@ -274,7 +274,7 @@ namespace OsEngine.Robots.Vwma
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

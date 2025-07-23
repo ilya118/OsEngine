@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -118,13 +119,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The contertrend robot on two Price Channel. " +
-                "Buy: the bottom line of the local PC has become higher than the bottom line of the global PC. " +
-                "Sell: the top line of the local PC has become lower than the top line of the global PC. " +
-                "Exit from buy: The trailing stop is placed at the minimum for the period specified for the trailing " +
-                "stop and transferred (slides) to new price lows, also for the specified period. " +
-                "Exit from sell: The trailing stop is placed at the maximum for the period specified for the trailing " +
-                "stop and is transferred (slides) to the new maximum price, also for the specified period.";
+            Description = OsLocalization.Description.DescriptionLabel177;
         }
 
         private void BreakEOMAndSma_ParametrsChangeByUser()
@@ -258,23 +253,28 @@ namespace OsEngine.Robots
                 if (position.Direction == Side.Buy) // If the direction of the position is purchase
                 {
                     decimal price = GetPriceStop(Side.Buy, candles, candles.Count - 1);
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price - _slippage);
                 }
                 else // If the direction of the position is sale
                 {
                     decimal price = GetPriceStop(Side.Sell, candles, candles.Count - 1);
+
                     if (price == 0)
                     {
                         return;
                     }
+
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
                 }
             }
         }
+
         private decimal GetPriceStop(Side side, List<Candle> candles, int index)
         {
             if (candles == null || index < _trailCandlesLong.ValueInt || index < _trailCandlesShort.ValueInt)
@@ -293,6 +293,7 @@ namespace OsEngine.Robots
                         price = candles[i].Low;
                     }
                 }
+
                 return price;
             }
 
@@ -310,6 +311,7 @@ namespace OsEngine.Robots
 
                 return price;
             }
+
             return 0;
         }
 
@@ -333,7 +335,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

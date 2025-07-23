@@ -25,10 +25,17 @@
     <PlatformTarget>x64</PlatformTarget>
     <ApplicationIcon>OsLogo.ico</ApplicationIcon>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
-    <AssemblyVersion>2.0.0.2</AssemblyVersion>
+    <AssemblyVersion>2.0.0.3</AssemblyVersion>
+    <PackageOutputPath>$(OutputPath)\</PackageOutputPath>
+    <FileVersion>2.0.0.3</FileVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
    <OutputPath>bin\Debug\</OutputPath>
+   <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+   <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+   <OutputPath>bin\Release\</OutputPath>
    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
    <AppendRuntimeIdentifierToOutputPath>false</AppendRuntimeIdentifierToOutputPath>
   </PropertyGroup>
@@ -62,6 +69,9 @@
     <Reference Include="cgate_net64">
       <HintPath>bin\Debug\cgate_net64.dll</HintPath>
     </Reference>
+    <Reference Include="FinamApi">
+      <HintPath>bin\Debug\FinamApi.dll</HintPath>
+    </Reference>
     <Reference Include="Jayrock.Json">
       <HintPath>bin\Debug\Jayrock.Json.dll</HintPath>
     </Reference>
@@ -78,6 +88,9 @@
     <Reference Include="qc">
       <HintPath>bin\Debug\qC.dll</HintPath>
     </Reference>
+    <Reference Include="QUIKSharp">
+      <HintPath>bin\Debug\QuikSharp.dll</HintPath>
+    </Reference>
     <Reference Include="RestSharp">
       <HintPath>bin\Debug\RestSharp.dll</HintPath>
     </Reference>
@@ -85,7 +98,7 @@
       <HintPath>bin\Debug\SuperSocket.ClientEngine.dll</HintPath>
     </Reference>
     <Reference Include="TInvestApi">
-      <HintPath>..\..\related projects\TInvestApi\bin\Debug\TInvestApi.dll</HintPath>
+      <HintPath>bin\Debug\TInvestApi.dll</HintPath>
     </Reference>
     <Reference Include="WebSocket4Net">
       <HintPath>bin\Debug\WebSocket4Net.dll</HintPath>
@@ -93,12 +106,12 @@
     <Reference Update="System.Runtime.Serialization">
       <Private>True</Private>
     </Reference>
+    <PackageReference Include="Google.Api.CommonProtos" Version="2.16.0" />
     <PackageReference Include="Grpc.Net.Client" Version="2.71.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.13.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Google.Protobuf" Version="3.31.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="QUIKSharp" Version="2.0.0" />
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="6.1.2" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="9.0.5" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="9.0.5" />

@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -112,13 +113,7 @@ namespace OsEngine.Robots.MyBots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Break QStick. " +
-                "Buy: When the QStick indicator broke the maximum for a certain number of candles and the candle closed above the Sma line." +
-                "Sell: When the QStick indicator broke the minimum for a certain number of candles and the candle closed below the Sma line." +
-                "Exit from buy: We set the stop to the minimum for the period specified for the stop, " +
-                "and the profit is equal to the size of the stop multiplied by the coefficient from the parameters." +
-                "Exit from sell: We set the stop to the maximum for the period specified for the stop, " +
-                "and the profit is equal to the size of the stop multiplied by the coefficient from the parameters.";
+            Description = OsLocalization.Description.DescriptionLabel167;
         }       
 
         private void BreakQStick_ParametrsChangeByUser()
@@ -133,6 +128,7 @@ namespace OsEngine.Robots.MyBots
             _sma.Reload();
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "BreakQStick";
@@ -280,6 +276,7 @@ namespace OsEngine.Robots.MyBots
         private decimal EnterLong(List<decimal> values, int period)
         {
             decimal Max = int.MinValue;
+
             for (int i = values.Count - 1; i > values.Count - 1 - period; i--)
             {
                 if (values[i] > Max)
@@ -287,6 +284,7 @@ namespace OsEngine.Robots.MyBots
                     Max = values[i];
                 }
             }
+
             return Max;
         }
 
@@ -294,6 +292,7 @@ namespace OsEngine.Robots.MyBots
         private decimal EnterShort(List<decimal> values, int period)
         {
             decimal Min = int.MaxValue;
+
             for (int i = values.Count - 1; i > values.Count -1 - period; i--)
             {
                 if (values[i] < Min)
@@ -301,6 +300,7 @@ namespace OsEngine.Robots.MyBots
                     Min = values[i];
                 }
             }
+
             return Min;
         }
 
@@ -404,7 +404,7 @@ namespace OsEngine.Robots.MyBots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

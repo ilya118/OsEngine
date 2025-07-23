@@ -14,6 +14,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -35,7 +36,7 @@ Sell Exit:
 2. Profit - for a minimum for a certain number of candles
 */
 
-namespace OsEngine.Robots.ZZAO
+namespace OsEngine.Robots
 {
     // We create an attribute so that we don't write anything to the BotFactory
     [Bot("FigureTwoPeaksDivergence")]
@@ -106,19 +107,7 @@ namespace OsEngine.Robots.ZZAO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Divergence " +
-                "Buy: " +
-                "1. The lows of the Awesome histogram are gradually increasing. " +
-                "2. The lows of the chart, on the contrary, gradually decrease. " +
-                "Sell: " +
-                "1. The extreme points AO decrease successively. " +
-                "2. Extremes of the price chart, on the contrary, are rising. " +
-                "Buy Exit: " +
-                "1. Stop behind the minimum for a certain number of candles " +
-                "2. Profit - for the maximum for a certain number of candles " +
-                "Sell Exit: " +
-                "1. Stop behind the maximum for a certain number of candles " +
-                "2. Profit - for a minimum for a certain number of candles";
+            Description = OsLocalization.Description.DescriptionLabel316;
         }
 
         // Indicator Update event
@@ -222,6 +211,7 @@ namespace OsEngine.Robots.ZZAO
                 }
             }
         }
+
         //  logic close position
         private void LogicClosePosition(List<Candle> candles)
         {
@@ -469,7 +459,7 @@ namespace OsEngine.Robots.ZZAO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

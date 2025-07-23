@@ -6,6 +6,7 @@
 using System;
 using System.Collections.Generic;
 using OsEngine.Entity;
+using OsEngine.Language;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
@@ -88,10 +89,7 @@ namespace OsEngine.Robots.BotsFromStartLessons
             _openAtStopIsNoLifeTimeOrder = CreateParameter("Use no lifetime order", false, "Entry at Stop");
             _openAtStopIsMarketOrder = CreateParameter("Is market order", false, "Entry at Stop");
 
-            Description = "Robot example from the lecture course \"C# for algotreader\"." +
-                "Stores examples of different methods for entering in position." +
-                "When you click on the button in robot parameters, an order of the selected type is created." +
-                "You can close the positions with button in the settings of the robot.";
+            Description = OsLocalization.Description.DescriptionLabel18;
         }
 
         #region Close positions
@@ -289,9 +287,7 @@ namespace OsEngine.Robots.BotsFromStartLessons
                 {
                     _tabToTrade.BuyAtIcebergMarket(volume, ordersCount, _icebergMarketMinMillisecondsDistance.ValueInt, "User click button buy iceberg Market");
                 }
-
             }
-
 
             else if (_icebergMarket.ValueBool == false)
             { // Limit iceberg
@@ -304,7 +300,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
                 {
                     _tabToTrade.BuyAtIceberg(volume, price, ordersCount, "User click button buy iceberg Limit");
                 }
-
             }
         }
 
@@ -328,7 +323,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             int ordersCount = _icebergCount.ValueInt;
 
-
             if (_icebergMarket.ValueBool == true)
             { // Market iceberg
 
@@ -340,9 +334,7 @@ namespace OsEngine.Robots.BotsFromStartLessons
                 {
                     _tabToTrade.SellAtIcebergMarket(volume, ordersCount, _icebergMarketMinMillisecondsDistance.ValueInt, "User click button sell iceberg Market");
                 }
-
             }
-
 
             else if (_icebergMarket.ValueBool == false)
             { // Limit iceberg
@@ -355,7 +347,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
                 {
                     _tabToTrade.SellAtIceberg(volume, price, ordersCount, "User click button sell iceberg Limit");
                 }
-
             }
         }
 
@@ -556,7 +547,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
                 return;
             }
-
 
             if (_openAtStopExpiresBars.ValueInt == 0)
             {// lifetime of the order - one candle

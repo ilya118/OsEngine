@@ -1,4 +1,4 @@
-﻿/*
+/*
  * Your rights to use code governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
@@ -36,7 +36,20 @@ namespace OsEngine.OsTrader.Grids
 
         public void Clear()
         {
-            TradeGrids.Clear();
+            if(TradeGrids != null 
+                && TradeGrids.Count > 0)
+            {
+                TradeGrid[] grids = TradeGrids.ToArray();
+
+                for (int i = 0;i < grids.Length; i++)
+                {
+                    DeleteAtNum(grids[i].Number, true);
+                }
+
+                TradeGrids.Clear();
+                PaintGridView(); 
+            }
+          
             SaveGrids();
         }
 
@@ -131,6 +144,7 @@ namespace OsEngine.OsTrader.Grids
                     TradeGrids[i].NeedToSaveEvent -= NewGrid_NeedToSaveEvent;
                     TradeGrids[i].LogMessageEvent -= SendNewLogMessage;
                     TradeGrids[i].RePaintSettingsEvent -= NewGrid_UpdateTableEvent;
+                    TradeGrids[i].DeleteGrid();
                     TradeGrids[i].Delete();
                     TradeGrids.RemoveAt(i);
                     
@@ -168,6 +182,11 @@ namespace OsEngine.OsTrader.Grids
 
                 if(ui.Number == myGrid.Number)
                 {
+                    if (ui.WindowState == System.Windows.WindowState.Minimized)
+                    {
+                        ui.WindowState = System.Windows.WindowState.Normal;
+                    }
+
                     ui.Activate();
                     return;
                 }

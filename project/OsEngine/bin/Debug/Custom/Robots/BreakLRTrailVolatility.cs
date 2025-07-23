@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -61,7 +62,7 @@ namespace OsEngine.Robots
         private Aindicator _lR;
         private Aindicator _eR;
 
-        // Exit
+        // Exit settings
         private StrategyParameterInt _trailCandlesLong;
         private StrategyParameterInt _trailCandlesShort;
 
@@ -115,7 +116,7 @@ namespace OsEngine.Robots
             ((IndicatorParameterInt)_eR.Parameters[0]).ValueInt = _lengthER.ValueInt;
             _eR.Save();
 
-            // Exit
+            // Exit settings
             _trailCandlesLong = CreateParameter("Trail Candles Long", 5, 5, 200, 5, "Exit");
             _trailCandlesShort = CreateParameter("Trail Candles Short", 5, 5, 200, 5, "Exit");
 
@@ -125,13 +126,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on BreakLRTrailVolatility. " +
-                "Buy: the price is above the upper LR line. " +
-                "Sell: the price is below the lower LR line. " +
-                "Exit from buy: The trailing stop is placed at the minimum – Atr * Er for the period specified for the " +
-                "trailing stop and is transferred, (slides), to new price lows, also for the specified period. " +
-                "Exit from sell: The trailing stop is placed at the maximum + Atr * Er for the period specified for the " +
-                "trailing stop and is transferred (slides) to the new maximum of the price, also for the specified period.";
+            Description = OsLocalization.Description.DescriptionLabel155;
         }
 
         private void BreakLRTrailVolatility_ParametrsChangeByUser()
@@ -289,7 +284,6 @@ namespace OsEngine.Robots
 
                     _tab.CloseAtTrailingStop(position, price, price + _slippage);
                 }
-
             }
         }
 

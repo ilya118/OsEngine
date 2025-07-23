@@ -61,6 +61,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                 _connector.ConnectorStartedReconnectEvent += _connector_ConnectorStartedReconnectEvent;
                 _connector.SecuritySubscribeEvent += _connector_SecuritySubscribeEvent;
                 _connector.DialogClosed += _connector_DialogClosed;
+                _connector.FundingChangedEvent += _connector_FundingChangedEvent;
+                _connector.NewVolume24hChangedEvent += _connector_NewVolume24hChangedEvent;
 
                 if (startProgram != StartProgram.IsOsOptimizer)
                 {
@@ -376,10 +378,13 @@ namespace OsEngine.OsTrader.Panels.Tab
                     _connector.TickChangeEvent -= _connector_TickChangeEvent;
                     _connector.ConnectorStartedReconnectEvent -= _connector_ConnectorStartedReconnectEvent;
                     _connector.PortfolioOnExchangeChangedEvent -= _connector_PortfolioOnExchangeChangedEvent;
-                    _connector.Delete();
-                    _connector.LogMessageEvent -= SetNewLogMessage;
                     _connector.SecuritySubscribeEvent -= _connector_SecuritySubscribeEvent;
                     _connector.DialogClosed -= _connector_DialogClosed;
+                    _connector.FundingChangedEvent -= _connector_FundingChangedEvent;
+                    _connector.NewVolume24hChangedEvent -= _connector_NewVolume24hChangedEvent;
+
+                    _connector.Delete();
+                    _connector.LogMessageEvent -= SetNewLogMessage;
 
                     _connector = null;
                 }
@@ -6604,6 +6609,21 @@ namespace OsEngine.OsTrader.Panels.Tab
                 }
             }
 
+            if(_connector.EmulatorIsOn == true)
+            {
+                for (int i2 = 0; i2 < newTrades.Count; i2++)
+                {
+                    try
+                    {
+                        _connector.CheckEmulatorExecution(newTrades[i2].Price);
+                    }
+                    catch (Exception error)
+                    {
+                        SetNewLogMessage(error.ToString(), LogMessageType.Error);
+                    }
+                }
+            }
+
             _lastTradeIndex = trades.Count;
             _lastTradeTime = newTrades[newTrades.Count - 1].Time;
             _lastTradeIdInTester = newTrades[newTrades.Count - 1].IdInTester;
@@ -6923,6 +6943,45 @@ namespace OsEngine.OsTrader.Panels.Tab
                 SetNewLogMessage(error.ToString(), LogMessageType.Error);
             }
         }
+
+        private void _connector_NewVolume24hChangedEvent(SecurityVolumes data)
+        {
+            _securityVolumes.SecurityNameCode = data.SecurityNameCode;
+            _securityVolumes.Volume24h = data.Volume24h;
+            _securityVolumes.Volume24hUSDT = data.Volume24hUSDT;
+            _securityVolumes.TimeUpdate = data.TimeUpdate;
+        }
+
+        private void _connector_FundingChangedEvent(Funding data)
+        {
+            _funding.SecurityNameCode = data.SecurityNameCode;
+            _funding.CurrentValue = data.CurrentValue;
+            _funding.NextFundingTime = data.NextFundingTime;
+            _funding.FundingIntervalHours = data.FundingIntervalHours;
+            _funding.MaxFundingRate = data.MaxFundingRate;
+            _funding.MinFundingRate = data.MinFundingRate;
+            _funding.TimeUpdate = data.TimeUpdate;
+        }
+
+        /// <summary>
+        /// Data of Funding
+        /// </summary>
+        public Funding Funding
+        {
+            get { return _funding; }
+        }
+
+        private Funding _funding = new Funding();
+
+        /// <summary>
+        /// Volume24h
+        /// </summary>
+        public SecurityVolumes SecurityVolumes
+        {
+            get { return _securityVolumes; }
+        }
+
+        private SecurityVolumes _securityVolumes = new SecurityVolumes();
 
         // Outgoing events. Handlers for strategy
 

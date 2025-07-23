@@ -191,4 +191,33 @@ namespace OsEngine.Market.Servers.BitGet.BitGetFutures.Entity
         public string ts { get; set; }
         public string symbol { get; set; }
     }
+
+    public class OIData
+    {
+        public List<OpenInterestItem> openInterestList { get; set; }
+        public string ts { get; set; }
+    }
+
+    public class OpenInterestItem
+    {
+        public string symbol { get; set; }
+        public string size { get; set; }
+    }
+
+    public class FundingItem
+    {
+        public string symbol { get; set; }
+        public string fundingRate { get; set; }
+        public string fundingRateInterval { get; set; }
+        public string nextUpdate { get; set; }
+        public string minFundingRate { get; set; }
+        public string maxFundingRate { get; set; }
+    }
+
+    public class FundingItemHistory
+    {
+        public string symbol { get; set; }
+        public string fundingRate { get; set; }
+        public string fundingTime { get; set; }
+    }
 }

@@ -13,6 +13,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine
@@ -26,13 +27,12 @@ Sell: the Volume Oscillator indicator line is below 0 and the price is below Ema
 Exit: on the opposite signal.
 */
 
-namespace OsEngine.Robots.MyRobots
+namespace OsEngine.Robots
 {
     [Bot("BreakVolumeOscilatorAndEma")] //We create an attribute so that we don't write anything in the Bot factory
-
     public class BreakVolumeOscilatorAndEma : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -98,10 +98,7 @@ namespace OsEngine.Robots.MyRobots
             // Subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on the Break VolumeOscilator And Ema. " +
-                "Buy: the Volume Oscillator indicator line is above 0 and the price is your Ema. " +
-                "Sell: the Volume Oscillator indicator line is below 0 and the price is below Ema. " +
-                "Exit: on the opposite signal.";
+            Description = OsLocalization.Description.DescriptionLabel171;
         }
 
         // Indicator Update event
@@ -261,7 +258,7 @@ namespace OsEngine.Robots.MyRobots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -22,19 +23,22 @@ The trend robot on Strategy MACD and ADX.
 Buy:
 1. MACD histogram > 0 or rising;
 2. Adx > 20 and growing.
+
 Sell:
 1. MACD histogram < 0 or falling;
 2. Adx > 20 and growing.
+
 Exit:
 From buy: MACD histogram <0 or falling.
 From sell: MACD histogram> 0 or rising.
- */
+*/
 
 namespace OsEngine.Robots
 {
-    [Bot("StrategyMACDandADX")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("StrategyMACDandADX")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class StrategyMACDandADX : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -54,7 +58,7 @@ namespace OsEngine.Robots
         private StrategyParameterInt _slowLineLengthMACD;
         private StrategyParameterInt _signalLineLengthMACD;
 
-        // Indicator
+        // Indicators
         private Aindicator _ADX;
         private Aindicator _MACD;
 
@@ -68,6 +72,7 @@ namespace OsEngine.Robots
 
         public StrategyMACDandADX(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -108,16 +113,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Strategy MACD and ADX. " +
-                "Buy: " +
-                "1. MACD histogram > 0 or rising; " +
-                "2. Adx > 20 and growing. " +
-                "Sell: " +
-                "1. MACD histogram < 0 or falling; " +
-                "2. Adx > 20 and growing. " +
-                "Exit: " +
-                "From buy: MACD histogram <0 or falling. " +
-                "From sell: MACD histogram> 0 or rising.";
+            Description = OsLocalization.Description.DescriptionLabel256;
         }
 
         private void StrategyMACDandADX_ParametrsChangeByUser()
@@ -125,6 +121,7 @@ namespace OsEngine.Robots
             ((IndicatorParameterInt)_ADX.Parameters[0]).ValueInt = _periodADX.ValueInt;
             _ADX.Save();
             _ADX.Reload();
+
             ((IndicatorParameterInt)_MACD.Parameters[0]).ValueInt = _fastLineLengthMACD.ValueInt;
             ((IndicatorParameterInt)_MACD.Parameters[1]).ValueInt = _slowLineLengthMACD.ValueInt;
             ((IndicatorParameterInt)_MACD.Parameters[2]).ValueInt = _signalLineLengthMACD.ValueInt;
@@ -137,6 +134,7 @@ namespace OsEngine.Robots
         {
             return "StrategyMACDandADX";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -211,18 +209,27 @@ namespace OsEngine.Robots
                 // Long
                 if (_regime.ValueString != "OnlyShort") // If the mode is not only short, then we enter long
                 {
-                    if (_lastMACD > 0 && _lastADX > 20 && _prevADX < _lastADX || 
-                        _lastMACD > _prevMACD && _prevADX < _lastADX && _lastADX > 20)
+                    bool condition = _lastMACD > 0 && _lastADX > 20 && _prevADX < _lastADX;
+                    bool condition1 = _lastMACD > _prevMACD && _prevADX < _lastADX && _lastADX > 20;
+
+                    if (condition || condition1)
                     {
                         _tab.BuyAtLimit(GetVolume(_tab), _tab.PriceBestAsk + _slippage);
                     }
                 }
 
-                // Short
+                //If the position is already open - exit
+                if (openPositions.Count != 0)
+                {
+                    return;
+                }
+
                 if (_regime.ValueString != "OnlyLong") // If the mode is not only long, then we enter short
                 {
-                    if (_lastMACD < 0 && _lastADX > 20 && _prevADX < _lastADX ||
-                        _lastMACD < _prevMACD && _prevADX < _lastADX && _lastADX > 20)
+                    bool condition = _lastMACD < 0 && _lastADX > 20 && _prevADX < _lastADX;
+                    bool condition1 = _lastMACD < _prevMACD && _prevADX < _lastADX && _lastADX > 20;
+
+                    if (condition || condition1)
                     {
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
                     }
@@ -243,7 +250,7 @@ namespace OsEngine.Robots
             _lastMACD = _MACD.DataSeries[0].Last;
 
             // The prev value of the indicator
-            _lastMACD = _MACD.DataSeries[0].Values[_MACD.DataSeries[0].Values.Count - 2];
+            _prevMACD = _MACD.DataSeries[0].Values[_MACD.DataSeries[0].Values.Count - 2];
 
             for (int i = 0; openPositions != null && i < openPositions.Count; i++)
             {

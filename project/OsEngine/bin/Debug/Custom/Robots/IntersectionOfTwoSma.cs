@@ -14,6 +14,7 @@ using System.Drawing;
 using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -96,10 +97,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on intersection of two SMA " +
-                "Buy: Fast Sma is higher than slow Sma " +
-                "Sell: Fast Sma below slow Sma " +
-                "Exit: on the opposite signal";
+            Description = OsLocalization.Description.DescriptionLabel211;
         }
 
         // Indicator Update event
@@ -179,6 +177,7 @@ namespace OsEngine.Robots
                 _lastSmaSlow = _smaSlow.DataSeries[0].Last;
 
                 decimal _slippage = this._slippage.ValueDecimal * _tab.Securiti.PriceStep;
+
                 // Long
                 if (_regime.ValueString != "OnlyShort") // If the mode is not only short, then we enter long
                 {
@@ -258,7 +257,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

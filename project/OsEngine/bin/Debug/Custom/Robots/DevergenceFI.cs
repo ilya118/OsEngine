@@ -1,4 +1,9 @@
-﻿using System;
+﻿/*
+ * Your rights to use code governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
+ * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Drawing.Drawing2D;
 using System.Drawing;
@@ -12,6 +17,7 @@ using System.Linq;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -38,12 +44,12 @@ namespace OsEngine.Robots.AO
         private StrategyParameterTimeOfDay _startTradeTime;
         private StrategyParameterTimeOfDay _endTradeTime;
 
-        // GetVolume Parameter
+        // GetVolume settings
         private StrategyParameterString _volumeType;
         private StrategyParameterDecimal _volume;
         private StrategyParameterString _tradeAssetInPortfolio;
 
-        // Indicator setting 
+        // Indicator settings
         private StrategyParameterInt _periodZigZag;
         private StrategyParameterInt _periodFI;
 
@@ -51,7 +57,7 @@ namespace OsEngine.Robots.AO
         private Aindicator _zigZag;
         private Aindicator _zigZagFI;
 
-        // Exit
+        // Exit settings
         private StrategyParameterInt _stopValue;
         private StrategyParameterInt _profitValue;
 
@@ -60,18 +66,18 @@ namespace OsEngine.Robots.AO
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
-            // Basic setting
+            // Basic settings
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" }, "Base");
             _slippage = CreateParameter("Slippage %", 0m, 0, 20, 1, "Base");
             _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
             _endTradeTime = CreateParameterTimeOfDay("End Trade Time", 24, 0, 0, 0, "Base");
 
-            // GetVolume Parameter
+            // GetVolume settings
             _volumeType = CreateParameter("Volume type", "Deposit percent", new[] { "Contracts", "Contract currency", "Deposit percent" });
             _volume = CreateParameter("Volume", 20, 1.0m, 50, 4);
             _tradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime");
 
-            // Indicator setting
+            // Indicator settings
             _periodZigZag = CreateParameter("Period ZigZag", 10, 10, 300, 10, "Indicator");
             _periodFI = CreateParameter("Period FI", 10, 10, 300, 10, "Indicator");
 
@@ -81,14 +87,14 @@ namespace OsEngine.Robots.AO
             ((IndicatorParameterInt)_zigZag.Parameters[0]).ValueInt = _periodZigZag.ValueInt;
             _zigZag.Save();
 
-            // Create indicator ZigZag CCI
+            // Create indicator ZigZag FI
             _zigZagFI = IndicatorsFactory.CreateIndicatorByName("ZigZagFI", name + "ZigZagFI", false);
             _zigZagFI = (Aindicator)_tab.CreateCandleIndicator(_zigZagFI, "NewArea");
             ((IndicatorParameterInt)_zigZagFI.Parameters[0]).ValueInt = _periodFI.ValueInt;
             ((IndicatorParameterInt)_zigZagFI.Parameters[1]).ValueInt = _periodZigZag.ValueInt;
             _zigZagFI.Save();
 
-            // Exit setting
+            // Exit settings
             _stopValue = CreateParameter("Stop Value", 1, 5, 200, 5, "Exit");
             _profitValue = CreateParameter("Profit Value", 1, 5, 200, 5, "Exit");
 
@@ -98,10 +104,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy Devergence ForceIndex. " +
-                "Buy: The lows on the chart are decreasing, but on the indicator they are growing. " +
-                "Sell: the highs on the chart are rising, and on the indicator they are decreasing. " +
-                "Exit: stop and profit in % of the entry price. ";
+            Description = OsLocalization.Description.DescriptionLabel200;
         }
 
         private void DevergenceFI_ParametrsChangeByUser()
@@ -252,9 +255,7 @@ namespace OsEngine.Robots.AO
             decimal zzAOLowTwo = 0;
 
             int indexOne = 0;
-
             int indexTwo = 0;
-
             int indexHigh = 0;
 
             for (int i = zzAOHigh.Count - 1; i >= 0; i--)
@@ -320,6 +321,7 @@ namespace OsEngine.Robots.AO
             }
 
             decimal cntLow = 0;
+
             if (zzLowOne < zzLowTwo && zzLowOne != 0 && indexTwo < indexHigh)
             {
                 cntLow++;
@@ -347,9 +349,7 @@ namespace OsEngine.Robots.AO
             decimal zzAOHighTwo = 0;
 
             int indexOne = 0;
-
             int indexTwo = 0;
-
             int indexLow = 0;
 
             for (int i = zzAOLow.Count - 1; i >= 0; i--)
@@ -415,6 +415,7 @@ namespace OsEngine.Robots.AO
             }
 
             decimal cntHigh = 0;
+
             if (zzHighOne > zzHighTwo && zzHighTwo != 0 && indexTwo < indexLow)
             {
                 cntHigh++;
@@ -453,7 +454,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

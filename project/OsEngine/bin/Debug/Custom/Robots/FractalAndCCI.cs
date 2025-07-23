@@ -17,6 +17,7 @@ using System.Linq;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -36,7 +37,7 @@ Exit from buy: trailing stop in % of the High of the candle on which you entered
 Exit from sell: trailing stop in % of the Low candle on which you entered.
  */
 
-namespace OsEngine.Robots.AO
+namespace OsEngine.Robots
 {
     [Bot("FractalAndCCI")] // We create an attribute so that we don't write anything to the BotFactory
     public class FractalAndCCI : BotPanel
@@ -113,15 +114,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Fractal And CCI. " +
-                "Buy: " +
-                "1. Formed fractal at a local minimum. " +
-                "2. The CCI curve has pushed off from the additional -300 level and is directed upwards. " +
-                "Sell: " +
-                "1. The local maximum is marked by a fractal. " +
-                "2. The CCI line touched the 300 level and is directed downwards. " +
-                "Exit from buy: trailing stop in % of the High of the candle on which you entered. " +
-                "Exit from sell: trailing stop in % of the Low candle on which you entered.";
+            Description = OsLocalization.Description.DescriptionLabel317;
         }
 
         private void FractalAndCCI_ParametrsChangeByUser()
@@ -270,6 +263,7 @@ namespace OsEngine.Robots.AO
                     decimal high = candles[candles.Count - 1].High;
                     stopPrice = high + high * _trailingValueShort.ValueInt / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPrice, stopPrice);
             }
         }
@@ -294,7 +288,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

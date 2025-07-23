@@ -1727,14 +1727,43 @@ namespace OsEngine.Market.Servers.Optimizer
                 if (_typeTesterData == TesterDataType.TickOnlyReadyCandle)
                 {
                     DataStorage storage =
-                                   _storages.Find(s => s.Security.Name == security.Name &&
-                                                              s.TimeStart == timeStart && s.TimeEnd == timeEnd && s.StorageType == TesterDataType.TickOnlyReadyCandle);
+                                   _storages.Find(s => s.Security.Name == security.Name 
+                                   && s.TimeStart == timeStart 
+                                   && s.TimeEnd == timeEnd 
+                                   && s.StorageType == TesterDataType.TickOnlyReadyCandle);
 
                     if (storage != null)
                     {
                         return storage;
                     }
                     storage = LoadTradesFromFolder(security, timeStart, timeEnd);
+                    storage.StorageType = TesterDataType.TickOnlyReadyCandle;
+
+                    if (storage == null)
+                    {
+                        SendLogMessage(OsLocalization.Market.Message29 + security.Name + OsLocalization.Market.Message30 + _typeTesterData, LogMessageType.Error);
+                        return null;
+                    }
+
+                    _storages.Add(storage);
+                    return storage;
+                }
+                if (_typeTesterData == TesterDataType.TickAllCandleState)
+                {
+                    DataStorage storage =
+                                   _storages.Find(s => s.Security.Name == security.Name 
+                                   && s.TimeStart == timeStart 
+                                   && s.TimeEnd == timeEnd 
+                                   && s.StorageType == TesterDataType.TickAllCandleState);
+
+                    if (storage != null)
+                    {
+                        return storage;
+                    }
+
+                    storage = LoadTradesFromFolder(security, timeStart, timeEnd);
+
+                    storage.StorageType = TesterDataType.TickAllCandleState;
 
                     if (storage == null)
                     {
@@ -1756,6 +1785,7 @@ namespace OsEngine.Market.Servers.Optimizer
                         return storage;
                     }
                     storage = LoadMarketDepthFromFolder(security, timeStart, timeEnd);
+                    storage.StorageType = TesterDataType.MarketDepthOnlyReadyCandle;
 
                     if (storage == null)
                     {

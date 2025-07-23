@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -32,7 +33,7 @@ Exit:
 On the opposite signal.
 */
 
-namespace OsEngine.Robots.My_bots
+namespace OsEngine.Robots
 {
     [Bot("BullsPowerAndBearsPowerTrend")]
     public class BullsPowerAndBearsPowerTrend : BotPanel
@@ -100,17 +101,7 @@ namespace OsEngine.Robots.My_bots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend strategy on Bears Power and Bulls Power." +
-                "Buy:" +
-                " 1.Bears Power columns must be higher than 0." +
-                "2.Bulls Power columns must be above 0." +
-                "3.The sum of the last values of both indicators should be greater than a certain value." +
-                "Sell:" +
-                "1.Bulls Power columns must be below 0." +
-                "2.Bears Power columns must be below 0." +
-                "3.The sum of the last values of both indicators should be less than a certain value with a minus sign." +
-                "Exit:" +
-                "On the opposite signal.";
+            Description = OsLocalization.Description.DescriptionLabel173;
         }
 
         // Indicator Update event
@@ -206,7 +197,6 @@ namespace OsEngine.Robots.My_bots
                 if (_regime.ValueString != "OnlyLong")
                 {
                     if (_lastBearsPrice < 0 && _lastBullsPrice < 0 && _lastBullsPrice + _lastBearsPrice < -_step.ValueDecimal)
-
                     {
                         _tab.SellAtLimit(GetVolume(_tab), _tab.PriceBestBid - _slippage);
                     }
@@ -271,7 +261,7 @@ namespace OsEngine.Robots.My_bots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -344,4 +334,3 @@ namespace OsEngine.Robots.My_bots
         }
     }
 }
-

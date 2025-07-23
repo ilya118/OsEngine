@@ -13,6 +13,7 @@ using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
 using System.Drawing;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -108,11 +109,7 @@ namespace OsEngine.Robots.MyBots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on the SuperTrend indicator. " +
-                "Buy: When the SuperTrend with a smaller period and deviation is higher than the SuperTrend with a larger period and deviation." +
-                "Sell: When the SuperTrend with a smaller period and deviation is lower than a SuperTrend with a larger period and deviation." +
-                "Exit from buy: When the SuperTrend with a smaller period and deviation is lower than a SuperTrend with a larger period and deviation." +
-                "Exit from sell: When the SuperTrend with a smaller period and deviation is higher than the SuperTrend with a larger period and deviation.";
+            Description = OsLocalization.Description.DescriptionLabel203;
         }
 
         private void IntersectionOfSuperTrends_ParametrsChangeByUser()
@@ -132,12 +129,14 @@ namespace OsEngine.Robots.MyBots
             _slowSP.Reload();
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "IntersectionOfSuperTrends";
         }
         public override void ShowIndividualSettingsDialog()
         {
+
         }
 
         // Candle Finished Event
@@ -277,7 +276,7 @@ namespace OsEngine.Robots.MyBots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

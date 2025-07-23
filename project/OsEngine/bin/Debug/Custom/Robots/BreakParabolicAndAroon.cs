@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -28,6 +29,7 @@ Exit the position:
 From buying when the price is below the Parabolic SAR value.
 From sale when the price is higher than the Parabolic SAR value.
  */
+
 namespace OsEngine.Robots
 {
     [Bot("BreakParabolicAndAroon")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
@@ -62,7 +64,7 @@ namespace OsEngine.Robots
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
-            // Basic setting
+            // Basic settings
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" }, "Base");
             _slippage = CreateParameter("Slippage %", 0m, 0, 20, 1, "Base");
             _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
@@ -100,11 +102,7 @@ namespace OsEngine.Robots
             // Successful position opening event
             _tab.PositionOpeningSuccesEvent += _tab_PositionOpeningSuccesEvent;
 
-            Description = "The trend robot on Parabolic SAR and Aroon" +
-                "Buy: When the price is above the Parabolic SAR value and the Aroon Up line is above 50 and above the Aroon Down line. " +
-                "Sell: When the price is below the Parabolic SAR value and the Aroon Down line is above 50 and above the Aroon Up line. " +
-                "Exit the position:  From buying when the price is below the Parabolic SAR value." +
-                "From sale when the price is higher than the Parabolic SAR value.";
+            Description = OsLocalization.Description.DescriptionLabel160;
         }
 
         private void _tab_PositionOpeningSuccesEvent(Position position)
@@ -125,6 +123,7 @@ namespace OsEngine.Robots
             _aroon.Reload();
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "BreakParabolicAndAroon";
@@ -178,7 +177,7 @@ namespace OsEngine.Robots
             }
         }
 
-        // Opening logic
+        // Opening position logic
         private void LogicOpenPosition(List<Candle> candles)
         {
             // The last value of the indicator

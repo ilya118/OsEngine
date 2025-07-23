@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine.
@@ -33,7 +34,7 @@ namespace OsEngine.Robots
     [Bot("OverbougthOversoldWilliamsRange")] //We create an attribute so that we don't write anything in the Boot factory
     public class OverbougthOversoldWilliamsRange : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -54,7 +55,7 @@ namespace OsEngine.Robots
         private Aindicator _ssma;
         private Aindicator _Williams;
 
-        // Exit
+        // Exit settings
         private StrategyParameterDecimal _stopValue;
         private StrategyParameterDecimal _profitValue;
 
@@ -98,7 +99,7 @@ namespace OsEngine.Robots
             ((IndicatorParameterInt)_Williams.Parameters[0]).ValueInt = _periodWilliams.ValueInt;
             _Williams.Save();
 
-            // Exit
+            // Exit settings
             _stopValue = CreateParameter("Stop Value", 1.0m, 5, 200, 5, "Exit");
             _profitValue = CreateParameter("Profit Value", 1.0m, 5, 200, 5, "Exit");
 
@@ -108,14 +109,7 @@ namespace OsEngine.Robots
             // subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot on Overbougth Oversold WilliamsRange. " +
-                "Buy: " +
-                "1. The price of the instrument is higher than the Ssma and the Ssma is rising. " +
-                "2. WR leaves the oversold zone, crossing the -80 mark from bottom to top. " +
-                "Sell: " +
-                "1. The price of the instrument is lower than the Ssma and the Ssma is falling. " +
-                "2. WR leaves the overbought zone, crossing the -20 mark from top to bottom. " +
-                "Exit: stop and profit in % of the entry price.";
+            Description = OsLocalization.Description.DescriptionLabel230;
         }
 
         // Indicator Update event
@@ -278,7 +272,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

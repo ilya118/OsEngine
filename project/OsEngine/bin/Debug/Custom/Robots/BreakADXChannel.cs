@@ -3,35 +3,40 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using OsEngine.Entity;
 using OsEngine.Indicators;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
 using System.Drawing;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
 
 The trend robot on strategy break Channel Ema with ADX.
 
-Buy: the price is above EmaHigh and Adx is growing and not above the critical value.
+Buy:
+the price is above EmaHigh and Adx is growing and not above the critical value.
 
-Sell: the price is below EmaLow and Adx is growing and not above the critical value.
+Sell:
+the price is below EmaLow and Adx is growing and not above the critical value.
 
-Exit: stop and profit in % of the entry price. 
+Exit:
+stop and profit in % of the entry price. 
  */
 
 namespace OsEngine.Robots
 {
-    [Bot("BreakADXChannel")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("BreakADXChannel")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class BreakADXChannel : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -69,6 +74,7 @@ namespace OsEngine.Robots
 
         public BreakADXChannel(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -86,7 +92,7 @@ namespace OsEngine.Robots
             // Indicator Settings
             _periodEma = CreateParameter("Period Ema", 10, 10, 300, 10, "Indicator");
             _periodADX = CreateParameter("Period ADX", 10, 10, 300, 10, "Indicator");
-            _criticalValue = CreateParameter("CriticalValue", 10, 10, 100, 10, "Indicator");
+            _criticalValue = CreateParameter("CriticalValue", 30, 10, 100, 10, "Indicator");
 
             // Create indicator EmaHigh
             _emaHigh = IndicatorsFactory.CreateIndicatorByName("Ema", name + "EmaHigh", false);
@@ -115,25 +121,24 @@ namespace OsEngine.Robots
             _profitValue = CreateParameter("Profit Value", 1.0m, 5, 200, 5, "Exit");
 
             // Subscribe to the indicator update event
-            ParametrsChangeByUser += BreakADXChannel_ParametrsChangeByUser; ;
+            ParametrsChangeByUser += _breakADXChannel_ParametrsChangeByUser;
 
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy break Channel Ema with ADX. " +
-                "Buy: the price is above EmaHigh and Adx is growing and not above the critical value. " +
-                "Sell: the price is below EmaLow and Adx is growing and not above the critical value. " +
-                "Exit: stop and profit in % of the entry price.";
+            Description = OsLocalization.Description.DescriptionLabel134;
         }
 
-        private void BreakADXChannel_ParametrsChangeByUser()
+        private void _breakADXChannel_ParametrsChangeByUser()
         {
             ((IndicatorParameterInt)_emaHigh.Parameters[0]).ValueInt = _periodEma.ValueInt;
             _emaHigh.Save();
             _emaHigh.Reload();
+
             ((IndicatorParameterInt)_emaLow.Parameters[0]).ValueInt = _periodEma.ValueInt;
             _emaLow.Save();
             _emaLow.Reload();
+
             ((IndicatorParameterInt)_ADX.Parameters[0]).ValueInt = _periodADX.ValueInt;
             _ADX.Save();
             _ADX.Reload();
@@ -144,6 +149,7 @@ namespace OsEngine.Robots
         {
             return "BreakADXChannel";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -159,11 +165,11 @@ namespace OsEngine.Robots
             }
 
             // If there are not enough candles to build an indicator, we exit
-            if (candles.Count < _periodADX.ValueInt || candles.Count < _periodEma.ValueInt)
+            if (candles.Count <= _periodADX.ValueInt || candles.Count <= _periodEma.ValueInt)
             {
                 return;
             }
-
+            
             // If the time does not match, we leave
             if (_startTradeTime.Value > _tab.TimeServerCurrent ||
                 _endTradeTime.Value < _tab.TimeServerCurrent)
@@ -289,7 +295,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

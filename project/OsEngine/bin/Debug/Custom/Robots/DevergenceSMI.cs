@@ -16,6 +16,7 @@ using System.Linq;
 using OsEngine.Logging;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -31,7 +32,7 @@ Buy exit: trailing stop as a % of the Low of the candle where you entered.
 Sell ​​exit: trailing stop as a % of the High of the candle where you entered.
  */
 
-namespace OsEngine.Robots.AO
+namespace OsEngine.Robots
 {
     [Bot("DevergenceSMI")] // We create an attribute so that we don't write anything to the BotFactory
     public class DevergenceSMI : BotPanel
@@ -111,11 +112,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy Devergence SMI. " +
-                "Buy: The lows on the chart are falling, while the lows are rising on the indicator. " +
-                "Sell: the highs on the chart are rising, while the indicator is falling. " +
-                "Buy exit: trailing stop as a % of the Low of the candle where you entered. " +
-                "Sell ​​exit: trailing stop as a % of the High of the candle where you entered.";
+            Description = OsLocalization.Description.DescriptionLabel308;
         }
 
         private void DevergenceSMI_ParametrsChangeByUser()
@@ -253,6 +250,7 @@ namespace OsEngine.Robots.AO
                     decimal high = candles[candles.Count - 1].High;
                     stopPrice = high + high * _trailingValue.ValueDecimal / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPrice, stopPrice);
             }
         }
@@ -465,7 +463,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

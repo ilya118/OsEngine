@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /*Discription
 Trading robot for osengine
@@ -31,7 +32,7 @@ namespace OsEngine.Robots
     [Bot("IntersectionOfTwoSsma")] // We create an attribute so that we don't write anything in the Boot factory
     public class IntersectionOfTwoSsma : BotPanel
     {
-        BotTabSimple _tab;
+        private BotTabSimple _tab;
 
         // Basic Settings
         private StrategyParameterString _regime;
@@ -77,14 +78,14 @@ namespace OsEngine.Robots
             _periodSsmaSlow = CreateParameter("slow EMA2 period", 1000, 500, 1500, 100, "Indicator");
 
             // Creating an indicator SsmaFast
-            _ssma1 = IndicatorsFactory.CreateIndicatorByName("Ssma", name + "SsMA1", false);
+            _ssma1 = IndicatorsFactory.CreateIndicatorByName("Ssma", name + "SsmaFast", false);
             _ssma1 = (Aindicator)_tab.CreateCandleIndicator(_ssma1, "Prime");
             ((IndicatorParameterInt)_ssma1.Parameters[0]).ValueInt = _periodSsmaFast.ValueInt;
             _ssma1.DataSeries[0].Color = Color.Red;
             _ssma1.Save();
 
             // Creating indicator SsmaSlow
-            _ssma2 = IndicatorsFactory.CreateIndicatorByName("Ssma", name + "Ssma2", false);
+            _ssma2 = IndicatorsFactory.CreateIndicatorByName("Ssma", name + "SsmaSlow", false);
             _ssma2 = (Aindicator)_tab.CreateCandleIndicator(_ssma2, "Prime");
             ((IndicatorParameterInt)_ssma2.Parameters[0]).ValueInt = _periodSsmaSlow.ValueInt;
             _ssma2.DataSeries[0].Color = Color.Green;
@@ -96,10 +97,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle completion event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Trend robot at the intersection of two smoothed averages. " +
-                "Buy: the fast Ssma is higher than the slow Ssma and the value of the last candle is greater than the fast Ssma. " +
-                "Sell: the fast Ssma is lower than the slow Ssma and the value of the last candle is less than the slow Ssma. " +
-                "Exit: on the opposite signal";
+            Description = OsLocalization.Description.DescriptionLabel212;
         }
 
         // Indicator Update event
@@ -258,7 +256,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);
@@ -331,4 +329,3 @@ namespace OsEngine.Robots
         }
     }
 }
-

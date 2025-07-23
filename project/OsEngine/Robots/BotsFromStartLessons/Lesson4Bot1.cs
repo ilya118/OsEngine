@@ -12,6 +12,7 @@ using OsEngine.Market;
 using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Language;
 
 /* Description
 Robot example from the lecture course "C# for algotreader".
@@ -101,10 +102,7 @@ namespace OsEngine.Robots.BotsFromStartLessons
             _tabToTrade.PositionOpeningSuccesEvent += _tabToTrade_PositionOpeningSuccesEvent;
             _tabToTrade.NewTickEvent += _tabToTrade_NewTickEvent;
 
-            Description = "Robot example from the lecture course \"C# for algotreader\"." +
-                "This robot shows the tracking of various source events." +
-                "Buy: SmaFast > SmaSlow. Buy in the market." +
-                "Sell: SmaFast < SmaSlow. Close the market.";
+            Description = OsLocalization.Description.DescriptionLabel11;
         }
 
         private void _tabToTrade_PositionOpeningSuccesEvent(Position position)
@@ -114,7 +112,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             // For example
             // Для примера
-
         }
 
         private void _tabToTrade_MarketDepthUpdateEvent(MarketDepth marketDepth)
@@ -124,7 +121,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             // For example
             // Для примера
-
         }
 
         private void _tabToTrade_OrderUpdateEvent(Order order)
@@ -134,7 +130,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             // For example
             // Для примера
-
         }
 
         private void _tabToTrade_CandleUpdateEvent(List<Candle> candles)
@@ -144,7 +139,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             // For example
             // Для примера
-
         }
 
         private void _tabToTrade_NewTickEvent(Trade trade)
@@ -154,7 +148,6 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             // For example
             // Для примера
-
         }
 
         private void Lesson3Bot3_ParametrsChangeByUser()
@@ -343,6 +336,5 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             return volume;
         }
-
     }
 }

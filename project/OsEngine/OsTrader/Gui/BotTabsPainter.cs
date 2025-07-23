@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using OsEngine.Journal;
 using OsEngine.Logging;
 using OsEngine.OsTrader.Panels.Tab;
+using OsEngine.Market;
 
 namespace OsEngine.OsTrader.Gui
 {
@@ -281,18 +282,27 @@ namespace OsEngine.OsTrader.Gui
                     _master.DeleteByNum(rowIndex);
                 }
 
-                if (coluIndex == 8 &&
-         rowIndex == botsCount + 1)
-                { // вызываем общий журнал
-                    _master.ShowCommunityJournal(2, 0, 0);
-                }
-                else if (coluIndex == 9 &&
-        rowIndex == botsCount + 1)
-                { // вызываем добавление нового бота
-                    _master.CreateNewBot();
+                if(rowIndex == botsCount + 1)
+                { // последняя строка
+
+                    if (_master._startProgram == StartProgram.IsOsTrader
+                        && coluIndex == 7)
+                    {
+                       // ServerMaster.ShowCopyMasterDialog();
+                    }
+                    else if (coluIndex == 8 &&
+                       rowIndex == botsCount + 1)
+                    { // вызываем общий журнал
+                        _master.ShowCommunityJournal(2, 0, 0);
+                    }
+                    else if (coluIndex == 9 &&
+                       rowIndex == botsCount + 1)
+                    { // вызываем добавление нового бота
+                        _master.CreateNewBot();
+                    }
                 }
 
-                if(_grid.Rows.Count <= _prevActiveRow)
+                if (_grid.Rows.Count <= _prevActiveRow)
                 {
                     _prevActiveRow = rowIndex;
                     return;
@@ -793,7 +803,14 @@ namespace OsEngine.OsTrader.Gui
 
                 for (int i = 0; _master.PanelsArray != null && i < _master.PanelsArray.Count; i++)
                 {
-                    _grid.Rows.Add(GetRow(_master.PanelsArray[i], i + 1));
+                    BotPanel bot = _master.PanelsArray[i];
+
+                    if(bot == null)
+                    {
+                        continue;
+                    }
+
+                    _grid.Rows.Add(GetRow(bot, i + 1));
                 }
 
                 _grid.Rows.Add(GetNullRow());
@@ -944,6 +961,12 @@ colum9.HeaderText = "Journal";
             row.Cells[6].Value = "";
 
             row.Cells.Add(new DataGridViewButtonCell());
+
+            if(_master._startProgram == StartProgram.IsOsTrader)
+            {
+                //row.Cells[7].Value = OsLocalization.Trader.Label570; //"Copy trading";
+            }
+
             row.Cells.Add(new DataGridViewButtonCell());
             row.Cells[8].Value = OsLocalization.Trader.Label40; //"Journal";
             row.Cells.Add(new DataGridViewButtonCell());
@@ -997,6 +1020,11 @@ colum9.HeaderText = "Journal";
                     DataGridViewRow row = _grid.Rows[i];
 
                     BotPanel bot = _master.PanelsArray[i];
+
+                    if(bot == null)
+                    {
+                        continue;
+                    }
 
                     if (bot.TabsSimple.Count != 0 &&
                         bot.TabsSimple[0].Security != null)

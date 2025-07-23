@@ -1,4 +1,10 @@
-﻿using OsEngine.Entity;
+﻿/*
+ * Your rights to use code governed by this license https://github.com/AlexWan/OsEngine/blob/master/LICENSE
+ * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
+*/
+
+using OsEngine.Entity;
+using OsEngine.Language;
 using OsEngine.Market;
 using OsEngine.Market.Connectors;
 using OsEngine.Market.Servers;
@@ -8,11 +14,16 @@ using OsEngine.OsTrader.Panels.Tab;
 using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Windows.Media;
+
+/* Description
+TestBot for OsEngine.
+
+Do not turn on - robot for connection testing.
+*/
 
 namespace OsEngine.Robots.AutoTestBots
 {
-    [Bot("TestBotConnection")]
+    [Bot("TestBotConnection")] //We create an attribute so that we don't write anything in the Boot factory
     public class TestBotConnection : BotPanel
     {
         private BotTabScreener _screener;
@@ -34,10 +45,10 @@ namespace OsEngine.Robots.AutoTestBots
             thread.IsBackground = true;
             thread.Start();
 
-            Description = "Do not turn on - robot for connection testing";
+            Description = OsLocalization.Description.DescriptionLabel1;
         }
 
-
+        // Start testing connector
         public void StartTestingConnector(string ServerName,int countToReloadServer,
             int secondToReloadServer, int countTabsToConnectServer)
         {
@@ -93,7 +104,6 @@ namespace OsEngine.Robots.AutoTestBots
                 DrawingDefault();
 
                 ReloadedServer(server);
-
             }
             catch (Exception error)
             {
@@ -103,12 +113,10 @@ namespace OsEngine.Robots.AutoTestBots
 
             TestingIsStart = false;
             TestingIsNeedStop = false;
-
         }
 
         private bool DropDefaultParamsScreener()
         {
-
             testBotConnectionParams.DrawingLabeleStatusTest("Drop params screener");
 
             _screener.SecuritiesNames.Clear();
@@ -128,9 +136,12 @@ namespace OsEngine.Robots.AutoTestBots
             testBotConnectionParams.DrawingLabeleStatusTest("Try Start Server");
 
             _server = ServerName;
+
             var servers = ServerMaster.GetServers();
             var server = servers.Find(ser => ser.ServerType.ToString().Equals(ServerName));
+
             server.StartServer();
+
             return server;
         }
 
@@ -168,23 +179,21 @@ namespace OsEngine.Robots.AutoTestBots
             {
                 return true;
             }
-
         }
 
         private void SetParamsScreener(IServer server)
         {
             _screener.NeedToReloadTabs = true;
             _screener.ServerType = server.ServerType;
-            _screener.PortfolioName = server.Portfolios[0].Number; // добавить проверку подключен ли портфель
+            _screener.PortfolioName = server.Portfolios[0].Number; // add check if portfolio is connected
         }
 
         private int ReloadTabs(IServer server)
         {
-
             List<ActivatedSecurity> securities = new List<ActivatedSecurity>();
+
             for (int i = 0; i < server.Securities.Count; i++)
             {
-
                 if (CountTabsToConnectServer <= i)
                 {
                     break;
@@ -197,17 +206,22 @@ namespace OsEngine.Robots.AutoTestBots
                     SecurityClass = server.Securities[i].NameClass
                 });
             }
+
             _screener.SecuritiesNames = securities;
 
             int CountLoadSecurities = securities.Count;
+
             return CountLoadSecurities;
         }
 
         private bool WaitToLoadTabs(int CountLoadSecurities)
         {
             bool IsNeedToReturn = true;
+
             testBotConnectionParams.DrawingLabeleStatusTest("Wait To Load Tabs");
+
             IsNeedToReturn = Wait(2);
+
             while (_screener.Tabs.Count != CountLoadSecurities)
             {
                 IsNeedToReturn = Wait(2);
@@ -229,6 +243,7 @@ namespace OsEngine.Robots.AutoTestBots
         private void ReloadedServer(IServer server)
         {
             testBotConnectionParams.DrawingLabeleStatusTest("Server restart work");
+
             for (int i = 0; i < CountToReLoadServer; i++)
             {
                 bool IsNeedReturn = Wait(SecondToReloadServer);
@@ -247,6 +262,7 @@ namespace OsEngine.Robots.AutoTestBots
                     testBotConnectionParams.DrawingProgressBar((100 / CountToReLoadServer) * (i + 1));
                 }
             }
+
             testBotConnectionParams.DrawingLabeleStatusTest("Stop Test");
         }
 
@@ -274,6 +290,7 @@ namespace OsEngine.Robots.AutoTestBots
                 try
                 {
                     Thread.Sleep(200);
+
                     if (testBotConnectionParams != null)
                     {
                         var servers = ServerMaster.GetServers();
@@ -310,11 +327,13 @@ namespace OsEngine.Robots.AutoTestBots
             ServerMaster.CreateServer(type, false);
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "TestBotConnection";
         }
 
+        // Show settings GUI
         public override void ShowIndividualSettingsDialog()
         {
             testBotConnectionParams = new TestBotConnectionParams(this);

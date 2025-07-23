@@ -16,6 +16,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -36,7 +37,6 @@ trailing stop in % of the low of the last candle.
 Exit from sell:
 trailing stop in % of the high of the last candle.
  */
-
 
 namespace OsEngine.Robots
 {
@@ -64,11 +64,11 @@ namespace OsEngine.Robots
         private Aindicator _fI;
         private Aindicator _oBV;
 
-        // Enter
+        // Enter settings
         private StrategyParameterInt _entryCandlesLong;
         private StrategyParameterInt _entryCandlesShort;
 
-        // Exit
+        // Exit setting
         private StrategyParameterDecimal _trailingValue;
 
         // The last value of the indicator
@@ -83,7 +83,7 @@ namespace OsEngine.Robots
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
-            // Basic setting
+            // Basic settings
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" }, "Base");
             _slippage = CreateParameter("Slippage %", 0m, 0, 20, 1, "Base");
             _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
@@ -108,11 +108,11 @@ namespace OsEngine.Robots
             _oBV = (Aindicator)_tab.CreateCandleIndicator(_oBV, "NewArea0");
             _oBV.Save();
 
-            // Enter 
+            // Enter settings
             _entryCandlesLong = CreateParameter("Entry Candles Long", 10, 5, 200, 5, "Enter");
             _entryCandlesShort = CreateParameter("Entry Candles Short", 10, 5, 200, 5, "Enter");
 
-            // Exit
+            // Exit setting
             _trailingValue = CreateParameter("Stop Value", 1.0m, 5, 200, 5, "Exit");
 
             // Subscribe to the indicator update event
@@ -121,17 +121,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on strategy Break OBV and FI. " +
-                "Buy: " +
-                "1. The value of the OBV indicator broke through the maximum for a certain number of candles and closed higher. " +
-                "2. The values of the force index indicator cross the 0 level from bottom to top. " +
-                "Sell: " +
-                "1. The value of the OBV indicator broke through the minimum for a certain number of candles and closed lower. " +
-                "2. The values of the force index indicator cross the level 0 from top to bottom. " +
-                "Exit from buy:" +
-                "trailing stop in % of the low of the last candle." +
-                "Exit from sell:" +
-                "trailing stop in % of the high of the last candle.";
+            Description = OsLocalization.Description.DescriptionLabel158;
         }
 
         // Indicator update event
@@ -262,6 +252,7 @@ namespace OsEngine.Robots
                     decimal high = candles[candles.Count - 1].High;
                     stopPrice = high + high * _trailingValue.ValueDecimal / 100;
                 }
+
                 _tab.CloseAtTrailingStop(pos, stopPrice, stopPrice);
             }
         }
@@ -270,17 +261,20 @@ namespace OsEngine.Robots
         {
             decimal Max = -9999999;
             decimal Min = 9999999;
+
             for (int i = 1; i <= period; i++)
             {
                 if (values[values.Count - 1 - i] > Max)
                 {
                     Max = values[values.Count - 1 - i];
                 }
+
                 if (values[values.Count - 1 - i] < Min)
                 {
                     Min = values[values.Count - 1 - i];
                 }               
             }
+
             if (Max < values[values.Count - 1])
             {
                 return "true";
@@ -289,6 +283,7 @@ namespace OsEngine.Robots
             {
                 return "false";
             }
+
             return "nope";
         }
 
@@ -379,11 +374,9 @@ namespace OsEngine.Robots
                 }
 
                 return qty;
-
             }
 
             return volume;
-
         }
     }
 }

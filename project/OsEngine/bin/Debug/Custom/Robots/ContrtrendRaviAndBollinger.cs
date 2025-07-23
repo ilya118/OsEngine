@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -103,11 +104,7 @@ namespace OsEngine.Robots
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "Counter-trend robot based on Ravi and Bollinger indicators. " +
-                "Buy: When the candle closed below the lower Bollinger line, and the Ravi indicator value is below the lower line." +
-                "Sell: When the candle closed above the upper Bollinger line, and the Ravi indicator value is above the upper line." +
-                "Exit from buy: When the candle closed above the upper Bollinger line. " +
-                "Exit from sell: When the candle closed above the upper Bollinger line.";
+            Description = OsLocalization.Description.DescriptionLabel180;
         }
 
         private void ContrtrendRaviAndBollinger_ParametrsChangeByUser()
@@ -125,12 +122,14 @@ namespace OsEngine.Robots
             _bollinger.Reload();
         }
 
+        // The name of the robot in OsEngine
         public override string GetNameStrategyType()
         {
             return "ContrtrendRaviAndBollinger";
         }
         public override void ShowIndividualSettingsDialog()
         {
+
         }
 
         // Candle Finished Event
@@ -284,7 +283,7 @@ namespace OsEngine.Robots
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

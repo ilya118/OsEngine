@@ -12,6 +12,7 @@ using OsEngine.OsTrader.Panels;
 using OsEngine.OsTrader.Panels.Attributes;
 using OsEngine.OsTrader.Panels.Tab;
 using System.Threading;
+using OsEngine.Language;
 
 /* Description
 Robot example from the lecture course "C# for algotreader".
@@ -100,9 +101,7 @@ namespace OsEngine.Robots.BotsFromStartLessons
             Thread worker = new Thread(WorkerPlace);
             worker.Start();
 
-            Description = "Robot example from the lecture course \"C# for algotreader\"." +
-                "Buy: If best bid volume bigger on value of _percentInFirstBid, than volume in the summary bid below. Buy at limit price." +
-                "Exit: Close At Stop Market and Close At Profit Market.";
+            Description = OsLocalization.Description.DescriptionLabel16;
         }
 
         private void WorkerPlace()
@@ -193,10 +192,12 @@ namespace OsEngine.Robots.BotsFromStartLessons
                         {
                             continue;
                         }
+
                         if (pos.State != PositionStateType.Open)
                         {
                             continue;
                         }
+
                         if (pos.StopOrderPrice != 0)
                         {
                             continue;
@@ -320,6 +321,5 @@ namespace OsEngine.Robots.BotsFromStartLessons
 
             return volume;
         }
-
     }
 }

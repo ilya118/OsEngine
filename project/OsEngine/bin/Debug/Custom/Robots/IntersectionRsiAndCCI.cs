@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 trading robot for osengine
@@ -25,7 +26,7 @@ Sell: CCI below RSI.
 Exit: stop and profit in % of the entry price.
  */
 
-namespace OsEngine.Robots.AO
+namespace OsEngine.Robots
 {
     [Bot("IntersectionRsiAndCCI")] // We create an attribute so that we don't write anything to the BotFactory
     public class IntersectionRsiAndCCI : BotPanel
@@ -68,7 +69,7 @@ namespace OsEngine.Robots.AO
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
-            // Basic setting
+            // Basic settings
             _regime = CreateParameter("Regime", "Off", new[] { "Off", "On", "OnlyLong", "OnlyShort", "OnlyClosePosition" }, "Base");
             _slippage = CreateParameter("Slippage %", 0m, 0, 20, 1, "Base");
             _startTradeTime = CreateParameterTimeOfDay("Start Trade Time", 0, 0, 0, 0, "Base");
@@ -79,7 +80,7 @@ namespace OsEngine.Robots.AO
             _volume = CreateParameter("Volume", 20, 1.0m, 50, 4);
             _tradeAssetInPortfolio = CreateParameter("Asset in portfolio", "Prime");
 
-            // Indicator setting
+            // Indicator settings
             _periodCCI = CreateParameter("Period CCI", 14, 10, 300, 1, "Indicator");
             _periodRSI = CreateParameter("Period RSI", 14, 10, 300, 1, "Indicator");
 
@@ -95,7 +96,7 @@ namespace OsEngine.Robots.AO
             ((IndicatorParameterInt)_CCI.Parameters[0]).ValueInt = _periodCCI.ValueInt;
             _CCI.Save();
 
-            // Exit
+            // Exit settings
             _stopValue = CreateParameter("Stop Value", 1.0m, 5, 200, 5, "Exit");
             _profitValue = CreateParameter("Profit Value", 1.0m, 5, 200, 5, "Exit");
 
@@ -105,10 +106,7 @@ namespace OsEngine.Robots.AO
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Intersection Rsi And CCI. " +
-                "Buy: CCI above RSI. " +
-                "Sell: CCI below RSI. " +
-                "Exit: stop and profit in % of the entry price.";
+            Description = OsLocalization.Description.DescriptionLabel215;
         }
 
         private void IntersectionKalmanAndVwma_ParametrsChangeByUser()
@@ -272,7 +270,7 @@ namespace OsEngine.Robots.AO
 
                     if (serverPermission != null &&
                         serverPermission.IsUseLotToCalculateProfit &&
-                    tab.Security.Lot != 0 &&
+                        tab.Security.Lot != 0 &&
                         tab.Security.Lot > 1)
                     {
                         volume = _volume.ValueDecimal / (contractPrice * tab.Security.Lot);

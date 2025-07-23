@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using OsEngine.Market.Servers;
 using OsEngine.Market;
+using OsEngine.Language;
 
 /* Description
 Trading robot for osengine.
@@ -22,6 +23,7 @@ The trend robot on Strategy Envelops And RVI.
 Buy:
 1. The candle closed above the upper line of the Envelope.
 2. The RVI is greater than 0 and growing.
+
 Sell:
 1. The candle closed below the bottom line of the Envelope.
 2. RVI is less than 0 and falling.
@@ -31,9 +33,10 @@ Exit: the reverse side of the envelope channel.
 
 namespace OsEngine.Robots
 {
-    [Bot("StrategyEnvelopsAndRVI")] // We create an attribute so that we don't write anything to the BotFactory
+    [Bot("StrategyEnvelopsAndRVI")] // Instead of manually adding through BotFactory, we use an attribute to simplify the process.
     public class StrategyEnvelopsAndRVI : BotPanel
     {
+        // Reference to the main trading tab
         private BotTabSimple _tab;
 
         // Basic Settings
@@ -47,12 +50,12 @@ namespace OsEngine.Robots
         private StrategyParameterDecimal _volume;
         private StrategyParameterString _tradeAssetInPortfolio;
 
-        // Indicator settings
+        // Indicators settings
         private StrategyParameterInt _envelopsLength;
         private StrategyParameterDecimal _envelopsDeviation;
         private StrategyParameterInt _periodRVI;
 
-        // Indicator
+        // Indicators
         private Aindicator _envelop;
         private Aindicator _RVI;
 
@@ -66,6 +69,7 @@ namespace OsEngine.Robots
 
         public StrategyEnvelopsAndRVI(string name, StartProgram startProgram) : base(name, startProgram)
         {
+            // Create and assign the main trading tab
             TabCreate(BotTabType.Simple);
             _tab = TabsSimple[0];
 
@@ -99,27 +103,21 @@ namespace OsEngine.Robots
             _RVI.Save();
 
             // Subscribe to the indicator update event
-            ParametrsChangeByUser += BreakEnvelops_ParametrsChangeByUser; ;
+            ParametrsChangeByUser += _breakEnvelops_ParametrsChangeByUser;
 
             // Subscribe to the candle finished event
             _tab.CandleFinishedEvent += _tab_CandleFinishedEvent;
 
-            Description = "The trend robot on Strategy Envelops And RVI. " +
-                "Buy: " +
-                "1. The candle closed above the upper line of the Envelope. " +
-                "2. The RVI is greater than 0 and growing. " +
-                "Sell: " +
-                "1. The candle closed below the bottom line of the Envelope. " +
-                "2. RVI is less than 0 and falling. " +
-                "Exit: the reverse side of the envelope channel.";
+            Description = OsLocalization.Description.DescriptionLabel249;
         }
 
-        private void BreakEnvelops_ParametrsChangeByUser()
+        private void _breakEnvelops_ParametrsChangeByUser()
         {
             ((IndicatorParameterInt)_envelop.Parameters[0]).ValueInt = _envelopsLength.ValueInt;
             ((IndicatorParameterDecimal)_envelop.Parameters[1]).ValueDecimal = _envelopsDeviation.ValueDecimal;
             _envelop.Save();
             _envelop.Reload();
+
             ((IndicatorParameterInt)_RVI.Parameters[0]).ValueInt = _periodRVI.ValueInt;
             _RVI.Save();
             _RVI.Reload();
@@ -130,6 +128,7 @@ namespace OsEngine.Robots
         {
             return "StrategyEnvelopsAndRVI";
         }
+
         public override void ShowIndividualSettingsDialog()
         {
 
@@ -145,12 +144,13 @@ namespace OsEngine.Robots
             }
 
             // If there are not enough candles to build an indicator, we exit
-            if (candles.Count < _envelopsDeviation.ValueDecimal ||
-                candles.Count < _envelopsLength.ValueInt)
+            if (candles.Count <= _envelopsDeviation.ValueDecimal ||
+                candles.Count <= _envelopsLength.ValueInt + 1 ||
+                candles.Count <= _periodRVI.ValueInt)
             {
                 return;
             }
-
+            
             // If the time does not match, we leave
             if (_startTradeTime.Value > _tab.TimeServerCurrent ||
                 _endTradeTime.Value < _tab.TimeServerCurrent)
