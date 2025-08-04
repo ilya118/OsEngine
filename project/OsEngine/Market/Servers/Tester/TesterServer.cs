@@ -751,6 +751,7 @@ namespace OsEngine.Market.Servers.Tester
             portfolio.ValueBegin = 1000000;
             portfolio.ValueBlocked = 0;
             portfolio.ValueCurrent = 1000000;
+            portfolio.ServerUniqueName = ServerNameAndPrefix;
             ProfitArray = new List<decimal>();
 
             _portfolios = new List<Portfolio>();
@@ -1624,14 +1625,6 @@ namespace OsEngine.Market.Servers.Tester
             if (ServerStatus == ServerConnectStatus.Disconnect)
             {
                 SendLogMessage(OsLocalization.Market.Message40, LogMessageType.Error);
-                FailedOperationOrder(order);
-                return;
-            }
-
-            if (order.Price <= 0
-                && order.TypeOrder != OrderPriceType.Market)
-            {
-                SendLogMessage(OsLocalization.Market.Message41 + order.Price, LogMessageType.Error);
                 FailedOperationOrder(order);
                 return;
             }

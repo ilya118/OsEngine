@@ -1276,13 +1276,6 @@ namespace OsEngine.Market.Servers.Optimizer
                 return;
             }
 
-            if (order.Price <= 0)
-            {
-                SendLogMessage(OsLocalization.Market.Message41 + order.Price, LogMessageType.Error);
-                FailedOperationOrder(order);
-                return;
-            }
-
             if (order.Volume <= 0)
             {
                 SendLogMessage(OsLocalization.Market.Message42 + order.Volume, LogMessageType.Error);
@@ -1732,6 +1725,7 @@ namespace OsEngine.Market.Servers.Optimizer
             portfolio.ValueBegin = startValue;
             portfolio.ValueBlocked = 0;
             portfolio.ValueCurrent = startValue;
+            portfolio.ServerUniqueName = ServerNameAndPrefix;
 
             if (Portfolios == null)
             {

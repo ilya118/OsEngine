@@ -819,7 +819,7 @@ namespace OsEngine.Language
 
         public string Label196 => OsLocalization.ConvertToLocString(
           "Eng:You're going to delete the item! Are you sure?_" +
-          "Ru:Вы собариатесь удалить элемент! Вы уверены?_");
+          "Ru:Вы собираетесь удалить элемент! Вы уверены?_");
 
         public string Label197 => OsLocalization.ConvertToLocString(
           "Eng:Copy trading_" +
@@ -874,13 +874,72 @@ namespace OsEngine.Language
          "Ru:Коннекторы и портфели для копирования_");
 
         public string Label210 => OsLocalization.ConvertToLocString(
-         "Eng:Securities compliance_" +
-         "Ru:Соответствие бумаг_");
+         "Eng:Securities_" +
+         "Ru:Бумаги_");
 
         public string Label211 => OsLocalization.ConvertToLocString(
          "Eng:Journal_" +
          "Ru:Журнал_");
 
+        public string Label212 => OsLocalization.ConvertToLocString(
+         "Eng:Volume type_" +
+         "Ru:Тип объёма_");
+
+        public string Label213 => OsLocalization.ConvertToLocString(
+         "Eng:Multiplier_" +
+         "Ru:Мультипликатор_");
+
+        public string Label214 => OsLocalization.ConvertToLocString(
+         "Eng:Master asset_" +
+         "Ru:Мастер ассет_");
+
+        public string Label215 => OsLocalization.ConvertToLocString(
+         "Eng:Slave asset_" +
+         "Ru:Копи-ассет_");
+
+        public string Label216 => OsLocalization.ConvertToLocString(
+         "Eng:Copy type_" +
+         "Ru:Тип копирования_");
+
+        public string Label217 => OsLocalization.ConvertToLocString(
+         "Eng:Orders type_" +
+         "Ru:Тип ордеров_");
+
+        public string Label218 => OsLocalization.ConvertToLocString(
+         "Eng:Iceberg count_" +
+         "Ru:Кол-во айсбергов_");
+
+        public string Label219 => OsLocalization.ConvertToLocString(
+         "Eng:Server_" +
+         "Ru:Сервер_");
+
+        public string Label220 => OsLocalization.ConvertToLocString(
+         "Eng:Master. Name_" +
+         "Ru:Мастер. Имя_");
+
+        public string Label221 => OsLocalization.ConvertToLocString(
+         "Eng:Master. Class_" +
+         "Ru:Мастер. Класс_");
+
+        public string Label222 => OsLocalization.ConvertToLocString(
+         "Eng:Slave. Name_" +
+         "Ru:Slave. Имя_");
+
+        public string Label223 => OsLocalization.ConvertToLocString(
+         "Eng:Slave. Class_" +
+         "Ru:Slave. Класс_");
+
+        public string Label224 => OsLocalization.ConvertToLocString(
+         "Eng:Select_" +
+         "Ru:Выбрать_");
+
+        public string Label225 => OsLocalization.ConvertToLocString(
+         "Eng:Select new slave portfolio_" +
+         "Ru:Выберите новый копи-портфель_");
+
+        public string Label226 => OsLocalization.ConvertToLocString(
+         "Eng:To add a new slave portfolio, you need to connect at least one trade server_" +
+         "Ru:Для добавления нового копи-портфеля нужно подключить хотя бы один торговый коннектор_");
 
 
 

@@ -21,6 +21,8 @@ namespace OsEngine.Market.AutoFollow
             LogCopyMaster.Listen(this);
 
             SendLogMessage("Copy master activated. Copy traders: " + CopyTraders.Count, LogMessageType.System);
+      
+            
         }
 
         public void ShowDialog()
@@ -55,13 +57,19 @@ namespace OsEngine.Market.AutoFollow
 
         private void LoadCopyTraders()
         {
-            if (!File.Exists(@"Engine\" + @"CopyTradersHub.txt"))
+            if(Directory.Exists(@"Engine\CopyTrader\") == false)
+            {
+                Directory.CreateDirectory(@"Engine\CopyTrader\");
+
+            }
+
+            if (!File.Exists(@"Engine\CopyTrader\" + @"CopyTradersHub.txt"))
             {
                 return;
             }
             try
             {
-                using (StreamReader reader = new StreamReader(@"Engine\" + @"CopyTradersHub.txt"))
+                using (StreamReader reader = new StreamReader(@"Engine\CopyTrader\" + @"CopyTradersHub.txt"))
                 {
                     while (reader.EndOfStream == false)
                     {
@@ -72,8 +80,9 @@ namespace OsEngine.Market.AutoFollow
                             continue;
                         }
 
-                        CopyTrader newProxy = new CopyTrader(line);
-                        CopyTraders.Add(newProxy);
+                        CopyTrader newCopyTrader = new CopyTrader(line);
+                        newCopyTrader.NeedToSaveEvent += NewCopyTrader_NeedToSaveEvent;
+                        CopyTraders.Add(newCopyTrader);
                     }
 
                     reader.Close();
@@ -85,11 +94,16 @@ namespace OsEngine.Market.AutoFollow
             }
         }
 
+        private void NewCopyTrader_NeedToSaveEvent()
+        {
+            SaveCopyTraders();
+        }
+
         public void SaveCopyTraders()
         {
             try
             {
-                using (StreamWriter writer = new StreamWriter(@"Engine\" + @"CopyTradersHub.txt", false))
+                using (StreamWriter writer = new StreamWriter(@"Engine\CopyTrader\" + @"CopyTradersHub.txt", false))
                 {
                     for (int i = 0; i < CopyTraders.Count; i++)
                     {
@@ -117,11 +131,12 @@ namespace OsEngine.Market.AutoFollow
                 }
             }
 
-            CopyTrader newProxy = new CopyTrader(actualNumber);
-            CopyTraders.Add(newProxy);
+            CopyTrader newCopyTrader = new CopyTrader(actualNumber);
+            newCopyTrader.NeedToSaveEvent += NewCopyTrader_NeedToSaveEvent;
+            CopyTraders.Add(newCopyTrader);
             SaveCopyTraders();
 
-            return newProxy;
+            return newCopyTrader;
         }
 
         public void RemoveCopyTraderAt(int number)
@@ -131,6 +146,7 @@ namespace OsEngine.Market.AutoFollow
                 if (CopyTraders[i].Number == number)
                 {
                     CopyTraders[i].ClearDelete();
+                    CopyTraders[i].NeedToSaveEvent -= NewCopyTrader_NeedToSaveEvent;
                     CopyTraders.RemoveAt(i);
                     SaveCopyTraders();
                     return;

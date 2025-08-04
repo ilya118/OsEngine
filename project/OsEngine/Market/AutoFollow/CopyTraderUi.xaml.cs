@@ -14,6 +14,9 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Threading;
+using System.Drawing;
+using OsEngine.Market.Servers;
+using OsEngine.Market.Servers.ZB;
 
 namespace OsEngine.Market.AutoFollow
 {
@@ -50,26 +53,22 @@ namespace OsEngine.Market.AutoFollow
             TextBoxName.Text = copyTrader.Name;
             TextBoxName.TextChanged += TextBoxName_TextChanged;
 
-            ComboBoxWorkType.Items.Add(CopyTraderType.None.ToString());
-            ComboBoxWorkType.Items.Add(CopyTraderType.Portfolio.ToString());
-            ComboBoxWorkType.Items.Add(CopyTraderType.Robot.ToString());
-            ComboBoxWorkType.SelectedItem = copyTrader.WorkType.ToString();
-            ComboBoxWorkType.SelectionChanged += ComboBoxWorkType_SelectionChanged;
-
             // 2 Robots to copy
 
             CreateRobotsGrid();
             UpdateGridRobots();
 
+            // 3 Slave portfolios grid
+
+            CreateSlaveGrid();
+            UpdateGridSlave();
+
             // 6 Localization
 
             LabelIsOn.Content = OsLocalization.Market.Label182; 
             LabelName.Content = OsLocalization.Market.Label70;
-            LabelWorkType.Content = OsLocalization.Market.Label200;
             LabelRobotsGrid.Content = OsLocalization.Market.Label208;
             LabelSlaveGrid.Content = OsLocalization.Market.Label209;
-            LabelSecuritiesGrid.Content = OsLocalization.Market.Label210;
-            LabelJournal.Content = OsLocalization.Market.Label211;
 
             CopyTraderInstance.LogCopyTrader.StartPaint(HostLog);
 
@@ -84,9 +83,23 @@ namespace OsEngine.Market.AutoFollow
             _windowIsClosed = true;
 
             CopyTraderInstance.LogCopyTrader.StopPaint();
-
             CopyTraderInstance.DeleteEvent -= CopyTraderClass_DeleteEvent;
             CopyTraderInstance = null;
+
+            _gridRobots.CellValueChanged -= _gridRobots_CellValueChanged;
+            _gridRobots.DataError -= _gridRobots_DataError;
+            HostRobots.Child = null;
+            _gridRobots.Rows.Clear();
+            DataGridFactory.ClearLinks(_gridRobots);
+
+            _gridSlave.CellValueChanged -= _gridSlave_CellValueChanged;
+            _gridSlave.DataError -= _gridSlave_DataError;
+            _gridSlave.CellClick -= _gridSlave_CellClick;
+            HostSlaves.Child = null;
+            _gridSlave.Rows.Clear();
+            DataGridFactory.ClearLinks(_gridSlave);
+
+
         }
 
         private void CopyTraderClass_DeleteEvent()
@@ -102,8 +115,6 @@ namespace OsEngine.Market.AutoFollow
         {
             try
             {
-                CopyTraderType type;
-
                 bool isOn = Convert.ToBoolean(ComboBoxIsOn.SelectedItem.ToString());
                 CopyTraderInstance.IsOn = isOn;
                 ServerMaster.SaveCopyMaster();
@@ -112,29 +123,6 @@ namespace OsEngine.Market.AutoFollow
                 {
                     NeedToUpdateCopyTradersGridEvent();
                 }
-            }
-            catch (Exception ex)
-            {
-                SendNewLogMessage(ex.ToString(), Logging.LogMessageType.Error);
-            }
-        }
-
-        private void ComboBoxWorkType_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            try
-            {
-                CopyTraderType type;
-
-                if(Enum.TryParse(ComboBoxWorkType.SelectedItem.ToString(), out type))
-                {
-                    CopyTraderInstance.WorkType = type;
-                    ServerMaster.SaveCopyMaster();
-
-                    if (NeedToUpdateCopyTradersGridEvent != null)
-                    {
-                        NeedToUpdateCopyTradersGridEvent();
-                    }
-                }              
             }
             catch (Exception ex)
             {
@@ -179,24 +167,6 @@ namespace OsEngine.Market.AutoFollow
 
                 if (GridFollowSettings.RowDefinitions[2].Height.Value == 25)
                 {// slave
-                    result += "0,";
-                }
-                else
-                {
-                    result += "1,";
-                }
-
-                if (GridFollowSettings.RowDefinitions[3].Height.Value == 25)
-                {// securities
-                    result += "0,";
-                }
-                else
-                {
-                    result += "1,";
-                }
-
-                if (GridFollowSettings.RowDefinitions[4].Height.Value == 25)
-                {// journal
                     result += "0,";
                 }
                 else
@@ -254,41 +224,6 @@ namespace OsEngine.Market.AutoFollow
             {
                 ButtonSlaveGridUp.IsEnabled = false;
             }
-
-            if (save[2] == "0")
-            {
-                GridFollowSettings.RowDefinitions[3].Height = new GridLength(25, GridUnitType.Pixel);
-                ButtonSecuritiesGridDown.IsEnabled = false;
-            }
-            else
-            {
-                ButtonSecuritiesGridUp.IsEnabled = false;
-            }
-
-            if (save[3] == "0")
-            {
-                GridFollowSettings.RowDefinitions[4].Height = new GridLength(25, GridUnitType.Pixel);
-                ButtonJournalGridDown.IsEnabled = false;
-            }
-            else
-            {
-                ButtonJournalGridUp.IsEnabled = false;
-            }
-
-            if (save[4] == "0")
-            {
-                GridPrime.RowDefinitions[1].Height = new GridLength(25, GridUnitType.Pixel);
-                ButtonLogDown.IsEnabled = false;
-            }
-            else if (save[4] == "1")
-            {
-                GridPrime.RowDefinitions[1].Height = new GridLength(83, GridUnitType.Star);
-            }
-            else
-            {
-                GridPrime.RowDefinitions[1].Height = new GridLength(250, GridUnitType.Star);
-                ButtonLogUp.IsEnabled = false;
-            }
         }
 
         #endregion
@@ -303,7 +238,7 @@ namespace OsEngine.Market.AutoFollow
             {
                 try
                 {
-                    Thread.Sleep(3000);
+                    Thread.Sleep(1000);
 
                     if (_windowIsClosed == true)
                     {
@@ -311,6 +246,7 @@ namespace OsEngine.Market.AutoFollow
                     }
 
                     UpdateGridRobots();
+                    UpdateGridSlave();
                 }
                 catch(Exception ex)
                 {
@@ -321,7 +257,14 @@ namespace OsEngine.Market.AutoFollow
 
         #endregion
 
-        #region Robots grid
+        #region Master portfolios grid
+
+
+
+
+        #endregion
+
+        #region Master robots grid
 
         private DataGridView _gridRobots;
 
@@ -427,7 +370,7 @@ namespace OsEngine.Market.AutoFollow
                     }
                 }
 
-                CopyTraderInstance.OnRobotsNames = namesOnRobots;
+                CopyTraderInstance.MasterRobotsNames = namesOnRobots;
 
                 ServerMaster.SaveCopyMaster();
             }
@@ -587,8 +530,12 @@ namespace OsEngine.Market.AutoFollow
             {
                 rowFirst.Cells[rowFirst.Cells.Count - 1].Style.ForeColor = System.Drawing.Color.Green;
             }
+            else
+            {
+                rowFirst.Cells[rowFirst.Cells.Count - 1].Style.ForeColor = System.Drawing.Color.Red;
+            }
 
-            rowFirst.Cells.Add(new DataGridViewTextBoxCell());
+                rowFirst.Cells.Add(new DataGridViewTextBoxCell());
             rowFirst.Cells.Add(new DataGridViewTextBoxCell());
             rowFirst.Cells.Add(new DataGridViewTextBoxCell());
             rowFirst.Cells.Add(new DataGridViewTextBoxCell());
@@ -719,6 +666,339 @@ namespace OsEngine.Market.AutoFollow
 
         #region Slave grid
 
+        private DataGridView _gridSlave;
+
+        private void CreateSlaveGrid()
+        {
+            _gridSlave = DataGridFactory.GetDataGridView(DataGridViewSelectionMode.CellSelect,
+  DataGridViewAutoSizeRowsMode.AllCells);
+            _gridSlave.ScrollBars = ScrollBars.Vertical;
+
+            DataGridViewTextBoxCell cell0 = new DataGridViewTextBoxCell();
+            cell0.Style = _gridSlave.DefaultCellStyle;
+
+            DataGridViewColumn column0 = new DataGridViewColumn();
+            column0.CellTemplate = cell0;
+            column0.HeaderText = "#"; // num
+            column0.ReadOnly = true;
+            column0.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            _gridSlave.Columns.Add(column0);
+
+            DataGridViewColumn column2 = new DataGridViewColumn();
+            column2.CellTemplate = cell0;
+            column2.HeaderText = OsLocalization.Market.Label164; // Name
+            column2.ReadOnly = true;
+            column2.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            _gridSlave.Columns.Add(column2);
+
+            DataGridViewColumn column4 = new DataGridViewColumn();
+            column4.CellTemplate = cell0;
+            //column4.HeaderText = OsLocalization.Market.Label140; // Portfolio
+            column4.ReadOnly = true;
+            column4.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            column4.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            _gridSlave.Columns.Add(column4);
+
+            DataGridViewColumn column5 = new DataGridViewColumn();
+            column5.CellTemplate = cell0;
+            //column5.HeaderText = OsLocalization.Market.Label182; // Is On
+            column5.ReadOnly = false;
+            column5.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            column5.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            _gridSlave.Columns.Add(column5);
+
+            DataGridViewColumn column6 = new DataGridViewColumn();
+            column6.CellTemplate = cell0;
+            //column6.HeaderText = OsLocalization.Market.Label215; // Settings
+            column6.ReadOnly = false;
+            column6.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            column6.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            _gridSlave.Columns.Add(column6);
+
+            DataGridViewColumn column7 = new DataGridViewColumn();
+            column7.CellTemplate = cell0;
+            //column6.HeaderText = OsLocalization.Market.Label215; // Delete
+            column7.ReadOnly = false;
+            column7.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+            column7.HeaderCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            _gridSlave.Columns.Add(column7);
+
+            HostSlaves.Child = _gridSlave;
+            _gridSlave.CellValueChanged += _gridSlave_CellValueChanged;
+            _gridSlave.DataError += _gridSlave_DataError;
+            _gridSlave.CellClick += _gridSlave_CellClick;
+        }
+
+        private void UpdateGridSlave()
+        {
+            try
+            {
+                if (_gridRobots.InvokeRequired)
+                {
+                    _gridRobots.Invoke(new Action(UpdateGridSlave));
+                    return;
+                }
+
+                // 0 num
+                // 1 Name
+                // 2 Portfolio
+                // 3 Is On
+                // 4 Settings
+                // 5 Delete
+
+                List<DataGridViewRow> rowsNow = new List<DataGridViewRow>();
+                List<PortfolioToCopy> portfoliosToCopy = CopyTraderInstance.PortfolioToCopy;
+
+                for (int i = 0; i < portfoliosToCopy.Count; i++)
+                {
+                    List<DataGridViewRow> serverRows = GetRowsByPortfolio(portfoliosToCopy[i], i + 1);
+
+                    if (serverRows != null &&
+                        serverRows.Count > 0)
+                    {
+                        rowsNow.AddRange(serverRows);
+                       
+                    }
+                }
+
+                rowsNow.Add(GetLastRow());
+
+                if (rowsNow.Count != _gridSlave.Rows.Count)
+                { // 1 перерисовываем целиком
+                    _gridSlave.Rows.Clear();
+
+                    for (int i = 0; i < rowsNow.Count; i++)
+                    {
+                        _gridSlave.Rows.Add(rowsNow[i]);
+                    }
+                }
+                else
+                { // 2 перерисовываем по линиям
+                    for (int i = 0; i < _gridSlave.Rows.Count; i++)
+                    {
+                        TryRePaintPortfoliosRow(_gridSlave.Rows[i], rowsNow[i]);
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private void TryRePaintPortfoliosRow(DataGridViewRow actualRow, DataGridViewRow virtualRow)
+        {
+            if (actualRow.Cells[3].Value != null 
+                && virtualRow.Cells[3].Value != null 
+                && virtualRow.Cells[3].Value.ToString() 
+                != actualRow.Cells[3].Value.ToString())
+            {
+                actualRow.Cells[3].Value = virtualRow.Cells[3].Value;
+            }
+
+            for(int i = 0;i < actualRow.Cells.Count;i++)
+            {
+                if (virtualRow.Cells[i].Style.ForeColor != 
+                    actualRow.Cells[i].Style.ForeColor)
+                {
+                    actualRow.Cells[i].Style.ForeColor = virtualRow.Cells[i].Style.ForeColor;
+                }
+            }
+        }
+
+        private DataGridViewRow GetLastRow()
+        {
+            DataGridViewRow nRow = new DataGridViewRow();
+
+            // 0 num
+            // 1 Name
+            // 2 Portfolio
+            // 3 Is On
+            // 4 Settings
+            // 5 Delete
+
+            nRow.Cells.Add(new DataGridViewTextBoxCell());
+            nRow.Cells.Add(new DataGridViewTextBoxCell());
+            nRow.Cells.Add(new DataGridViewTextBoxCell());
+            nRow.Cells.Add(new DataGridViewTextBoxCell());
+            nRow.Cells.Add(new DataGridViewTextBoxCell());
+
+            DataGridViewButtonCell cell = new DataGridViewButtonCell();
+            cell.Value = OsLocalization.Market.Label48;
+            cell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            nRow.Cells.Add(cell);
+
+            return nRow;
+        }
+
+        private List<DataGridViewRow> GetRowsByPortfolio(PortfolioToCopy portfolio, int number)
+        {
+            List<DataGridViewRow> rows = new List<DataGridViewRow>();
+
+            // 0 num
+            // 1 Name
+            // 2 Portfolio
+            // 3 Is On
+            // 4 Settings
+            // 5 Delete
+
+            DataGridViewRow row = new DataGridViewRow();
+
+            row.Cells.Add(new DataGridViewTextBoxCell());
+            row.Cells[row.Cells.Count - 1].Value = number;
+
+            row.Cells.Add(new DataGridViewTextBoxCell());
+            row.Cells[row.Cells.Count - 1].Value = portfolio.ServerName;
+
+            row.Cells.Add(new DataGridViewTextBoxCell());
+            row.Cells[row.Cells.Count - 1].Value = portfolio.PortfolioName;
+
+            DataGridViewComboBoxCell cellIsOn = new DataGridViewComboBoxCell(); // IsOn
+            cellIsOn.Items.Add("True");
+            cellIsOn.Items.Add("False");
+            cellIsOn.Value = portfolio.IsOn.ToString();
+            cellIsOn.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            row.Cells.Add(cellIsOn);
+
+            if (portfolio.IsOn == true)
+            {
+                row.Cells[row.Cells.Count - 1].Style.ForeColor = Color.Green;
+            }
+            else
+            {
+                row.Cells[row.Cells.Count - 1].Style.ForeColor = Color.Red;
+            }
+
+            row.Cells.Add(new DataGridViewButtonCell());
+            row.Cells[row.Cells.Count - 1].Value = OsLocalization.Market.TabItem3; //"Settings";
+            row.Cells[row.Cells.Count - 1].ToolTipText = portfolio.ServerName + "~" + portfolio.PortfolioName;
+
+            row.Cells.Add(new DataGridViewButtonCell());
+            row.Cells[row.Cells.Count - 1].Value = OsLocalization.Market.Label47; //"Delete";
+
+            rows.Add(row);
+
+            return rows;
+        }
+
+        private void _gridSlave_DataError(object sender, DataGridViewDataErrorEventArgs e)
+        {
+            CopyTraderInstance.SendLogMessage("_gridSlave_DataError \n"
+              + e.Exception.ToString(), Logging.LogMessageType.Error);
+        }
+
+        private void _gridSlave_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                int row = e.RowIndex;
+                int column = e.ColumnIndex;
+
+                if(column == 3)
+                {
+                    DataGridViewCell cellPortfolioName = _gridSlave.Rows[row].Cells[2];
+
+                    string portfolioName = cellPortfolioName.Value.ToString();
+
+                    PortfolioToCopy portfolioToCopy =
+                      CopyTraderInstance.GetPortfolioByName(
+                          _gridSlave.Rows[row].Cells[1].Value.ToString(), portfolioName);
+
+                    bool portfolioIsOn = Convert.ToBoolean(_gridSlave.Rows[row].Cells[3].Value.ToString());
+                    
+                    portfolioToCopy.IsOn = portfolioIsOn;
+
+                    if (portfolioToCopy.IsOn == true)
+                    {
+                        _gridSlave.Rows[row].Cells[column].Style.ForeColor = Color.Green;
+                    }
+                    else
+                    {
+                        _gridSlave.Rows[row].Cells[column].Style.ForeColor = Color.Red;
+                    }
+
+                    ServerMaster.SaveCopyMaster();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private void _gridSlave_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                int row = e.RowIndex;
+                int col = e.ColumnIndex;
+
+                if (row < _gridSlave.Rows.Count
+                    && col == 4)
+                {// настройки
+
+                    if (_gridSlave.Rows[row].Cells[col] == null
+                         || _gridSlave.Rows[row].Cells[col].Value == null
+                         || _gridSlave.Rows[row].Cells[col].ToolTipText == null)
+                    {
+                        return;
+                    }
+
+                    if (_gridSlave.Rows[row].Cells[col].ToolTipText.Split('~').Length != 2)
+                    {
+                        return;
+                    }
+
+                    string server = _gridSlave.Rows[row].Cells[col].ToolTipText.Split('~')[0];
+                    string portfolio = _gridSlave.Rows[row].Cells[col].ToolTipText.Split('~')[1];
+
+                    PortfolioToCopy portfolioToCopy =
+                            CopyTraderInstance.GetPortfolioByName(server, portfolio);
+
+                    ShowDialogPortfolio(portfolioToCopy);
+                }
+                else if (row < _gridSlave.Rows.Count-1
+                  && col == 5)
+                {// удалить
+
+                    AcceptDialogUi ui = new AcceptDialogUi(OsLocalization.Market.Label196);
+
+                    ui.ShowDialog();
+
+                    if (ui.UserAcceptAction == false)
+                    {
+                        return;
+                    }
+
+                    CopyTraderInstance.RemovePortfolioAt(row);
+                }
+                else if(row == _gridSlave.Rows.Count - 1
+                    && col == 5)
+                {// добавить новый
+
+                    List<AServer> connectors = ServerMaster.GetAServers();
+
+                    if(connectors == null || connectors.Count == 0)
+                    {
+                        CustomMessageBoxUi uiMessage = new CustomMessageBoxUi(OsLocalization.Market.Label226);
+                        uiMessage.ShowDialog();
+                        return;
+                    }
+
+
+                    AddSlavePortfolioUi ui = new AddSlavePortfolioUi(CopyTraderInstance);
+                    ui.ShowDialog();
+                    CopyTraderInstance.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
         private void ButtonSlaveGridDown_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -751,70 +1031,52 @@ namespace OsEngine.Market.AutoFollow
 
         #endregion
 
-        #region Securities grid
+        #region Copy portfolios UI
 
-        private void ButtonSecuritiesGridDown_Click(object sender, RoutedEventArgs e)
+        private List<CopyPortfolioUi> _copyPortfolioUis = new List<CopyPortfolioUi>();
+
+        public void ShowDialogPortfolio(PortfolioToCopy portfolioToCopy)
         {
-            try
+            for(int i = 0; i < _copyPortfolioUis.Count; i++)
             {
-                ButtonSecuritiesGridUp.IsEnabled = true;
-                GridFollowSettings.RowDefinitions[3].Height = new GridLength(25, GridUnitType.Pixel);
-                ButtonSecuritiesGridDown.IsEnabled = false;
+                if (_copyPortfolioUis[i].UniqueName == portfolioToCopy.NameUnique)
+                {
+                    if (_copyPortfolioUis[i].WindowState == WindowState.Minimized)
+                    {
+                        _copyPortfolioUis[i].WindowState = WindowState.Normal;
+                    }
+
+                    _copyPortfolioUis[i].Activate();
+                    return;
+                }
             }
-            catch (Exception ex)
-            {
-                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
-            }
-            SavePanelsPosition();
+
+            CopyPortfolioUi newGui = new CopyPortfolioUi(portfolioToCopy,CopyTraderInstance);
+            _copyPortfolioUis.Add(newGui);
+            newGui.Show();
+            newGui.Closed += NewGui_Closed;
+
         }
 
-        private void ButtonSecuritiesGridUp_Click(object sender, RoutedEventArgs e)
+        private void NewGui_Closed(object sender, EventArgs e)
         {
             try
             {
-                ButtonSecuritiesGridDown.IsEnabled = true;
-                GridFollowSettings.RowDefinitions[3].Height = new GridLength(185, GridUnitType.Star);
-                ButtonSecuritiesGridUp.IsEnabled = false;
+                CopyPortfolioUi closedGui = (CopyPortfolioUi)sender;
+
+                for (int i = 0; i < _copyPortfolioUis.Count; i++)
+                {
+                    if (_copyPortfolioUis[i].UniqueName == closedGui.UniqueName)
+                    {
+                        _copyPortfolioUis.RemoveAt(i);
+                        return;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
+                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error); 
             }
-            SavePanelsPosition();
-        }
-
-        #endregion
-
-        #region Journal grid
-
-        private void ButtonJournalGridDown_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                ButtonJournalGridUp.IsEnabled = true;
-                GridFollowSettings.RowDefinitions[4].Height = new GridLength(25, GridUnitType.Pixel);
-                ButtonJournalGridDown.IsEnabled = false;
-            }
-            catch (Exception ex)
-            {
-                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
-            }
-            SavePanelsPosition();
-        }
-
-        private void ButtonJournalGridUp_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                ButtonJournalGridDown.IsEnabled = true;
-                GridFollowSettings.RowDefinitions[4].Height = new GridLength(185, GridUnitType.Star);
-                ButtonJournalGridUp.IsEnabled = false;
-            }
-            catch (Exception ex)
-            {
-                CopyTraderInstance.SendLogMessage(ex.ToString(), LogMessageType.Error);
-            }
-            SavePanelsPosition();
         }
 
         #endregion
@@ -884,5 +1146,12 @@ namespace OsEngine.Market.AutoFollow
 
         #endregion
 
+    }
+
+    public class ServersAndPortfolios
+    {
+        public string Server;
+
+        public List<string> Portfolios = new List<string>();
     }
 }

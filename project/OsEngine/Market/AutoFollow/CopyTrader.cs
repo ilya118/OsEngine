@@ -3,21 +3,20 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
+using OsEngine.Entity;
+using OsEngine.Journal;
 using OsEngine.Logging;
+using OsEngine.Market.Servers;
 using OsEngine.OsTrader.Panels;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms.Integration;
 
 namespace OsEngine.Market.AutoFollow
 {
-
-    public enum CopyTraderType
-    {
-        None,
-        Portfolio,
-        Robot
-    }
 
     public class CopyTrader
     {
@@ -26,17 +25,29 @@ namespace OsEngine.Market.AutoFollow
             string[] save = saveStr.Split('%');
             Number = Convert.ToInt32(save[0]);
             Name = save[1];
-            Enum.TryParse(save[2], out WorkType);
-            IsOn = Convert.ToBoolean(save[3]);
-            PanelsPosition = save[4];
+            IsOn = Convert.ToBoolean(save[2]);
+            PanelsPosition = save[3];
 
-            if (save[5].Split('!').Length > 1)
+            if (save[4].Split('!').Length > 1)
             {
-                OnRobotsNames = save[5].Split('!').ToList();
+                MasterRobotsNames = save[4].Split('!').ToList();
+
+                for(int i = 0;i < MasterRobotsNames.Count;i++)
+                {
+                    if (string.IsNullOrEmpty(MasterRobotsNames[i]))
+                    {
+                        MasterRobotsNames.RemoveAt(i);
+                        i--;
+                    }
+                }
             }
+
+            LoadPortfolios(save[5]);
 
             LogCopyTrader = new Log("CopyTrader" + Number, Entity.StartProgram.IsOsTrader);
             LogCopyTrader.Listen(this);
+
+            Task.Run(WorkThreadArea);
         }
 
         public CopyTrader(int number)
@@ -44,6 +55,8 @@ namespace OsEngine.Market.AutoFollow
             Number = number;
             LogCopyTrader = new Log("CopyTrader" + Number, Entity.StartProgram.IsOsTrader);
             LogCopyTrader.Listen(this);
+
+            Task.Run(WorkThreadArea);
         }
 
         private CopyTrader()
@@ -55,8 +68,6 @@ namespace OsEngine.Market.AutoFollow
 
         public string Name;
 
-        public CopyTraderType WorkType;
-
         public bool IsOn;
 
         public string PanelsPosition = "1,1,1,1,1";
@@ -65,11 +76,10 @@ namespace OsEngine.Market.AutoFollow
         {
             string result = Number + "%";
             result += Name + "%";
-            result += WorkType + "%";
             result += IsOn + "%";
             result += PanelsPosition + "%";
             result += OnRobotsNamesInString + "%";
-
+            result += GetStringToSavePortfolios() + "%";
 
             return result;
         }
@@ -80,13 +90,64 @@ namespace OsEngine.Market.AutoFollow
             {
                 DeleteEvent();
             }
+
+            for(int i = 0;i < PortfolioToCopy.Count;i++)
+            {
+                PortfolioToCopy[i].Delete();
+            }
+        }
+
+        public void Save()
+        {
+            if(NeedToSaveEvent != null)
+            {
+                NeedToSaveEvent();
+            }
+
+            for(int i = 0;i < PortfolioToCopy.Count;i++)
+            {
+                PortfolioToCopy[i].Save();
+            }
         }
 
         public event Action DeleteEvent;
 
+        public event Action NeedToSaveEvent;
+
+        #region Work thread
+
+        private bool _objectIsDelete;
+
+        private async void WorkThreadArea()
+        {
+            while (true)
+            {
+                try
+                {
+                    await Task.Delay(1000);
+
+                    if (_objectIsDelete == true)
+                    {
+                        return;
+                    }
+
+                    for(int i = 0;i < PortfolioToCopy.Count;i++)
+                    {
+                        PortfolioToCopy[i].Process(MasterRobotsNames);
+                    }
+                }
+                catch(Exception ex)
+                {
+                    SendLogMessage(ex.ToString(), LogMessageType.Error);
+                }
+            }
+        }
+
+        #endregion
+
         #region Robots for auto follow
 
-        public List<string> OnRobotsNames = new List<string>();
+        public List<string> MasterRobotsNames = new List<string>();
 
         private string OnRobotsNamesInString
         {
@@ -94,9 +155,9 @@ namespace OsEngine.Market.AutoFollow
             {
                 string result = "";
 
-                for(int i = 0;i < OnRobotsNames.Count;i++)
+                for(int i = 0;i < MasterRobotsNames.Count;i++)
                 {
-                    result += OnRobotsNames[i] + "!";
+                    result += MasterRobotsNames[i] + "!";
                 }
 
                 return result;
@@ -105,15 +166,89 @@ namespace OsEngine.Market.AutoFollow
 
         public bool BotIsOnToCopy(BotPanel bot)
         {
-            for(int i = 0;i < OnRobotsNames.Count;i++)
+            for(int i = 0;i < MasterRobotsNames.Count;i++)
             {
-                if (OnRobotsNames[i] == bot.NameStrategyUniq)
+                if (MasterRobotsNames[i] == bot.NameStrategyUniq)
                 {
                     return true;
                 }
             }
 
             return false;
+        }
+
+        #endregion
+
+        #region Portfolios to copy
+
+        public List<PortfolioToCopy> PortfolioToCopy = new List<PortfolioToCopy>();
+
+        public PortfolioToCopy GetPortfolioByName(string serverName, string portfolioName)
+        {
+            for(int i = 0;i <PortfolioToCopy.Count;i++)
+            {
+                if (PortfolioToCopy[i].ServerName == serverName
+                    && PortfolioToCopy[i].PortfolioName == portfolioName)
+                {
+                    return PortfolioToCopy[i];
+                }
+            }
+
+            PortfolioToCopy portfolio 
+                = new PortfolioToCopy(
+                    Number + "_PortfolioCopier_" + serverName + "_" + portfolioName);
+
+            portfolio.ServerName = serverName;
+            portfolio.PortfolioName = portfolioName;
+            portfolio.Save();
+            portfolio.LogMessageEvent += SendLogMessage;
+            PortfolioToCopy.Add(portfolio);
+            
+            if (NeedToSaveEvent != null)
+            {
+                NeedToSaveEvent();
+            }
+
+            return portfolio;
+        }
+
+        private string GetStringToSavePortfolios()
+        {
+            string result = "";
+
+            for(int i = 0;i < PortfolioToCopy.Count;i++)
+            {
+                result += PortfolioToCopy[i].NameUnique + "&";
+            }
+
+            return result;
+        }
+
+        private void LoadPortfolios(string saveStr)
+        {
+            string[] saveArray = saveStr.Split('&');
+
+            for(int i = 0;i < saveArray.Length;i++)
+            {
+                if (string.IsNullOrEmpty(saveArray[i]))
+                {
+                    continue;
+                }
+
+                PortfolioToCopy portfolio = new PortfolioToCopy(saveArray[i]);
+                PortfolioToCopy.Add(portfolio);
+            }
+        }
+
+        public void RemovePortfolioAt(int number)
+        {
+            if(number >= PortfolioToCopy.Count)
+            {
+                return;
+            }
+            PortfolioToCopy[number].Delete();
+            PortfolioToCopy.RemoveAt(number);
+            Save();
         }
 
         #endregion
@@ -131,6 +266,527 @@ namespace OsEngine.Market.AutoFollow
         }
 
         #endregion
+    }
+
+    public class PortfolioToCopy
+    {
+        public PortfolioToCopy(string name)
+        {
+            NameUnique = name;
+
+            Load();
+
+            MyJournal = new Journal.Journal(name, StartProgram.IsOsTrader);
+
+            // _journal.PositionStateChangeEvent += _journal_PositionStateChangeEvent;
+            // _journal.PositionNetVolumeChangeEvent += _journal_PositionNetVolumeChangeEvent;
+            // _journal.UserSelectActionEvent += _journal_UserSelectActionEvent;
+            MyJournal.LogMessageEvent += SendLogMessage;
+        }
+
+        public string NameUnique;
+
+        public void Save()
+        {
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(@"Engine\CopyTrader\" + NameUnique + ".txt", false))
+                {
+                    writer.WriteLine(ServerName);
+                    writer.WriteLine(PortfolioName);
+                    writer.WriteLine(IsOn);
+                    writer.WriteLine(VolumeType);
+                    writer.WriteLine(VolumeMult);
+                    writer.WriteLine(MasterAsset);
+                    writer.WriteLine(SlaveAsset);
+                    writer.WriteLine(CopyType);
+                    writer.WriteLine(OrderType);
+                    writer.WriteLine(IcebergCount);
+                    writer.WriteLine(GetSecuritiesSaveString());
+                    writer.Close();
+                }
+            }
+            catch (Exception error)
+            {
+                SendLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        public void Load()
+        {
+            if (!File.Exists(@"Engine\CopyTrader\" + NameUnique + ".txt"))
+            {
+                return;
+            }
+            try
+            {
+                using (StreamReader reader = new StreamReader(@"Engine\CopyTrader\" + NameUnique + ".txt"))
+                {
+                    ServerName = reader.ReadLine();
+
+                    PortfolioName = reader.ReadLine();
+                    IsOn = Convert.ToBoolean(reader.ReadLine());
+                    Enum.TryParse(reader.ReadLine(), out VolumeType);
+
+                    VolumeMult = reader.ReadLine().ToDecimal();
+                    MasterAsset = reader.ReadLine();
+                    SlaveAsset = reader.ReadLine();
+
+                    Enum.TryParse(reader.ReadLine(), out CopyType);
+                    Enum.TryParse(reader.ReadLine(), out OrderType);
+                    IcebergCount = Convert.ToInt32(reader.ReadLine());
+                    LoadSecuritiesFromString(reader.ReadLine());
+
+                    reader.Close();
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+
+        }
+
+        public void Delete()
+        {
+            try
+            {
+                _isDelete = true;
+
+                if (File.Exists(@"Engine\CopyTrader\" + NameUnique + ".txt"))
+                {
+                    File.Delete(@"Engine\CopyTrader\" + NameUnique + ".txt");
+                }
+
+                if(MyCopyServer != null)
+                {
+                    MyCopyServer.NewMyTradeEvent -= MyCopyServer_NewMyTradeEvent;
+                    MyCopyServer.NewOrderIncomeEvent -= MyCopyServer_NewOrderIncomeEvent;
+                    MyCopyServer = null;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        private bool _isDelete;
+
+        #region Settings
+
+        public string ServerName;
+
+        public ServerType ServerType
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(ServerName))
+                {
+                    return ServerType.None;
+                }
+
+                ServerType serverType;
+
+                Enum.TryParse(ServerName.Split('_')[0], out serverType);
+
+                return serverType;
+            }
+        }
+
+        public string PortfolioName;
+
+        public bool IsOn = false;
+
+        public CopyTraderVolumeType VolumeType;
+
+        public decimal VolumeMult = 1;
+
+        public string MasterAsset = "Prime";
+
+        public string SlaveAsset = "Prime";
+
+        public CopyTraderCopyType CopyType;
+
+        public CopyTraderOrdersType OrderType = CopyTraderOrdersType.Market;
+
+        public int IcebergCount = 2;
+
+        #endregion
+
+        #region Securities
+
+        public List<SecurityToCopy> SecurityToCopy = new List<SecurityToCopy>();
+
+        private string GetSecuritiesSaveString()
+        {
+            string result = "";
+
+            for(int i = 0;i < SecurityToCopy.Count;i++)
+            {
+                result += SecurityToCopy[i].GetSaveString() + "*";
+            }
+
+            return result;
+        }
+
+        private void LoadSecuritiesFromString(string str)
+        {
+            string[] array = str.Split('*');
+
+            for(int i = 0;i < array.Length;i++)
+            {
+                if (string.IsNullOrEmpty(array[i]))
+                {
+                    continue;
+                }
+
+                SecurityToCopy securityToCopy = new SecurityToCopy();
+                securityToCopy.SetSaveString(array[i]);
+                SecurityToCopy.Add(securityToCopy);
+            }
+        }
+
+        #endregion
+
+        #region Server and Journal 
+
+        public Journal.Journal MyJournal;
+
+        public AServer MyCopyServer;
+
+        private void TryGetServer()
+        {
+            List<AServer> servers = ServerMaster.GetAServers();
+
+            if (servers == null
+                || servers.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < servers.Count; i++)
+            {
+                if (servers[i].ServerNameAndPrefix.StartsWith(this.ServerName))
+                {
+                    MyCopyServer = servers[i];
+
+                    MyCopyServer.NewMyTradeEvent += MyCopyServer_NewMyTradeEvent;
+                    MyCopyServer.NewOrderIncomeEvent += MyCopyServer_NewOrderIncomeEvent;
+
+                    break;
+                }
+            }
+        }
+
+        private void MyCopyServer_NewOrderIncomeEvent(Order order)
+        {
+            try
+            {
+                if (_isDelete)
+                {
+                    return;
+                }
+
+                Order orderInJournal = MyJournal.IsMyOrder(order);
+
+                if (orderInJournal == null)
+                {
+                    return;
+                }
+                MyJournal.SetNewOrder(order);
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(),LogMessageType.Error);
+            }
+        }
+
+        private void MyCopyServer_NewMyTradeEvent(MyTrade myTrade)
+        {
+            try
+            {
+                if (_isDelete)
+                {
+                    return;
+                }
+                if (MyJournal.SetNewMyTrade(myTrade) == false)
+                {
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
+            }
+        }
+
+        public void StartPaint(WindowsFormsHost hostOpenDeals, WindowsFormsHost hostCloseDeals)
+        {
+           // _journal?.StartPaint(hostOpenDeals, hostCloseDeals);
+        }
+
+        public void StopPaint()
+        {
+
+
+        }
+
+        #endregion
+
+        #region Copy position logic
+
+        public void Process(List<string> masterRobots)
+        {
+            if(IsOn == false)
+            {
+                TryCloseMyPositionsRobots();
+                return;
+            }
+
+            if(masterRobots == null ||
+                masterRobots.Count == 0)
+            {
+                return;
+            }
+
+            // 1 пробуем взять коннектор
+
+            if(MyCopyServer == null)
+            {
+                TryGetServer();
+                if (MyCopyServer == null)
+                {
+                    return;
+                }
+            }
+
+            if(MyCopyServer.ServerStatus != ServerConnectStatus.Connect)
+            {
+                return;
+            }
+
+            if(MyCopyServer.LastStartServerTime.AddSeconds(MyCopyServer.WaitTimeToTradeAfterFirstStart) 
+                > DateTime.Now)
+            {
+                return;
+            }
+
+            ProcessCopyRobots(masterRobots);
+
+
+
+
+
+        }
+
+
+
+
+        #endregion
+
+        #region Robots copy logic
+
+        private void ProcessCopyRobots(List<string> masterRobots)
+        {
+            // 1 обновляем список роботов
+
+            TrySyncRobots(masterRobots);
+
+            if (Robots == null
+                || Robots.Count == 0)
+            {
+                TryCloseMyPositionsRobots();
+                return;
+            }
+
+            // 2 берём позиции по роботам и по копи-портфелю
+
+            List<PositionToCopy> positionsInBots = GetPositionsFromBots();
+            List<PositionToCopy> myPositionsRobots = GetMyPositionsRobots();
+
+
+
+
+        }
+
+        private List<PositionToCopy> GetPositionsFromBots()
+        {
+
+            return null;
+        }
+
+        private List<PositionToCopy> GetMyPositionsRobots()
+        {
+
+            return null;
+        }
+
+        public List<BotPanel> Robots = new List<BotPanel>();
+
+        private void TrySyncRobots(List<string> robotsNames)
+        {
+            // 1 создаём не достающие
+
+            List<BotPanel> allRobots = ServerMaster.GetAllBotsFromBotStation();
+
+            for (int i = 0; i < robotsNames.Count; i++)
+            {
+                string currentBot = robotsNames[i];
+
+                bool botInArray = false;
+
+                for (int j = 0; j < Robots.Count; j++)
+                {
+                    if (Robots[j].NameStrategyUniq == currentBot)
+                    {
+                        botInArray = true;
+                        break;
+                    }
+                }
+
+                if (botInArray == false)
+                {
+                    BotPanel bot = allRobots.Find(b => b.NameStrategyUniq == currentBot);
+
+                    if (bot != null)
+                    {
+                        Robots.Add(bot);
+                    }
+                    else
+                    {
+                        robotsNames.RemoveAt(i);
+                        i--;
+                    }
+                }
+            }
+
+            // 2 убираем лишние
+
+            for (int i = 0; i < Robots.Count; i++)
+            {
+                bool isInArray = false;
+
+                for (int j = 0; j < robotsNames.Count; j++)
+                {
+                    if (robotsNames[j] == Robots[i].NameStrategyUniq)
+                    {
+                        isInArray = true;
+                        break;
+                    }
+                }
+
+                if (isInArray == false)
+                {
+                    Robots.RemoveAt(i);
+                    i--;
+                }
+            }
+        }
+
+        private void TryCloseMyPositionsRobots()
+        {
+            List<PositionToCopy> myPositionsRobots = GetMyPositionsRobots();
+
+            for(int i = 0;i < myPositionsRobots.Count;i++)
+            {
+
+            }
+
+        }
+
+        #endregion
+
+        #region Trade operations
+
+        private void ClosePositions(Position position)
+        {
+
+
+        }
+
+
+        #endregion
+
+        #region Log
+
+        public Log LogCopyTrader;
+
+        public event Action<string, LogMessageType> LogMessageEvent;
+
+        public void SendLogMessage(string message, LogMessageType messageType)
+        {
+            message = "Copy portfolio.  server:" + ServerName + " portfolio: " + PortfolioName + " message: \n" + message;
+            LogMessageEvent?.Invoke(message, messageType);
+        }
+
+        #endregion
+    }
+
+    public enum CopyTraderVolumeType
+    {
+        QtyMultiplicator,
+        DepoProportional
+    }
+
+    public enum CopyTraderCopyType
+    {
+        FullCopy,
+        Absolute
+    }
+
+    public enum CopyTraderOrdersType
+    {
+        Market,
+        Iceberg
+    }
+
+    public class SecurityToCopy
+    {
+        public string MasterSecurityName;
+
+        public string MasterSecurityClass;
+
+        public string SlaveSecurityName;
+
+        public string SlaveSecurityClass;
+
+        public string GetSaveString()
+        {
+            string result = MasterSecurityName + "^";
+            result += MasterSecurityClass + "^";
+            result += SlaveSecurityName + "^";
+            result += SlaveSecurityClass + "^";
+
+            return result;
+        }
+
+        public void SetSaveString(string str)
+        {
+            string[] saveArray = str.Split('^');
+
+            MasterSecurityName = saveArray[0];
+            MasterSecurityClass = saveArray[1];
+            SlaveSecurityName = saveArray[2];
+            SlaveSecurityClass = saveArray[3];
+
+        }
+
+    }
+
+    public class PositionToCopy
+    {
+        public Security Security;
+
+        public List<Position> Positions;
+
+        public string SecurityName;
+
+        public decimal VolumeBuy;
+
+        public decimal VolumeSell;
+
+        public decimal VolumeAbs;
     }
 
 }
