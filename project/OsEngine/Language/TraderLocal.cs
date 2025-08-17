@@ -2181,6 +2181,14 @@ namespace OsEngine.Language
 
         public string Label570 => OsLocalization.ConvertToLocString(
         "Eng:Copy trading_" +
-        "Ru:КопиТрейдинг_");
+        "Ru:Копи трейдинг_");
+
+        public string Label571 => OsLocalization.ConvertToLocString(
+        "Eng:Can move exit orders_" +
+        "Ru:Разрешить двигать закрывающие ордера_");
+
+        public string Label572 => OsLocalization.ConvertToLocString(
+        "Eng:Check micro volumes_" +
+        "Ru:Проверять микро объёмы_");
     }
 }

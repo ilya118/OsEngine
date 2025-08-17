@@ -1531,13 +1531,13 @@ namespace OsEngine.Market.Servers.Alor
 
         #endregion
 
-        #region 9 WebSocket Security subscrible
+        #region 9 WebSocket Security subscribe
 
         private RateGate _rateGateSubscribe = new RateGate(1, TimeSpan.FromMilliseconds(50));
 
         List<Security> _subscribedSecurities = new List<Security>();
 
-        public void Subscrible(Security security)
+        public void Subscribe(Security security)
         {
             try
             {
@@ -1598,11 +1598,58 @@ namespace OsEngine.Market.Servers.Alor
                 string messageMdSub = JsonConvert.SerializeObject(subObjMarketDepth);
 
                 _webSocketData.Send(messageMdSub);
-
             }
             catch (Exception exception)
             {
-                SendLogMessage(exception.ToString(),LogMessageType.Error);
+                SendLogMessage($"Subscribe error {security.Name} " + exception.ToString(),LogMessageType.Error);
+            }
+        }
+
+        public void Unsubscribe(Security security)
+        {
+            try
+            {
+                for (int i = 0; i < _subscribedSecurities.Count; i++)
+                {
+                    if (_subscribedSecurities[i].Name == security.Name)
+                    {
+                        _subscribedSecurities.RemoveAt(i);
+                        break;
+                    }
+                }
+
+                _rateGateSubscribe.WaitToProceed();
+
+                List<AlorSocketSubscription> subsToRemove = new List<AlorSocketSubscription>();
+
+                for (int i = 0; i < _subscriptionsData.Count; i++)
+                {
+                    if (_subscriptionsData[i].ServiceInfo == security.Name)
+                    {
+                        subsToRemove.Add(_subscriptionsData[i]);
+                    }
+                }
+
+                for (int i = 0; i < subsToRemove.Count; i++)
+                {
+                    AlorSocketSubscription sub = subsToRemove[i];
+                    RequestSocketUnsubscribe unsubscribeRequest = new RequestSocketUnsubscribe();
+                    unsubscribeRequest.guid = sub.Guid;
+                    unsubscribeRequest.token = _apiTokenReal;
+
+                    string message = JsonConvert.SerializeObject(unsubscribeRequest);
+
+                    if (_webSocketData != null)
+                    {
+                        _webSocketData.Send(message);
+                    }
+
+                    _subscriptionsData.Remove(sub);
+                }
+            }
+            catch (Exception exception)
+            {
+                SendLogMessage($"Unsubscribe error. {security.Name}: " + exception.ToString(), LogMessageType.Error);
             }
         }
 
@@ -3010,7 +3057,7 @@ namespace OsEngine.Market.Servers.Alor
         private DateTime ConvertToDateTimeFromUnixFromSeconds(string seconds)
         {
             DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime result = origin.AddSeconds(seconds.ToDouble()).ToLocalTime();
+            DateTime result = origin.AddSeconds(seconds.ToDouble()).AddHours(3); // force to Moscow time zone gmt+3
 
             return result;
         }
@@ -3018,9 +3065,9 @@ namespace OsEngine.Market.Servers.Alor
         private DateTime ConvertToDateTimeFromUnixFromMilliseconds(string seconds)
         {
             DateTime origin = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-            DateTime result = origin.AddMilliseconds(seconds.ToDouble());
+            DateTime result = origin.AddMilliseconds(seconds.ToDouble()).AddHours(3); // force to Moscow time zone gmt+3
 
-            return result.ToLocalTime();
+            return result;
         }
 
         private DateTime ConvertToDateTimeFromTimeAlorData(string alorTime)

@@ -100,6 +100,11 @@ namespace OsEngine.OsTrader.Grids
                 TextBoxDelayInReal.TextChanged += TextBoxDelayInReal_TextChanged;
             }
 
+            ComboBoxCheckMicroVolumes.Items.Add("True");
+            ComboBoxCheckMicroVolumes.Items.Add("False");
+            ComboBoxCheckMicroVolumes.SelectedItem = tradeGrid.CheckMicroVolumes.ToString();
+            ComboBoxCheckMicroVolumes.SelectionChanged += ComboBoxCheckMicroVolumes_SelectionChanged;
+
             // non trade periods
 
             CheckBoxNonTradePeriod1OnOff.IsChecked = tradeGrid.NonTradePeriods.NonTradePeriod1OnOff;
@@ -423,6 +428,10 @@ namespace OsEngine.OsTrader.Grids
             TextBoxTrailingUpLimit.Text = tradeGrid.TrailingUp.TrailingUpLimit.ToString();
             TextBoxTrailingUpLimit.TextChanged += TextBoxTrailingUpLimit_TextChanged;
 
+            CheckBoxTrailingUpCanMoveExitOrder.IsChecked = tradeGrid.TrailingUp.TrailingUpCanMoveExitOrder;
+            CheckBoxTrailingUpCanMoveExitOrder.Checked += CheckBoxTrailingUpCanMoveExitOrder_Checked;
+            CheckBoxTrailingUpCanMoveExitOrder.Unchecked += CheckBoxTrailingUpCanMoveExitOrder_Checked;
+
             CheckBoxTrailingDownIsOn.IsChecked = tradeGrid.TrailingUp.TrailingDownIsOn;
             CheckBoxTrailingDownIsOn.Checked += CheckBoxTrailingDownIsOn_Checked; 
             CheckBoxTrailingDownIsOn.Unchecked += CheckBoxTrailingDownIsOn_Checked;
@@ -432,6 +441,10 @@ namespace OsEngine.OsTrader.Grids
 
             TextBoxTrailingDownLimit.Text = tradeGrid.TrailingUp.TrailingDownLimit.ToString();
             TextBoxTrailingDownLimit.TextChanged += TextBoxTrailingDownLimit_TextChanged;
+
+            CheckBoxTrailingDownCanMoveExitOrder.IsChecked = tradeGrid.TrailingUp.TrailingDownCanMoveExitOrder;
+            CheckBoxTrailingDownCanMoveExitOrder.Checked += CheckBoxTrailingDownCanMoveExitOrder_Checked;
+            CheckBoxTrailingDownCanMoveExitOrder.Unchecked += CheckBoxTrailingDownCanMoveExitOrder_Checked;
 
             Localization();
 
@@ -445,6 +458,7 @@ namespace OsEngine.OsTrader.Grids
             Thread worker = new Thread(TableUpdateThread);
             worker.Start();
         }
+
 
         private void Localization()
         {
@@ -466,6 +480,7 @@ namespace OsEngine.OsTrader.Grids
             LabelMaxOpenOrdersInMarket.Content = OsLocalization.Trader.Label508;
             LabelMaxCloseOrdersInMarket.Content = OsLocalization.Trader.Label509;
             LabelDelayInReal.Content = OsLocalization.Trader.Label569;
+            LabelCheckMicroVolumes.Content = OsLocalization.Trader.Label572;
 
             // tab controls
 
@@ -570,10 +585,12 @@ namespace OsEngine.OsTrader.Grids
             CheckBoxTrailingUpIsOn.Content = OsLocalization.Trader.Label545;
             LabelTrailingUpStep.Content = OsLocalization.Trader.Label549;
             LabelTrailingUpLimit.Content = OsLocalization.Trader.Label547;
+            CheckBoxTrailingUpCanMoveExitOrder.Content = OsLocalization.Trader.Label571;
 
             CheckBoxTrailingDownIsOn.Content = OsLocalization.Trader.Label546;
             LabelTrailingDownStep.Content = OsLocalization.Trader.Label549;
             LabelTrailingDownLimit.Content = OsLocalization.Trader.Label547;
+            CheckBoxTrailingDownCanMoveExitOrder.Content = OsLocalization.Trader.Label571;
         }
 
         private void CheckEnabledItems()
@@ -1006,6 +1023,21 @@ namespace OsEngine.OsTrader.Grids
             }
         }
 
+        private void CheckBoxTrailingDownCanMoveExitOrder_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool value = CheckBoxTrailingDownCanMoveExitOrder.IsChecked.Value;
+
+                TradeGrid.TrailingUp.TrailingDownCanMoveExitOrder = value;
+                TradeGrid.Save();
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
         private int _trailingDownErrorsCountLimit;
 
         private int _trailingDownErrorsCountStep;
@@ -1086,6 +1118,21 @@ namespace OsEngine.OsTrader.Grids
                 }
 
                 TradeGrid.TrailingUp.TrailingDownLimit = TextBoxTrailingDownLimit.Text.ToDecimal();
+                TradeGrid.Save();
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        private void CheckBoxTrailingUpCanMoveExitOrder_Checked(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                bool value = CheckBoxTrailingUpCanMoveExitOrder.IsChecked.Value;
+
+                TradeGrid.TrailingUp.TrailingUpCanMoveExitOrder = value;
                 TradeGrid.Save();
             }
             catch
@@ -1901,6 +1948,7 @@ namespace OsEngine.OsTrader.Grids
                         if (Lines[i].PriceExit != priceExit)
                         {
                             Lines[i].PriceExit = priceExit;
+                            Lines[i].CanReplaceExitOrder = true;
                             needToSave = true;
                         }
                     }
@@ -2752,6 +2800,19 @@ namespace OsEngine.OsTrader.Grids
             }
         }
 
+        private void ComboBoxCheckMicroVolumes_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            try
+            {
+                TradeGrid.CheckMicroVolumes = Convert.ToBoolean(ComboBoxCheckMicroVolumes.SelectedItem.ToString());
+                TradeGrid.Save();
+            }
+            catch (Exception ex)
+            {
+                TradeGrid.SendNewLogMessage(ex.ToString(), Logging.LogMessageType.Error);
+            }
+        }
+
         private void ComboBoxRegimeLogicEntry_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             try
@@ -2851,11 +2912,6 @@ namespace OsEngine.OsTrader.Grids
             {
                 TradeGrid.SendNewLogMessage(ex.ToString(), Logging.LogMessageType.Error);
             }
-        }
-
-        private void ButtonSelectPositionToClose_Click(object sender, RoutedEventArgs e)
-        {
-
         }
 
         private void TextBoxMaxOrdersInMarket_TextChanged(object sender, TextChangedEventArgs e)

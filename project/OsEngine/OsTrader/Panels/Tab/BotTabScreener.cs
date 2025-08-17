@@ -1271,6 +1271,8 @@ namespace OsEngine.OsTrader.Panels.Tab
         /// </summary>
         public void RemoveTabBySecurityName(string securityName, string securityClass)
         {
+            bool securityDeleted = false;
+
             for (int i = 0; i < SecuritiesNames.Count; i++)
             {
                 if (SecuritiesNames[i].SecurityName == securityName
@@ -1278,8 +1280,14 @@ namespace OsEngine.OsTrader.Panels.Tab
                 {
                     SecuritiesNames.RemoveAt(i);
                     NeedToReloadTabs = true;
+                    securityDeleted = true;
                     break;
                 }
+            }
+
+            if(securityDeleted == true)
+            {
+                SaveSettings();
             }
         }
 

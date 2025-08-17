@@ -284,11 +284,16 @@ namespace OsEngine.OsTrader.Gui
 
                 if(rowIndex == botsCount + 1)
                 { // последняя строка
+                    if (_master._startProgram == StartProgram.IsOsTrader
+                       && coluIndex == 6)
+                    {
+                        ServerMaster.ShowApiDialog();
+                    }
 
                     if (_master._startProgram == StartProgram.IsOsTrader
                         && coluIndex == 7)
                     {
-                        //ServerMaster.ShowCopyMasterDialog();
+                        ServerMaster.ShowCopyMasterDialog();
                     }
                     else if (coluIndex == 8 &&
                        rowIndex == botsCount + 1)
@@ -959,12 +964,13 @@ colum9.HeaderText = "Journal";
 
             row.Cells.Add(new DataGridViewTextBoxCell());
             row.Cells[6].Value = "";
+            row.Cells[6].ReadOnly = true;
 
             row.Cells.Add(new DataGridViewButtonCell());
 
             if(_master._startProgram == StartProgram.IsOsTrader)
             {
-               // row.Cells[7].Value = OsLocalization.Trader.Label570; //"Copy trading";
+                row.Cells[7].Value = OsLocalization.Trader.Label570; //"Copy trading";
             }
 
             row.Cells.Add(new DataGridViewButtonCell());

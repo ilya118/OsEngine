@@ -1557,7 +1557,7 @@ namespace OsEngine.Market.Servers.TInvest
         private DateTime _lastMyTradesDataTime = DateTime.MinValue;
         private DateTime _lastMyOrderStateDataTime = DateTime.MinValue;
 
-        public void Subscrible(Security security)
+        public void Subscribe(Security security)
         {
             try
             {
@@ -2667,6 +2667,12 @@ namespace OsEngine.Market.Servers.TInvest
             {
                 Security security = _subscribedSecurities.Find((sec) =>
                     sec.Name == order.SecurityNameCode);
+
+                if(security == null)
+                {
+                    security = _securities.Find((sec) =>
+                    sec.Name == order.SecurityNameCode);
+                }
 
                 PostOrderRequest request = new PostOrderRequest();
                 request.Direction = order.Side == Side.Buy ? OrderDirection.Buy : OrderDirection.Sell;

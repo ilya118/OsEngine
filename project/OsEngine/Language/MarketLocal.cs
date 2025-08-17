@@ -941,6 +941,57 @@ namespace OsEngine.Language
          "Eng:To add a new slave portfolio, you need to connect at least one trade server_" +
          "Ru:Для добавления нового копи-портфеля нужно подключить хотя бы один торговый коннектор_");
 
+        public string Label227 => OsLocalization.ConvertToLocString(
+         "Eng:Min qty in currency_" +
+         "Ru:Мин объём в валюте_");
+
+        public string Label228 => OsLocalization.ConvertToLocString(
+          "Eng:Additional settings_" +
+          "Ru:Дополнительные настройки_");
+
+        public string Label229 => OsLocalization.ConvertToLocString(
+         "Eng:Show journal_" +
+         "Ru:Открыть журнал_");
+
+        public string Label230 => OsLocalization.ConvertToLocString(
+         "Eng:Volume settings_" +
+         "Ru:Объёмы дублирования_");
+
+        public string Label231 => OsLocalization.ConvertToLocString(
+         "Eng:Errors reaction_" +
+         "Ru:Реакция на ошибки_");
+
+        public string Label232 => OsLocalization.ConvertToLocString(
+         "Eng:Max fail orders_" +
+         "Ru:Макс. ошибок ордеров_");
+
+        public string Label233 => OsLocalization.ConvertToLocString(
+         "Eng:Fail orders now_" +
+         "Ru:Ошибок ордеров сейчас_");
+
+        public string Label234 => OsLocalization.ConvertToLocString(
+         "Eng:Stop module after N orders errors_" +
+         "Ru:Остановить копировщик после N ошибок_");
+
+        public string Label235 => OsLocalization.ConvertToLocString(
+         "Eng:Iceberg delay mls_" +
+         "Ru:Задержка в млс_");
+
+        public string Label236 => OsLocalization.ConvertToLocString(
+         "Eng:Time delay. Sec_" +
+         "Ru:Задержка в секундах_");
+
+        public string Label237 => OsLocalization.ConvertToLocString(
+         "Eng:All positions will be closed. The copier will be disabled. Are you sure?_" +
+         "Ru:Все позиции будут закрыты. Копировщик будет отключен. Вы уверены?_");
+
+        public string Label238 => OsLocalization.ConvertToLocString(
+         "Eng:The copier's log will be cleared. The copier will be disabled. Are you sure?_" +
+         "Ru:Журнал копировщика будет очищен. Копировщик будет отключен. Вы уверены?_");
+
+
+
+
 
 
 

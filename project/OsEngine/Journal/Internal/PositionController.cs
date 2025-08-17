@@ -84,8 +84,7 @@ namespace OsEngine.Journal.Internal
 
             Activate();
 
-            if (_startProgram != StartProgram.IsOsOptimizer
-                && _startProgram != StartProgram.IsOsMiner)
+            if (_startProgram != StartProgram.IsOsOptimizer)
             {
                 ControllersToCheck.Add(this);
                 Load();
@@ -346,7 +345,6 @@ namespace OsEngine.Journal.Internal
             }
 
             if (_startProgram == StartProgram.IsOsOptimizer
-                || _startProgram == StartProgram.IsOsMiner
                 || _startProgram == StartProgram.IsTester)
             {
                 return;
@@ -376,8 +374,7 @@ namespace OsEngine.Journal.Internal
             result.Append(_commissionType + "\r\n");
             result.Append(_commissionValue + "\r\n");
 
-            if (_startProgram == StartProgram.IsOsTrader ||
-                _startProgram == StartProgram.IsOsMiner)
+            if (_startProgram == StartProgram.IsOsTrader)
             {
                 List<Position> deals = _deals;
 
@@ -587,7 +584,7 @@ namespace OsEngine.Journal.Internal
                 if (isCloseOrder == false ||
                     curPosition.OpenOrders != null && curPosition.OpenOrders.Count > 0)
                 {
-                    for (int indexOpenOrd = 0; indexOpenOrd < curPosition.OpenOrders.Count; indexOpenOrd++)
+                    for (int indexOpenOrd = 0; curPosition.OpenOrders != null && indexOpenOrd < curPosition.OpenOrders.Count; indexOpenOrd++)
                     {
                         if (curPosition.OpenOrders[indexOpenOrd].NumberUser == updateOrder.NumberUser)
                         {
@@ -804,8 +801,7 @@ namespace OsEngine.Journal.Internal
 
         private void TrySaveStopLimits()
         {
-            if (_startProgram == StartProgram.IsOsOptimizer
-           || _startProgram == StartProgram.IsOsMiner)
+            if (_startProgram == StartProgram.IsOsOptimizer)
             {
                 return;
             }
@@ -1367,6 +1363,8 @@ namespace OsEngine.Journal.Internal
 
         private DataGridView _gridCloseDeal;
 
+        public bool CanShowToolStripMenu = true;
+
         public void StartPaint(WindowsFormsHost dataGridOpenDeal, WindowsFormsHost dataGridCloseDeal)
         {
             _hostCloseDeal = dataGridCloseDeal;
@@ -1830,6 +1828,11 @@ namespace OsEngine.Journal.Internal
                 return;
             }
 
+            if(CanShowToolStripMenu == false)
+            {
+                return;
+            }
+
             try
             {
                 ToolStripMenuItem[] items = new ToolStripMenuItem[6];
@@ -1869,6 +1872,11 @@ namespace OsEngine.Journal.Internal
             {
                 MouseEventArgs mouse = (MouseEventArgs)e;
                 if (mouse.Button != MouseButtons.Right)
+                {
+                    return;
+                }
+
+                if (CanShowToolStripMenu == false)
                 {
                     return;
                 }

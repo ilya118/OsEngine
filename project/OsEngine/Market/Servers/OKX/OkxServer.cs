@@ -30,7 +30,7 @@ namespace OsEngine.Market.Servers.OKX
             CreateParameterPassword(OsLocalization.Market.ServerParamPassword, "");
             CreateParameterEnum("Hedge Mode", "On", new List<string> { "On", "Off" });
             CreateParameterEnum("Margin Mode", "Cross", new List<string> { "Cross", "Isolated" });
-            CreateParameterBoolean(OsLocalization.Market.UseOptions, false);
+            CreateParameterBoolean("Use Options", false);
             CreateParameterEnum("Demo Mode", "Off", new List<string> { "Off", "On" });
             CreateParameterBoolean("Extended Data", false);
         }
@@ -1525,7 +1525,7 @@ namespace OsEngine.Market.Servers.OKX
         //mapping: secutity name -> option (true or false)
         private Dictionary<string, bool> _subscribedSecurities = new Dictionary<string, bool>();
 
-        public void Subscrible(Security security)
+        public void Subscribe(Security security)
         {
             try
             {

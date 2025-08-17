@@ -3,6 +3,7 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
+using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
@@ -73,7 +74,6 @@ namespace OsEngine.OsTrader.Grids
             }
         }
 
-
         public StartProgram StartProgram;
 
         public int Number;
@@ -114,6 +114,7 @@ namespace OsEngine.OsTrader.Grids
             result +=  _openPositionsBySession + "@";
             result += _firstTradeTime.ToString(CultureInfo.InvariantCulture) + "@";
             result += DelayInReal + "@";
+            result += CheckMicroVolumes + "@";
 
             result += "%";
 
@@ -177,10 +178,12 @@ namespace OsEngine.OsTrader.Grids
                 try
                 {
                     DelayInReal = Convert.ToInt32(values[11]);
+                    CheckMicroVolumes = Convert.ToBoolean(values[12]);
                 }
                 catch
                 {
                     DelayInReal = 500;
+                    CheckMicroVolumes = true;
                 }
 
                 // non trade periods
@@ -344,6 +347,8 @@ namespace OsEngine.OsTrader.Grids
         public int MaxCloseOrdersInMarket = 5;
 
         public int DelayInReal = 500;
+
+        public bool CheckMicroVolumes = true;
 
         #endregion
 
@@ -624,6 +629,11 @@ namespace OsEngine.OsTrader.Grids
             }
 
             if(Tab.EventsIsOn == false)
+            {
+                return;
+            }
+
+            if(MainWindow.ProccesIsWorked == false)
             {
                 return;
             }
@@ -1083,6 +1093,7 @@ namespace OsEngine.OsTrader.Grids
             {
                 for (int i = 0; i < ordersToCancelBadPrice.Count; i++)
                 {
+                    //Tab.SetNewLogMessage("Отзыв ордера по не правильной цене", LogMessageType.Error);
                     Tab.CloseOrder(ordersToCancelBadPrice[i]);
                 }
 
@@ -1098,6 +1109,7 @@ namespace OsEngine.OsTrader.Grids
             {
                 for (int i = 0; i < ordersToCancelBadLines.Count; i++)
                 {
+                   // Tab.SetNewLogMessage("Отзыв ордера по количеству", LogMessageType.Error);
                     Tab.CloseOrder(ordersToCancelBadLines[i]);
                 }
 
@@ -1113,6 +1125,7 @@ namespace OsEngine.OsTrader.Grids
             {
                 for (int i = 0; i < ordersToCancelOpenOrders.Count; i++)
                 {
+                    //Tab.SetNewLogMessage("Отзыв ордера по дыре в сетке", LogMessageType.Error);
                     Tab.CloseOrder(ordersToCancelOpenOrders[i]);
                 }
 
@@ -1174,7 +1187,8 @@ namespace OsEngine.OsTrader.Grids
                 Position position = linesWithOrdersToCloseFact[i].Position;
                 TradeGridLine currentLine = linesWithOrdersToCloseFact[i];
 
-                if (position.CloseActive) 
+                if (position.CloseActive 
+                    && currentLine.CanReplaceExitOrder == true) 
                 {
                     Order closeOrder = position.CloseOrders[^1];
 
@@ -1362,7 +1376,15 @@ namespace OsEngine.OsTrader.Grids
                     continue;
                 }
 
-                Tab.CloseAtLimit(pos, line.PriceExit, pos.OpenVolume);
+                decimal volume = pos.OpenVolume;
+
+                if (CheckMicroVolumes == true 
+                    && Tab.CanTradeThisVolume(volume) == false)
+                {
+                    continue;
+                }
+
+                Tab.CloseAtLimit(pos, line.PriceExit, volume);
             }
         }
 
@@ -1513,7 +1535,10 @@ namespace OsEngine.OsTrader.Grids
                     continue;
                 }
 
-                if (pos.State == PositionStateType.OpeningFail)
+                if (pos.State == PositionStateType.OpeningFail
+                    && pos.OpenVolume == 0
+                    && pos.OpenActive == false
+                    && pos.CloseActive == false)
                 {
                     TryDeletePositionsFromJournal(pos);
                 }
@@ -1533,6 +1558,17 @@ namespace OsEngine.OsTrader.Grids
                 }
 
                 if (pos.State != PositionStateType.Done)
+                {
+                    continue;
+                }
+
+                if (pos.OpenVolume != 0)
+                {
+                    continue;
+                }
+
+                if(pos.OpenActive == true
+                    || pos.CloseActive == true)
                 {
                     continue;
                 }
@@ -1588,6 +1624,12 @@ namespace OsEngine.OsTrader.Grids
                         ||
                         (line.Position.State == PositionStateType.OpeningFail
                         && line.Position.OpenActive == false))
+                    {
+                        line.Position = null;
+                        line.PositionNum = -1;
+                    }
+
+                    else if(line.Position.State == PositionStateType.Deleted)
                     {
                         line.Position = null;
                         line.PositionNum = -1;
@@ -1657,6 +1699,19 @@ namespace OsEngine.OsTrader.Grids
                 if (pos.State != PositionStateType.Done
                     || pos.OpenVolume >= 0)
                 {
+                    if (CheckMicroVolumes == true
+                    && Tab.CanTradeThisVolume(pos.OpenVolume) == false)
+                    {
+                        string message = "Micro volume detected. Position deleted \n";
+                        message += "Position volume: " + pos.OpenVolume + "\n";
+                        message += "Security name: " + pos.SecurityName;
+                        SendNewLogMessage(message, LogMessageType.Error);
+
+                        line.Position = null;
+                        line.PositionNum = -1;
+                        continue;
+                    }
+
                     Tab.CloseAtMarket(pos, pos.OpenVolume);
                     havePositions = true;
                 }

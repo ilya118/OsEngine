@@ -754,6 +754,44 @@ namespace OsEngine.Market.Servers
         private ServerConnectStatus _serverConnectStatus;
 
         /// <summary>
+        /// Can do trade operations
+        /// </summary>
+        public bool IsReadyToTrade
+        {
+            get
+            {
+                if (ServerStatus != ServerConnectStatus.Connect)
+                {
+                    return false;
+                }
+
+                if (LastStartServerTime.AddSeconds(5) > DateTime.Now)
+                {
+                    return false;
+                }
+
+                if (LastStartServerTime.AddSeconds(this.WaitTimeToTradeAfterFirstStart) > DateTime.Now)
+                {
+                    return false;
+                }
+
+                if (Portfolios == null
+                    || Portfolios.Count == 0)
+                {
+                    return false;
+                }
+
+                if (Securities == null
+                 || Securities.Count == 0)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
+
+        /// <summary>
         /// server type
         /// </summary>
         public ServerType ServerType { get { return ServerRealization.ServerType; } }
@@ -2092,7 +2130,7 @@ namespace OsEngine.Market.Servers
 
                     CandleSeries series = new CandleSeries(timeFrameBuilder, security, StartProgram.IsOsTrader);
 
-                    ServerRealization.Subscrible(security);
+                    ServerRealization.Subscribe(security);
 
                     _candleManager.StartSeries(series);
 
@@ -2135,6 +2173,14 @@ namespace OsEngine.Market.Servers
             {
                 _candleStorage.RemoveSeries(series);
             }
+
+            Security security = series.Security;
+
+            if (_candleManager.IsSafeToUnsubscribeFromSecurityUpdates(security))
+            {
+                ServerRealization.Unsubscribe(security);
+                RemoveSecurityFromSubscribed(security.Name, security.NameClass);
+            }
         }
 
         /// <summary>
@@ -2148,8 +2194,38 @@ namespace OsEngine.Market.Servers
 
                 if (_needToSaveCandlesParam.Value == true)
                 {
-                    List<Candle> candles = _candleStorage.GetCandles(series.Specification, _needToLoadCandlesCountParam.Value);
-                    series.CandlesAll = series.CandlesAll.Merge(candles);
+                    List<Candle> candlesStorage = _candleStorage.GetCandles(series.Specification, _needToLoadCandlesCountParam.Value);
+                    series.CandlesAll = series.CandlesAll.Merge(candlesStorage);
+
+                    List<Candle> candlesAll = series.CandlesAll;
+
+                    if(candlesStorage != null 
+                        && candlesStorage.Count > 0
+                        && candlesAll != null)
+                    {                    
+                        // копируем в новый массив данные по открытому интересу
+                        for (int i = 0, j = 0; i < candlesStorage.Count && j < candlesAll.Count; i++, j++)
+                        {
+                            Candle candleStorage = candlesStorage[i];
+                            Candle candleAll = candlesAll[j];
+
+                            if (candleStorage.TimeStart == candleAll.TimeStart)
+                            {
+                                if(candleStorage.OpenInterest > candleAll.OpenInterest)
+                                {
+                                    candleAll.OpenInterest = candleStorage.OpenInterest;
+                                }
+                            }
+                            else if (candleStorage.TimeStart > candleAll.TimeStart)
+                            {
+                                i--;
+                            }
+                            else if (candleStorage.TimeStart < candleAll.TimeStart)
+                            {
+                                j--;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -2286,6 +2362,31 @@ namespace OsEngine.Market.Servers
 
             _subscribeSecurities.Add(newSubscribeSecurity);
         }
+
+        private void RemoveSecurityFromSubscribed(string securityName, string securityClass)
+        {
+            // remove security from subscribed list
+            if (_subscribeSecurities == null || _subscribeSecurities.Count == 0)
+            {
+                return;
+            }
+
+            if (securityName == null || securityClass == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _subscribeSecurities.Count; i++)
+            {
+                if (_subscribeSecurities[i].SecurityName == securityName
+                    && _subscribeSecurities[i].SecurityClass == securityClass)
+                {
+                    _subscribeSecurities.RemoveAt(i);
+                    return;
+                }
+            }
+        }
+
 
         private void CheckDataFlowThread()
         {
@@ -2862,6 +2963,10 @@ namespace OsEngine.Market.Servers
         /// </summary>
         private void _tickStorage_TickLoadedEvent(List<Trade>[] trades)
         {
+            if(trades == null)
+            {
+                return;
+            }
             _allTrades = trades;
         }
 

@@ -432,19 +432,86 @@ namespace OsEngine.OsTrader.Panels
             {
                 Position position = openPoses[i];
 
-                if(position.SecurityName == security.Name
-                    || position.SecurityName == security.Name + "_LONG"
-                    || position.SecurityName == security.Name + "_SHORT"
-                    || position.SecurityName == security.Name + "_Long"
-                    || position.SecurityName == security.Name + "_Short"
-                    || position.SecurityName == security.Name + "_long"
-                    || position.SecurityName == security.Name + "_short")
+                string nameInPosition = position.SecurityName.Replace(" TestPaper", "");
+
+                if (nameInPosition == security.Name
+                    || nameInPosition == security.Name + "_LONG"
+                    || nameInPosition == security.Name + "_SHORT"
+                    || nameInPosition == security.Name + "_Long"
+                    || nameInPosition == security.Name + "_Short"
+                    || nameInPosition == security.Name + "_long"
+                    || nameInPosition == security.Name + "_short"
+                    )
                 {
                     result.Add(position);
                 }
             }
 
             return result;
+        }
+
+        public Portfolio GetFirstPortfolio()
+        {
+            Portfolio portfolio = null;
+
+            for(int i = 0;_botTabs != null && i < _botTabs.Count;i++)
+            {
+                IIBotTab tab = _botTabs[i];
+
+                if(tab.TabType == BotTabType.Simple)
+                {
+                    BotTabSimple simple = (BotTabSimple)tab;
+
+                    if(simple.Portfolio != null)
+                    {
+                        portfolio = simple.Portfolio;
+                        break;
+                    }
+                }
+                else if (tab.TabType == BotTabType.Screener)
+                {
+                    BotTabScreener screener = (BotTabScreener)tab;
+
+                    for(int j = 0;j < screener.Tabs.Count;j++)
+                    {
+                        if (screener.Tabs[j].Portfolio != null)
+                        {
+                            portfolio = screener.Tabs[j].Portfolio;
+                            break;
+                        }
+                    }
+
+                    if(portfolio != null)
+                    {
+                        break;
+                    }
+                }
+                else if (tab.TabType == BotTabType.Pair)
+                {
+                    BotTabPair pair = (BotTabPair)tab;
+
+                    for (int j = 0; j < pair.Pairs.Count; j++)
+                    {
+                        if (pair.Pairs[j].Tab1.Portfolio != null)
+                        {
+                            portfolio = pair.Pairs[j].Tab1.Portfolio;
+                            break;
+                        }
+                        if (pair.Pairs[j].Tab2.Portfolio != null)
+                        {
+                            portfolio = pair.Pairs[j].Tab2.Portfolio;
+                            break;
+                        }
+                    }
+
+                    if (portfolio != null)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return portfolio;
         }
 
         #endregion

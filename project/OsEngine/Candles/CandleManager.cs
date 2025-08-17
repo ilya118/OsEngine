@@ -10,7 +10,6 @@ using System.Windows;
 using OsEngine.Logging;
 using OsEngine.Market;
 using OsEngine.Market.Servers;
-using OsEngine.Market.Servers.BitMax;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.Market.Servers.ZB;
 using OsEngine.Market.Servers.Hitbtc;
@@ -276,28 +275,6 @@ namespace OsEngine.Entity
                             series.UpdateAllCandles();
                             series.IsStarted = true;
                         }
-                        else if (serverType == ServerType.AscendEx_BitMax)
-                        {
-                            BitMaxProServer bitMax = (BitMaxProServer)_server;
-                            if (series.CandleCreateMethodType != "Simple" ||
-                                series.TimeFrameSpan.TotalMinutes < 1)
-                            {
-                                List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
-                                series.PreLoad(allTrades);
-                            }
-                            else
-                            {
-                                List<Candle> candles = bitMax.GetCandleHistory(series.Security.Name,
-                                    series.TimeFrameSpan);
-                                if (candles != null)
-                                {
-                                    series.CandlesAll = candles;
-                                }
-                            }
-                            series.UpdateAllCandles();
-                            series.IsStarted = true;
-                        }
-                       
                         else if (serverType == ServerType.Exmo)
                         {
                             List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
@@ -544,6 +521,40 @@ namespace OsEngine.Entity
                 return result;
             }
         }
+
+        /// <summary>
+        /// returns whether marketdata updates for the specified security are no longer needed
+        /// </summary>
+        public bool IsSafeToUnsubscribeFromSecurityUpdates(Security security)
+        {
+            for (int i = 0; _activeSeriesBasedOnTrades != null && i < _activeSeriesBasedOnTrades.Count; i++)
+            {
+                Security curSeriesSecurity = _activeSeriesBasedOnTrades[i].Security;
+
+                if (curSeriesSecurity.Name != security.Name ||
+                    curSeriesSecurity.NameClass != security.NameClass)
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            for (int i = 0; _activeSeriesBasedOnMd != null && i < _activeSeriesBasedOnMd.Count; i++)
+            {
+                Security curSeriesSecurity = _activeSeriesBasedOnMd[i].Security;
+
+                if (curSeriesSecurity.Name != security.Name ||
+                    curSeriesSecurity.NameClass != security.NameClass)
+                {
+                    continue;
+                }
+
+                return false;
+            }
+
+            return true;
+        }   
 
         /// <summary>
         /// request a series of candlesticks for an instrument with certain settings
