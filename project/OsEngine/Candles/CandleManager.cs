@@ -11,10 +11,9 @@ using OsEngine.Logging;
 using OsEngine.Market;
 using OsEngine.Market.Servers;
 using OsEngine.Market.Servers.Tester;
-using OsEngine.Market.Servers.ZB;
-using OsEngine.Market.Servers.Hitbtc;
 using OsEngine.Market.Servers.InteractiveBrokers;
 using OsEngine.Market.Servers.BitMaxFutures;
+using OsEngine.Candles;
 
 namespace OsEngine.Entity
 {
@@ -48,7 +47,21 @@ namespace OsEngine.Entity
             }
 
             TypeTesterData = TesterDataType.Unknown;
+
+            if(startProgram == StartProgram.IsOsTrader)
+            {
+                IServerPermission permissions = ServerMaster.GetServerPermission(_server.ServerType);
+
+                if(permissions != null
+                    && permissions.IsSupports_AsyncCandlesStarter)
+                {
+                    _asyncStarter = new CandleSeriesAsyncStarter(permissions.AsyncCandlesStarter_RateGateLimitMls);
+                    _asyncStarter.StartSeriesEvent += StandardStarter;
+                }
+            }
         }
+
+        private CandleSeriesAsyncStarter _asyncStarter;
 
         /// <summary>
         /// exchange connection server
@@ -164,7 +177,9 @@ namespace OsEngine.Entity
                     {
                         CandleSeries series = _candleSeriesNeedToStart.Dequeue();
 
-                        if (series == null || series.IsStarted)
+                        if (series == null 
+                            || series.IsStarted
+                            || series.IsSendInStandardStarter)
                         {
                             continue;
                         }
@@ -201,34 +216,16 @@ namespace OsEngine.Entity
                         if (permission != null &&
                            permission.UseStandardCandlesStarter == true)
                         {
-                            // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                            // NEW STANDART CANDLE SERIES START 2024
-                            if (series.CandleCreateMethodType != "Simple" ||
-                                series.TimeFrameSpan.TotalMinutes < 1)
+                            series.IsSendInStandardStarter = true;
+
+                            if(_asyncStarter != null)
                             {
-                                List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
-                                series.PreLoad(allTrades);
+                                _asyncStarter.StartAsync(series);
                             }
                             else
                             {
-                                AServer aServer = (AServer)_server;
-                                int candlesToRequestCount = ((OsEngine.Market.Servers.Entity.ServerParameterInt)aServer.GetStandardServerParameter(3)).Value; // query CandlesToLoad parameter
-
-                                if (candlesToRequestCount < 50)
-                                {
-                                    candlesToRequestCount = 50;
-                                }
-                                
-                                List<Candle> candles = _server.GetLastCandleHistory(series.Security, series.TimeFrameBuilder, candlesToRequestCount);
-
-                                if (candles != null)
-                                {
-                                    series.CandlesAll = candles;
-                                }
+                                StandardStarter(series);
                             }
-
-                            series.UpdateAllCandles();
-                            series.IsStarted = true;
                         }
                         else if (serverType == ServerType.Plaza ||
                                  serverType == ServerType.QuikDde ||
@@ -283,49 +280,6 @@ namespace OsEngine.Entity
                             series.UpdateAllCandles();
                             series.IsStarted = true;
                         }
-                        else if (serverType == ServerType.Zb)
-                        {
-                            ZbServer zbServer = (ZbServer)_server;
-
-                            if (series.CandleCreateMethodType != "Simple" ||
-                                series.TimeFrameSpan.TotalMinutes < 1)
-                            {
-                                List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
-                                series.PreLoad(allTrades);
-                            }
-                            else
-                            {
-                                List<Candle> candles = zbServer.GetCandleHistory(series.Security.Name, series.TimeFrameSpan);
-
-                                if (candles != null)
-                                {
-                                    series.CandlesAll = candles;
-                                }
-                            }
-                            series.UpdateAllCandles();
-                            series.IsStarted = true;
-                        }
-                        else if (serverType == ServerType.Hitbtc)
-                        {
-                            HitbtcServer hitbtc = (HitbtcServer)_server;
-                            if (series.CandleCreateMethodType != "Simple" ||
-                                series.TimeFrameSpan.TotalMinutes < 1)
-                            {
-                                List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
-                                series.PreLoad(allTrades);
-                            }
-                            else
-                            {
-                                List<Candle> candles = hitbtc.GetCandleHistory(series.Security.Name,
-                                    series.TimeFrameSpan);
-                                if (candles != null)
-                                {
-                                    series.CandlesAll = candles;
-                                }
-                            }
-                            series.UpdateAllCandles();
-                            series.IsStarted = true;
-                        }
                         else if (serverType == ServerType.Bitmax_AscendexFutures)
                         {
                             if (series.CandleCreateMethodType != "Simple" ||
@@ -348,7 +302,6 @@ namespace OsEngine.Entity
                             series.IsStarted = true;
                         }
 
-
                         if (series.CandleMarketDataType == CandleMarketDataType.MarketDepth)
                         {
                             if (_activeSeriesBasedOnMd != null)
@@ -359,13 +312,49 @@ namespace OsEngine.Entity
                             if (_activeSeriesBasedOnTrades != null)
                                 _activeSeriesBasedOnTrades.Add(series);
                         }
-
                     }
                 }
             }
             catch (Exception error)
             {
                 SendLogMessage(error.ToString(), LogMessageType.Error);
+            }
+        }
+
+        private void StandardStarter(CandleSeries series)
+        {
+            try
+            {
+                if (series.CandleCreateMethodType != "Simple" ||
+                    series.TimeFrameSpan.TotalMinutes < 1)
+                {
+                    List<Trade> allTrades = _server.GetAllTradesToSecurity(series.Security);
+                    series.PreLoad(allTrades);
+                }
+                else
+                {
+                    AServer aServer = (AServer)_server;
+                    int candlesToRequestCount =
+                        ((OsEngine.Market.Servers.Entity.ServerParameterInt)aServer.GetStandardServerParameter(3)).Value;
+
+                    if (candlesToRequestCount < 50)
+                    {
+                        candlesToRequestCount = 50;
+                    }
+                    List<Candle> candles = _server.GetLastCandleHistory(series.Security, series.TimeFrameBuilder, candlesToRequestCount);
+
+                    if (candles != null)
+                    {
+                        series.CandlesAll = candles;
+                    }
+                }
+
+                series.UpdateAllCandles();
+                series.IsStarted = true;
+            }
+            catch(Exception ex)
+            {
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 

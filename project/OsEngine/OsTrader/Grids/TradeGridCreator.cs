@@ -168,6 +168,15 @@ namespace OsEngine.OsTrader.Grids
                     curStep = Math.Round(curStep, tab.Security.Decimals);
                 }
             }
+            else if (TypeStep == TradeGridValueType.Absolute)
+            {
+                curStep = LineStep;
+
+                if (tab.Security != null)
+                {
+                    curStep = Math.Round(curStep, tab.Security.Decimals);
+                }
+            }
 
             for (int i = 0; i < LineCountStart; i++)
             {
@@ -336,11 +345,25 @@ namespace OsEngine.OsTrader.Grids
 
                 if(tab.StartProgram == StartProgram.IsOsTrader)
                 {
-                    volume = Math.Round(volumeFromLine / contractPrice, tab.Security.DecimalsVolume);
+                    if(tab.Security.Lot != 0)
+                    {
+                        volume = Math.Round(volumeFromLine / contractPrice / tab.Security.Lot, tab.Security.DecimalsVolume);
+                    }
+                    else
+                    {
+                        volume = Math.Round(volumeFromLine / contractPrice, tab.Security.DecimalsVolume);
+                    }
                 }
                 else
                 {
-                    volume = Math.Round(volumeFromLine / contractPrice, 7);
+                    if (tab.Security.Lot != 0)
+                    {
+                        volume = Math.Round(volumeFromLine / contractPrice / tab.Security.Lot, 7);
+                    }
+                    else
+                    {
+                        volume = Math.Round(volumeFromLine / contractPrice, 7);
+                    }
                 }
 
                 return volume;

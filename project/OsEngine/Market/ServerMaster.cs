@@ -28,8 +28,6 @@ using OsEngine.Market.Servers.Quik;
 using OsEngine.Market.Servers.QuikLua;
 using OsEngine.Market.Servers.Tester;
 using OsEngine.Market.Servers.Transaq;
-using OsEngine.Market.Servers.ZB;
-using OsEngine.Market.Servers.Hitbtc;
 using OsEngine.Market.Servers.MFD;
 using OsEngine.Market.Servers.MOEX;
 using OsEngine.Market.Servers.TInvest;
@@ -84,6 +82,8 @@ using OsEngine.OsTrader;
 using OsEngine.OsTrader.Panels.Tab;
 using System.Linq;
 using OsEngine.Market.Servers.AscendexSpot;
+using OsEngine.Market.Servers.OKXData;
+using System.Windows.Controls;
 
 namespace OsEngine.Market
 {
@@ -300,8 +300,6 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.KuCoinSpot);
                 serverTypes.Add(ServerType.KuCoinFutures);
                 serverTypes.Add(ServerType.Exmo);
-                serverTypes.Add(ServerType.Zb);
-                serverTypes.Add(ServerType.Hitbtc);
                 serverTypes.Add(ServerType.HTXSpot);
                 serverTypes.Add(ServerType.HTXFutures);
                 serverTypes.Add(ServerType.HTXSwap);
@@ -331,7 +329,6 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.TelegramNews);
                 serverTypes.Add(ServerType.BinanceData);
                 serverTypes.Add(ServerType. AscendexSpot);
-               
 
                 // а теперь сортируем в зависимости от предпочтений пользователя
 
@@ -436,6 +433,7 @@ namespace OsEngine.Market
                 serverTypes.Add(ServerType.CoinExFutures);
                 serverTypes.Add(ServerType.BinanceData);
                 serverTypes.Add(ServerType.AscendexSpot);
+                serverTypes.Add(ServerType.OKXData);
 
                 return serverTypes;
             }
@@ -479,6 +477,32 @@ namespace OsEngine.Market
                 for (int i = 0; _servers != null && i < _servers.Count; i++)
                 {
                     types.Add(_servers[i].ServerType);
+                }
+
+                return types;
+            }
+        }
+
+        /// <summary>
+        /// array of active servers names
+        /// </summary>
+        public static List<string> ActiveServersUniqueNames
+        {
+            get
+            {
+                List<string> types = new List<string>();
+
+                for (int i = 0; _servers != null && i < _servers.Count; i++)
+                {
+                    string name = _servers[i].ServerNameAndPrefix;
+
+                    if(name.Split('_').Length == 3)
+                    {
+                        string shortName = name.Split("_")[0] + "_" + name.Split("_")[1];
+                        name = shortName;
+                    }
+
+                    types.Add(name);
                 }
 
                 return types;
@@ -540,6 +564,10 @@ namespace OsEngine.Market
 
                 IServer newServer = null;
 
+                if (type == ServerType.OKXData)
+                {
+                    newServer = new OKXDataServer();
+                }
                 if (type == ServerType.BinanceData)
                 {
                     newServer = new BinanceDataServer();
@@ -632,10 +660,6 @@ namespace OsEngine.Market
                 {
                     newServer = new TInvestServer(uniqueNum);
                 }
-                if (type == ServerType.Hitbtc)
-                {
-                    newServer = new HitbtcServer();
-                }
                 if (type == ServerType.GateIoSpot)
                 {
                     newServer = new GateIoServerSpot(uniqueNum);
@@ -647,10 +671,6 @@ namespace OsEngine.Market
                 if (type == ServerType.Bybit)
                 {
                     newServer = new BybitServer(uniqueNum);
-                }
-                if (type == ServerType.Zb)
-                {
-                    newServer = new ZbServer();
                 }
                 if (type == ServerType.Exmo)
                 {
@@ -1537,6 +1557,10 @@ namespace OsEngine.Market
                 {
                     serverPermission = new AscendexSpotServerPermission();
                 }
+                else if (type == ServerType.OKXData)
+                {
+                    serverPermission = new OKXDataServerPermission();
+                }
 
                 if (serverPermission != null)
                 {
@@ -1757,7 +1781,7 @@ namespace OsEngine.Market
 
         private static ServerMasterPortfoliosPainter _painterPortfolios;
 
-        private static ServerMasterOrdersPainter _ordersStorage;
+        public static ServerMasterOrdersPainter _ordersStorage;
 
         /// <summary>
         /// clear the order list in the table
@@ -1774,8 +1798,17 @@ namespace OsEngine.Market
         /// <summary>
         /// add items on which portfolios and orders will be drawn
         /// </summary>
-        public static void SetHostTable(WindowsFormsHost hostPortfolio, WindowsFormsHost hostActiveOrders,
-            WindowsFormsHost hostHistoricalOrders)
+        public static void SetHostTable(WindowsFormsHost hostPortfolio, 
+            WindowsFormsHost hostActiveOrders, 
+            WindowsFormsHost hostHistoricalOrders, 
+            StartUiToPainter startUi,
+            ComboBox comboBoxActiveOrders,
+            Button buttonLeftActiveOrders,
+            Button buttonRightActiveOrders,
+            ComboBox comboBoxHistoryOrders,
+            Button buttonLeftHistoryOrders,
+            Button buttonRightHistoryOrders
+            )
         {
             if (_painterPortfolios == null)
             {
@@ -1789,7 +1822,9 @@ namespace OsEngine.Market
             {
                 _ordersStorage = new ServerMasterOrdersPainter();
                 _ordersStorage.LogMessageEvent += SendNewLogMessage;
-                _ordersStorage.SetHostTable(hostActiveOrders, hostHistoricalOrders);
+                _ordersStorage.SetHostTable(hostActiveOrders, hostHistoricalOrders, startUi,
+                comboBoxActiveOrders,buttonLeftActiveOrders,buttonRightActiveOrders,
+                comboBoxHistoryOrders,buttonLeftHistoryOrders, buttonRightHistoryOrders);
                 _ordersStorage.RevokeOrderToEmulatorEvent += _ordersStorage_RevokeOrderToEmulatorEvent;
             }
         }
@@ -1807,17 +1842,31 @@ namespace OsEngine.Market
 
         private static void _painterPortfolios_ClearPositionOnBoardEvent(string sec, IServer server, string fullName)
         {
-            if (ClearPositionOnBoardEvent != null)
+            try
             {
-                ClearPositionOnBoardEvent(sec, server, fullName);
+                if (ClearPositionOnBoardEvent != null)
+                {
+                    ClearPositionOnBoardEvent(sec, server, fullName);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(),LogMessageType.Error);
             }
         }
 
         private static void _ordersStorage_RevokeOrderToEmulatorEvent(Order order)
         {
-            if (RevokeOrderToEmulatorEvent != null)
+            try
             {
-                RevokeOrderToEmulatorEvent(order);
+                if (RevokeOrderToEmulatorEvent != null)
+                {
+                    RevokeOrderToEmulatorEvent(order);
+                }
+            }
+            catch (Exception ex)
+            {
+                SendNewLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -1965,12 +2014,6 @@ namespace OsEngine.Market
         TInvest,
 
         /// <summary>
-        /// cryptocurrency exchange Hitbtc
-        /// биржа криптовалют Hitbtc
-        /// </summary>
-        Hitbtc,
-
-        /// <summary>
         /// cryptocurrency exchange Gate.io
         /// биржа криптовалют Gate.io
         /// </summary>
@@ -1981,12 +2024,6 @@ namespace OsEngine.Market
         /// Фьючерсы биржи криптовалют Gate.io
         /// </summary>
         GateIoFutures,
-
-        /// <summary>
-        /// cryptocurrency exchange ZB
-        /// биржа криптовалют ZB
-        /// </summary>
-        Zb,
 
         /// <summary>
         /// transaq
@@ -2304,6 +2341,12 @@ namespace OsEngine.Market
         /// <summary>
         ///  AscendexSpot exchange
         /// </summary>
-        AscendexSpot
+        AscendexSpot,
+
+        /// <summary>
+        /// downloading historical data from exchange OKX
+        /// скачивание исторических данных с биржи OKX
+        /// </summary>
+        OKXData
     }
 }

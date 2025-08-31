@@ -316,6 +316,8 @@ namespace OsEngine.Market.Servers.TInvest
 
         private Dictionary<string, int> _orderNumbers = new Dictionary<string, int>();
 
+        private string _orderNumbersLocker = "_orderNumbersLocker";
+
         #endregion
 
         #region 3 Securities
@@ -628,17 +630,15 @@ namespace OsEngine.Market.Servers.TInvest
 
                     newSecurity.PriceStepCost = newSecurity.PriceStep;
 
-                    newSecurity.NameClass = SecurityType.Index.ToString() + " " + item.Currency;
+                    newSecurity.NameClass = SecurityType.Fund.ToString() + " " + item.Currency;
 
-                    newSecurity.SecurityType = SecurityType.Index;
+                    newSecurity.SecurityType = SecurityType.Fund;
                     newSecurity.Lot = item.Lot;
                     newSecurity.VolumeStep = 1;
-
 
                     newSecurity.State = SecurityStateType.Activ;
                     _securities.Add(newSecurity);
                 }
-
             }
             catch (Exception e)
             {
@@ -1247,10 +1247,19 @@ namespace OsEngine.Market.Servers.TInvest
                 catch (RpcException ex)
                 {
                     string message = GetGRPCErrorMessage(ex);
-                    SendLogMessage($"Error getting candles for {security.Name}. Info: {message}", LogMessageType.Error);
+
+                    if (message == "no server message")
+                        SendLogMessage($"Couldn't get candles for {security.Name}. Info: probably invalid time interval {fromDateTime}UTC - {toDateTime}UTC", LogMessageType.System);
+                    else
+                        SendLogMessage($"Error getting candles for {security.Name}. Info: {message}", LogMessageType.Error);
                 }
                 catch (Exception ex)
                 {
+                    if (ServerStatus == ServerConnectStatus.Disconnect)
+                    {
+                        break; // connection broke before we could get candles
+                    }
+
                     SendLogMessage($"Error getting candles for {security.Name}: " + ex.ToString(),
                         LogMessageType.Error);
                 }
@@ -1407,8 +1416,8 @@ namespace OsEngine.Market.Servers.TInvest
 
         #region 6 gRPC streams creation
 
-        //private readonly string _gRPCHost = "sandbox-invest-public-api.tinkoff.ru:443"; // sandbox 
-        private readonly string _gRPCHost = "https://invest-public-api.tinkoff.ru:443"; // prod 
+        //private readonly string _gRPCHost = "sandbox-invest-public-api.tbank.ru:443"; // sandbox 
+        private readonly string _gRPCHost = "https://invest-public-api.tinkoff.ru:443"; // prod  as of v1.40 should be tbank.ru but doesn't work due to SSL certificate issue
         private Metadata _gRpcMetadata;
         private GrpcChannel _channel;
         private CancellationTokenSource _cancellationTokenSource;
@@ -1621,7 +1630,8 @@ namespace OsEngine.Market.Servers.TInvest
                         Instruments = { tradeInstrument },
                         TradeSource = _filterOutDealerTrades
                             ? TradeSourceType.TradeSourceExchange
-                            : TradeSourceType.TradeSourceAll
+                            : TradeSourceType.TradeSourceAll,
+                        WithOpenInterest = true
                     };
                     marketDataRequest.SubscribeTradesRequest = subscribeTradesRequest;
                     _marketDataStream.RequestStream.WriteAsync(marketDataRequest).Wait();
@@ -1660,6 +1670,8 @@ namespace OsEngine.Market.Servers.TInvest
 
         #region 8 Reading messages from data streams
 
+        private Dictionary<string, OpenInterest> _openInterestData = new Dictionary<string, OpenInterest>(); // save open interest data to use later in trade updates
+
         private async void DataMessageReader()
         {
             Thread.Sleep(1000);
@@ -1670,13 +1682,13 @@ namespace OsEngine.Market.Servers.TInvest
                 {
                     if (ServerStatus == ServerConnectStatus.Disconnect)
                     {
-                        Thread.Sleep(1);
+                        Thread.Sleep(100);
                         continue;
                     }
 
                     if (_marketDataStream == null)
                     {
-                        Thread.Sleep(1);
+                        Thread.Sleep(100);
                         continue;
                     }
 
@@ -1707,6 +1719,21 @@ namespace OsEngine.Market.Servers.TInvest
                         Thread.Sleep(1);
                         continue;
                     }
+                    
+                    if (marketDataResponse.OpenInterest != null)
+                    {
+                        Security security = GetSecurity(marketDataResponse.OpenInterest.InstrumentUid);
+                        if (security == null)
+                            continue;
+
+                        if (_filterOutNonMarketData)
+                        {
+                            if (isTodayATradingDayForSecurity(security) == false)
+                                continue;
+                        }
+
+                        _openInterestData[security.Name] = marketDataResponse.OpenInterest; // save open interest data to cache
+                    }
 
                     if (marketDataResponse.Trade != null)
                     {
@@ -1728,30 +1755,33 @@ namespace OsEngine.Market.Servers.TInvest
                         trade.Side = marketDataResponse.Trade.Direction == TradeDirection.Buy ? Side.Buy : Side.Sell;
                         trade.Volume = marketDataResponse.Trade.Quantity;
 
+                        if (_openInterestData.ContainsKey(security.Name))
+                        {
+                            trade.OpenInterest = _openInterestData[security.Name].OpenInterest_;
+                        }
+
                         if (_ignoreMorningAuctionTrades && trade.Time.Hour < 9) // process only mornings
                         {
                             if (security.SecurityType == SecurityType.Futures)
                             {
-                                if (trade.Time < trade.Time.Date.AddHours(9))
+                                if (trade.Time < trade.Time.Date.AddHours(9)) // futures start trading at 9
                                 {
                                     continue;
                                 }
                             }
                             else
                             {
-                                if (trade.Time < trade.Time.Date.AddHours(7))
+                                if (trade.Time < trade.Time.Date.AddHours(7)) // options start trading at 7
                                 {
                                     continue;
                                 }
                             }
                         }
 
-                        if (NewTradesEvent != null)
-                        {
-                            NewTradesEvent(trade);
-                        }
+                        NewTradesEvent?.Invoke(trade);
                     }
 
+                   
                     if (marketDataResponse.LastPrice != null)
                     {
                         ProcessLastPrice(marketDataResponse.LastPrice);
@@ -1773,7 +1803,16 @@ namespace OsEngine.Market.Servers.TInvest
                         depth.SecurityNameCode = security.Name;
                         depth.Time = marketDataResponse.Orderbook.Time.ToDateTime().AddHours(3);// convert to MSK
 
-
+                        if(marketDataResponse.Orderbook.LimitUp != null)
+                        {
+                            security.PriceLimitHigh = GetValue(marketDataResponse.Orderbook.LimitUp);
+                        }
+                        
+                        if(marketDataResponse.Orderbook.LimitDown != null)
+                        {
+                            security.PriceLimitLow = GetValue(marketDataResponse.Orderbook.LimitDown);
+                        }
+   
                         for (int i = 0; i < marketDataResponse.Orderbook.Bids.Count; i++)
                         {
                             MarketDepthLevel newBid = new MarketDepthLevel();
@@ -1798,10 +1837,7 @@ namespace OsEngine.Market.Servers.TInvest
 
                         _lastMdTime = depth.Time;
 
-                        if (MarketDepthEvent != null)
-                        {
-                            MarketDepthEvent(depth);
-                        }
+                        MarketDepthEvent?.Invoke(depth);
                     }
                 }
                 catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
@@ -2540,12 +2576,16 @@ namespace OsEngine.Market.Servers.TInvest
 
                         Order order = new Order();
 
-                        if (!_orderNumbers.ContainsKey(state.OrderRequestId)) // значит сделка была вручную и это не наш ордер
+                        lock(_orderNumbersLocker)
                         {
-                            continue;
+                            if (!_orderNumbers.ContainsKey(state.OrderRequestId)) // значит сделка была вручную и это не наш ордер
+                            {
+                                continue;
+                            }
+
+                            order.NumberUser = _orderNumbers[state.OrderRequestId];
                         }
 
-                        order.NumberUser = _orderNumbers[state.OrderRequestId];
                         order.NumberMarket = state.OrderId;
                         order.SecurityNameCode = security.Name;
                         order.PortfolioNumber = state.AccountId;
@@ -2658,10 +2698,23 @@ namespace OsEngine.Market.Servers.TInvest
         #region 9 Trade
 
         private RateGate _rateGateOrders = new RateGate(100, TimeSpan.FromMinutes(1)); // https://russianinvestments.github.io/investAPI/limits/
+        private string _rageGateOrdersLocker = "_rageGateOrdersLocker";
+
+        private RateGate _rateGatePostOrders = new RateGate(300, TimeSpan.FromMinutes(1));
+        private string _rageGatePostOrdersLocker = "_rageGatePostOrdersLocker";
+
+        private RateGate _rateGateCancelOrders = new RateGate(100, TimeSpan.FromMinutes(1));
+        private string _rageGateCancelOrdersLocker = "_rageGateCancelOrdersLocker";
+
+        private RateGate _rateGateStatusOrders = new RateGate(200, TimeSpan.FromMinutes(1));
+        private string _rageGateStatusOrdersLocker = "_rageGateStatusOrdersLocker";
 
         public void SendOrder(Order order)
         {
-            _rateGateOrders.WaitToProceed();
+            lock(_rageGatePostOrdersLocker)
+            {
+                _rateGatePostOrders.WaitToProceed();
+            }
 
             try
             {
@@ -2693,7 +2746,10 @@ namespace OsEngine.Market.Servers.TInvest
                 Guid newUid = Guid.NewGuid();
                 string orderId = newUid.ToString();
 
-                _orderNumbers.Add(orderId, order.NumberUser);
+                lock (_orderNumbersLocker)
+                {
+                    _orderNumbers.Add(orderId, order.NumberUser);
+                }
 
                 request.OrderId = orderId;
 
@@ -2745,7 +2801,10 @@ namespace OsEngine.Market.Servers.TInvest
         {
             try
             {
-                _rateGateOrders.WaitToProceed();
+                lock(_rageGateOrdersLocker)
+                {
+                    _rateGateOrders.WaitToProceed();
+                }
 
                 if (order.TypeOrder == OrderPriceType.Market)
                 {
@@ -2753,25 +2812,31 @@ namespace OsEngine.Market.Servers.TInvest
                     return;
                 }
 
-                // remove old Uuid/NumberUser from list
-                foreach (KeyValuePair<string, int> kvp in _orderNumbers)
+                lock (_orderNumbersLocker)
                 {
-                    if (kvp.Value == order.NumberUser)
+                    // remove old Uuid/NumberUser from list
+                    foreach (KeyValuePair<string, int> kvp in _orderNumbers)
                     {
-                        _orderNumbers.Remove(kvp.Key);
-                        break;
+                        if (kvp.Value == order.NumberUser)
+                        {
+                            _orderNumbers.Remove(kvp.Key);
+                            break;
+                        }
                     }
                 }
-
                 ReplaceOrderRequest request = new ReplaceOrderRequest();
                 request.AccountId = order.PortfolioNumber;
                 request.OrderId = order.NumberMarket;
 
-                Guid newUid = Guid.NewGuid();
-                string orderId = newUid.ToString();
-                _orderNumbers.Add(orderId, order.NumberUser);
+                lock (_orderNumbersLocker)
+                {
+                    Guid newUid = Guid.NewGuid();
+                    string orderId = newUid.ToString();
 
-                request.IdempotencyKey = orderId;
+                    _orderNumbers.Add(orderId, order.NumberUser);
+                    request.IdempotencyKey = orderId;
+                }
+
                 request.Quantity = Convert.ToInt32(order.Volume - order.VolumeExecute);
 
                 if (request.Quantity <= 0 || order.State != OrderStateType.Active)
@@ -2823,7 +2888,12 @@ namespace OsEngine.Market.Servers.TInvest
                     // А теперь записываем новые данные для нового ордера
                     order.State = OrderStateType.Active;
                     order.NumberMarket = response.OrderId;
-                    order.NumberUser = _orderNumbers[response.OrderRequestId];
+
+                    lock(_orderNumbersLocker)
+                    {
+                        order.NumberUser = _orderNumbers[response.OrderRequestId];
+                    }
+                    
                     order.Price = newPrice;
                     order.Volume = request.Quantity;
                     order.VolumeExecute = 0;
@@ -2843,33 +2913,42 @@ namespace OsEngine.Market.Servers.TInvest
 
         List<string> _cancelOrderNums = new List<string>();
 
+        private string _cancelOrdersLocker = "_cancelOrdersLocker";
+
         public bool CancelOrder(Order order)
         {
-            _rateGateOrders.WaitToProceed();
-
             try
             {
-                int countTryRevokeOrder = 0;
-
-                for (int i = 0; i < _cancelOrderNums.Count; i++)
+                lock(_cancelOrdersLocker)
                 {
-                    if (_cancelOrderNums[i].Equals(order.NumberMarket))
+                    int countTryRevokeOrder = 0;
+
+                    for (int i = 0; i < _cancelOrderNums.Count; i++)
                     {
-                        countTryRevokeOrder++;
+                        if (_cancelOrderNums[i].Equals(order.NumberMarket))
+                        {
+                            countTryRevokeOrder++;
+                        }
+                    }
+
+                    if (countTryRevokeOrder >= 2)
+                    {
+                        SendLogMessage("Order cancel request error. The order has already been revoked " + order.SecurityNameCode,
+                            LogMessageType.System);
+                        return false;
+                    }
+
+                    _cancelOrderNums.Add(order.NumberMarket);
+
+                    while (_cancelOrderNums.Count > 100)
+                    {
+                        _cancelOrderNums.RemoveAt(0);
                     }
                 }
 
-                if (countTryRevokeOrder >= 2)
+                lock (_rageGateCancelOrdersLocker)
                 {
-                    SendLogMessage("Order cancel request error. The order has already been revoked " + order.SecurityClassCode, LogMessageType.Error);
-                    return false;
-                }
-
-                _cancelOrderNums.Add(order.NumberMarket);
-
-                while (_cancelOrderNums.Count > 100)
-                {
-                    _cancelOrderNums.RemoveAt(0);
+                    _rateGateCancelOrders.WaitToProceed();
                 }
 
                 CancelOrderRequest request = new CancelOrderRequest();
@@ -2885,12 +2964,12 @@ namespace OsEngine.Market.Servers.TInvest
                 catch (RpcException ex)
                 {
                     string message = GetGRPCErrorMessage(ex);
-                    SendLogMessage($"Error cancelling order. Info: {message}", LogMessageType.Error);
+                    SendLogMessage($"Error cancelling order. Info: {message}", LogMessageType.System);
                 }
                 catch (Exception exception)
                 {
-                    SendLogMessage("Order cancel request error. "
-                        + exception.Message + "  " + order.SecurityClassCode, LogMessageType.Error);
+                    SendLogMessage("Error cancelling order. Exception: "
+                        + exception.Message + "  " + order.SecurityClassCode, LogMessageType.System);
                 }
 
                 if (response != null)
@@ -2984,7 +3063,10 @@ namespace OsEngine.Market.Servers.TInvest
 
         public OrderStateType GetOrderStatusWithTrades(Order order, bool processTrades)
         {
-            _rateGateOrders.WaitToProceed();
+            lock(_rageGateStatusOrdersLocker)
+            {
+                _rateGateStatusOrders.WaitToProceed();
+            }
 
             try
             {
@@ -2996,7 +3078,6 @@ namespace OsEngine.Market.Servers.TInvest
                 OrderState state = null;
                 try
                 {
-                    _rateGateOrders.WaitToProceed();
                     state = _ordersClient.GetOrderState(getOrderStateRequest, _gRpcMetadata);
                 }
                 catch (RpcException ex)
@@ -3017,13 +3098,16 @@ namespace OsEngine.Market.Servers.TInvest
                 }
                 Order newOrder = new Order();
 
-                if (!_orderNumbers.ContainsKey(state.OrderRequestId))
+                lock(_orderNumbersLocker)
                 {
-                    order.NumberUser = order.NumberUser != 0 ? order.NumberUser : NumberGen.GetNumberOrder(StartProgram.IsOsTrader);
-                    _orderNumbers.Add(state.OrderRequestId, order.NumberUser);
+                    if (!_orderNumbers.ContainsKey(state.OrderRequestId))
+                    {
+                        order.NumberUser = order.NumberUser != 0 ? order.NumberUser : NumberGen.GetNumberOrder(StartProgram.IsOsTrader);
+                        _orderNumbers.Add(state.OrderRequestId, order.NumberUser);
+                    }
+                    newOrder.NumberUser = _orderNumbers[state.OrderRequestId];
                 }
-
-                newOrder.NumberUser = _orderNumbers[state.OrderRequestId];
+               
                 newOrder.NumberMarket = state.OrderId;
                 newOrder.SecurityNameCode = order.SecurityNameCode;
                 newOrder.PortfolioNumber = order.PortfolioNumber;
@@ -3137,6 +3221,12 @@ namespace OsEngine.Market.Servers.TInvest
         {
             _rateGateOrders.WaitToProceed();
 
+            if(_securities == null 
+                || _securities.Count == 0)
+            {
+                return null;
+            }
+
             try
             {
                 GetOrdersRequest getOrdersRequest = new GetOrdersRequest();
@@ -3152,6 +3242,11 @@ namespace OsEngine.Market.Servers.TInvest
                     {
                         OrderState state = response.Orders[i];
                         Security security = GetSecurity(state.InstrumentUid);
+
+                        if(security == null)
+                        {
+                            continue;
+                        }
 
                         Order newOrder = new Order();
 
@@ -3170,13 +3265,17 @@ namespace OsEngine.Market.Servers.TInvest
 
                         string orderId = state.OrderRequestId;
 
-                        if (_orderNumbers.ContainsKey(orderId))
+                        lock(_orderNumbersLocker)
                         {
-                            newOrder.NumberUser = _orderNumbers[orderId];
-                        }
-                        else
-                        {
-                            return null;
+                            if (_orderNumbers.ContainsKey(orderId))
+                            {
+                                newOrder.NumberUser = _orderNumbers[orderId];
+                            }
+                            else
+                            {
+                                return null;
+                            }
+
                         }
 
                         newOrder.NumberMarket = state.OrderId;

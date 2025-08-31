@@ -1367,9 +1367,6 @@ namespace OsEngine.OsTrader.Panels.Tab
         public void ShowConnectorDialog()
         {
             _connector.ShowDialog(true);
-
-            _journal.CommissionType = _connector.CommissionType;
-            _journal.CommissionValue = _connector.CommissionValue;
         }
 
         private void _connector_DialogClosed()
@@ -1379,7 +1376,8 @@ namespace OsEngine.OsTrader.Panels.Tab
                 DialogClosed();
             }
 
-            _journal.Save();
+            _journal.CommissionType = _connector.CommissionType;
+            _journal.CommissionValue = _connector.CommissionValue;
         }
 
         public event Action DialogClosed;
@@ -4420,14 +4418,14 @@ namespace OsEngine.OsTrader.Panels.Tab
         {
             try
             {
-                List<Position> positions = _journal.OpenPositions;
+                Position[] positions = _journal.OpenPositions.ToArray();
 
                 if (positions == null)
                 {
                     return;
                 }
 
-                for (int i = 0; i < positions.Count; i++)
+                for (int i = 0; i < positions.Length; i++)
                 {
                     CloseAllOrderToPosition(positions[i]);
                 }
@@ -6508,10 +6506,7 @@ namespace OsEngine.OsTrader.Panels.Tab
             }
         }
 
-        /// <summary>
-        /// has the session started today?
-        /// </summary>
-        private bool _firstTickToDaySend;
+        private DateTime _firstTradeTimeInDayLastSendTime;
 
         private DateTime _lastTradeTime;
 
@@ -6582,14 +6577,14 @@ namespace OsEngine.OsTrader.Panels.Tab
 
             Trade trade = trades[trades.Count - 1];
 
-            if (trade != null && _firstTickToDaySend == false && FirstTickToDayEvent != null)
+            if (FirstTickToDayEvent != null
+                && trade != null
+                &&
+                (_firstTradeTimeInDayLastSendTime == DateTime.MinValue
+                || _firstTradeTimeInDayLastSendTime.Date != trade.Time.Date))
             {
-                if (trade.Time.Hour == 10
-                    && (trade.Time.Minute == 1 || trade.Time.Minute == 0))
-                {
-                    _firstTickToDaySend = true;
-                    FirstTickToDayEvent(trade);
-                }
+                _firstTradeTimeInDayLastSendTime = trade.Time;
+                FirstTickToDayEvent(trade);
             }
 
             List<Trade> newTrades = new List<Trade>();

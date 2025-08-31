@@ -3,7 +3,6 @@
  * Ваши права на использование кода регулируются данной лицензией http://o-s-a.net/doc/license_simple_engine.pdf
 */
 
-using OsEngine.Charts.CandleChart.Indicators;
 using OsEngine.Entity;
 using OsEngine.Language;
 using OsEngine.Logging;
@@ -643,6 +642,14 @@ namespace OsEngine.OsTrader.Grids
             // 1 Авто-старт сетки, если выключено
             if (baseRegime == TradeGridRegime.Off)
             {
+                if (StartProgram == StartProgram.IsOsTrader)
+                {
+                    if (_vacationTime > DateTime.Now)
+                    {
+                        return;
+                    }
+                }
+
                 if (_openPositionsBySession != 0)
                 {
                     _openPositionsBySession = 0;
@@ -674,6 +681,26 @@ namespace OsEngine.OsTrader.Grids
                 {
                     TryDeleteDonePositions();
                 }
+
+                // отзываем ордера с рынка
+
+                int countRejectOrders = TryCancelClosingOrders();
+
+                if (countRejectOrders > 0)
+                {
+                    _vacationTime = DateTime.Now.AddMilliseconds(DelayInReal * countRejectOrders);
+                    return;
+                }
+
+                countRejectOrders = TryCancelOpeningOrders();
+
+                if (countRejectOrders > 0)
+                {
+                    _vacationTime = DateTime.Now.AddMilliseconds(DelayInReal * countRejectOrders);
+                    return;
+                }
+
+                // проверяем работу авто-стартера, если он включен
 
                 if (AutoStarter.AutoStartRegime == TradeGridAutoStartRegime.Off)
                 {
@@ -816,13 +843,16 @@ namespace OsEngine.OsTrader.Grids
 
             // 8 вход в различную логику различных сеток
 
-            if (GridType == TradeGridPrimeType.MarketMaking)
+            if(baseRegime != TradeGridRegime.Off)
             {
-                GridTypeMarketMakingLogic(baseRegime);
-            }
-            else if(GridType == TradeGridPrimeType.OpenPosition)
-            {
-                GridTypeOpenPositionLogic(baseRegime);
+                if (GridType == TradeGridPrimeType.MarketMaking)
+                {
+                    GridTypeMarketMakingLogic(baseRegime);
+                }
+                else if (GridType == TradeGridPrimeType.OpenPosition)
+                {
+                    GridTypeOpenPositionLogic(baseRegime);
+                }
             }
         }
 
@@ -1348,8 +1378,11 @@ namespace OsEngine.OsTrader.Grids
 
                 Order order = lines[i].Position.OpenOrders[^1];
 
-                Tab.CloseOrder(order);
-                cancelledOrders++;
+                if(order.NumberMarket != null)
+                {
+                    Tab.CloseOrder(order);
+                    cancelledOrders++;
+                }
             }
 
             return cancelledOrders;
@@ -1406,7 +1439,8 @@ namespace OsEngine.OsTrader.Grids
 
                 Order order = lines[i].Position.CloseOrders[^1];
 
-                if(order.TypeOrder != OrderPriceType.Market)
+                if(order.NumberMarket != null 
+                   && order.TypeOrder != OrderPriceType.Market)
                 {
                     Tab.CloseOrder(order);
                     cancelledOrders++;
@@ -1983,7 +2017,25 @@ namespace OsEngine.OsTrader.Grids
                 {
                     TradeGridLine curLine = linesAll[i];
 
-                    if (curLine.PriceEnter < lastPrice)
+                    Position position = curLine.Position;
+
+                    if(position != null 
+                        && position.OpenVolume > 0)
+                    {
+                        continue;
+                    }
+
+                    if(Tab.Security.PriceLimitHigh != 0 
+                        && Tab.Security.PriceLimitLow != 0)
+                    {
+                        if(curLine.PriceEnter > Tab.Security.PriceLimitHigh 
+                            || curLine.PriceEnter <  Tab.Security.PriceLimitLow)
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (curLine.PriceEnter <= lastPrice)
                     {
                         linesWithOrdersToOpenNeed.Add(curLine);
                     }
@@ -2000,7 +2052,25 @@ namespace OsEngine.OsTrader.Grids
                 {
                     TradeGridLine curLine = linesAll[i];
 
-                    if (curLine.PriceEnter > lastPrice)
+                    Position position = curLine.Position;
+
+                    if (position != null
+                        && position.OpenVolume > 0)
+                    {
+                        continue;
+                    }
+
+                    if (Tab.Security.PriceLimitHigh != 0
+                        && Tab.Security.PriceLimitLow != 0)
+                    {
+                        if (curLine.PriceEnter > Tab.Security.PriceLimitHigh
+                            || curLine.PriceEnter < Tab.Security.PriceLimitLow)
+                        {
+                            continue;
+                        }
+                    }
+
+                    if (curLine.PriceEnter >= lastPrice)
                     {
                         linesWithOrdersToOpenNeed.Add(curLine);
                     }

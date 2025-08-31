@@ -1951,7 +1951,7 @@ ContextMenuStrip menu)
                             if (deals[i].CloseOrders != null
                                 && deals[i].CloseOrders.FindAll(x => x.NumberMarket == curTrade.NumberOrderParent).Count > 0)
                             {
-                                buySellSeries.Points[buySellSeries.Points.Count - 1].Color = Color.BlueViolet;
+                                buySellSeries.Points[buySellSeries.Points.Count - 1].Color = Color.OrangeRed; 
                             }
                             else
                             {
@@ -1967,7 +1967,7 @@ ContextMenuStrip menu)
                             }
                             else
                             {
-                                buySellSeries.Points[buySellSeries.Points.Count - 1].Color = Color.Fuchsia;
+                                buySellSeries.Points[buySellSeries.Points.Count - 1].Color = Color.BlueViolet;
                             }
                         }
                     }
@@ -7341,8 +7341,6 @@ ContextMenuStrip menu)
                     ReloadAreaSizes();
                 }
 
-                
-
                 ChartAreaSizes areaSize = _areaSizes.Find(size => size.Name == areaName);
 
                 if (areaSize == null)
@@ -7356,7 +7354,9 @@ ContextMenuStrip menu)
                 min = Math.Round(Convert.ToDouble(min - value), areaSize.Decimals);
 
                 if (min == double.MaxValue ||
+                    max == double.MinValue ||
                     max == 0 ||
+                    max == min ||
                     max <= min)
                 {
                     return;

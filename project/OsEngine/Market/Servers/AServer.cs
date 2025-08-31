@@ -134,10 +134,29 @@ namespace OsEngine.Market.Servers
                     proxyType.Add("Auto");
                     proxyType.Add("Manual");
                     CreateParameterEnum(OsLocalization.Market.Label171, "None", proxyType);
-                    ServerParameters[10].Comment = OsLocalization.Market.Label191;
+                    ServerParameters[ServerParameters.Count - 1].Comment = OsLocalization.Market.Label191;
 
                     CreateParameterString(OsLocalization.Market.Label172, "");
-                    ServerParameters[11].Comment = OsLocalization.Market.Label192;
+                    ServerParameters[ServerParameters.Count - 1].Comment = OsLocalization.Market.Label192;
+                }
+
+                if(ServerPermission != null 
+                    && ServerPermission.IsSupports_AsyncOrderSending)
+                {
+                    _asyncOrdersSender 
+                        = new AServerAsyncOrderSender(ServerPermission.AsyncOrderSending_RateGateLimitMls);
+                    _asyncOrdersSender.ExecuteOrderInRealizationEvent += ExecuteOrderInRealization;
+                }
+
+                if (ServerPermission != null
+                    && ServerPermission.IsSupports_CheckDataFeedLogic)
+                {
+                    Task task4 = new Task(CheckDataFlowThread);
+                    task4.Start();
+
+                    CreateParameterBoolean(OsLocalization.Market.Label242, false);
+                    _needToCheckDataFeedOnDisconnect = (ServerParameterBool)ServerParameters[ServerParameters.Count - 1];
+                    ServerParameters[ServerParameters.Count-1].Comment = OsLocalization.Market.Label243;
                 }
 
                 _serverStandardParamsCount = ServerParameters.Count;
@@ -174,14 +193,6 @@ namespace OsEngine.Market.Servers
 
                 Task task3 = new Task(MyTradesBeepThread);
                 task3.Start();
-
-                if (ServerPermission != null
-                    && ServerPermission.IsSupports_CheckDataFeedLogic)
-                {
-                    _checkDataFlowIsOn = true;
-                    Task task4 = new Task(CheckDataFlowThread);
-                    task4.Start();
-                }
 
                 _serverIsCreated = true;
 
@@ -260,6 +271,8 @@ namespace OsEngine.Market.Servers
         /// whether to save the current session's trades to the file system
         /// </summary>
         private ServerParameterBool _needToSaveTicksParam;
+
+        private ServerParameterBool _needToCheckDataFeedOnDisconnect;
 
         /// <summary>
         /// parameter with the number of days for saving ticks
@@ -910,8 +923,6 @@ namespace OsEngine.Market.Servers
             }
         }
 
-        private bool _checkDataFlowIsOn;
-
         /// <summary>
         /// alert message from client that connection is established
         /// </summary>
@@ -1280,7 +1291,8 @@ namespace OsEngine.Market.Servers
 
                             for (int i = 0; i < list.Count; i++)
                             {
-                                if (_checkDataFlowIsOn)
+                                if (_needToCheckDataFeedOnDisconnect != null
+                                    && _needToCheckDataFeedOnDisconnect.Value)
                                 {
                                     SecurityFlowTime tradeTime = new SecurityFlowTime();
                                     tradeTime.SecurityName = list[i][0].SecurityNameCode;
@@ -1375,7 +1387,8 @@ namespace OsEngine.Market.Servers
                                     NewMarketDepthEvent(depth);
                                 }
 
-                                if (_checkDataFlowIsOn)
+                                if (_needToCheckDataFeedOnDisconnect != null
+                                    && _needToCheckDataFeedOnDisconnect.Value)
                                 {
                                     SecurityFlowTime tradeTime = new SecurityFlowTime();
                                     tradeTime.SecurityName = depth.SecurityNameCode;
@@ -1419,7 +1432,8 @@ namespace OsEngine.Market.Servers
 
                                 for (int i = 0; i < list.Count; i++)
                                 {
-                                    if (_checkDataFlowIsOn)
+                                    if (_needToCheckDataFeedOnDisconnect != null
+                                    && _needToCheckDataFeedOnDisconnect.Value)
                                     {
                                         SecurityFlowTime tradeTime = new SecurityFlowTime();
                                         tradeTime.SecurityName = list[i].SecurityNameCode;
@@ -2164,22 +2178,35 @@ namespace OsEngine.Market.Servers
         /// <param name="series"> candles series that need to stop</param>
         public void StopThisSecurity(CandleSeries series)
         {
-            if (series != null && _candleManager != null)
+            try
             {
-                _candleManager.StopSeries(series);
+                if(ServerStatus != ServerConnectStatus.Connect)
+                {
+                    return;
+                }
+
+                if (series != null && _candleManager != null)
+                {
+                    _candleManager.StopSeries(series);
+                }
+
+                if (_candleStorage != null)
+                {
+                    _candleStorage.RemoveSeries(series);
+                }
+
+                Security security = series.Security;
+
+                if (_candleManager != null &&
+                    _candleManager.IsSafeToUnsubscribeFromSecurityUpdates(security))
+                {
+                    ServerRealization.Unsubscribe(security);
+                    RemoveSecurityFromSubscribed(security.Name, security.NameClass);
+                }
             }
-
-            if (_candleStorage != null)
+            catch(Exception ex)
             {
-                _candleStorage.RemoveSeries(series);
-            }
-
-            Security security = series.Security;
-
-            if (_candleManager.IsSafeToUnsubscribeFromSecurityUpdates(security))
-            {
-                ServerRealization.Unsubscribe(security);
-                RemoveSecurityFromSubscribed(security.Name, security.NameClass);
+                SendLogMessage(ex.ToString(), LogMessageType.Error);
             }
         }
 
@@ -2328,20 +2355,18 @@ namespace OsEngine.Market.Servers
 
         private void SetSecurityInSubscribed(string securityName, string securityClass)
         {
-            if (_checkDataFlowIsOn == false)
+            if(ServerPermission != null)
             {
-                return;
-            }
+                string[] ignoreClasses = ServerPermission.CheckDataFeedLogic_ExceptionSecuritiesClass;
 
-            string[] ignoreClasses = ServerPermission.CheckDataFeedLogic_ExceptionSecuritiesClass;
-
-            if (ignoreClasses != null)
-            {
-                for (int i = 0; i < ignoreClasses.Length; i++)
+                if (ignoreClasses != null)
                 {
-                    if (ignoreClasses[i].Equals(securityClass))
+                    for (int i = 0; i < ignoreClasses.Length; i++)
                     {
-                        return;
+                        if (ignoreClasses[i].Equals(securityClass))
+                        {
+                            return;
+                        }
                     }
                 }
             }
@@ -2387,14 +2412,13 @@ namespace OsEngine.Market.Servers
             }
         }
 
-
         private void CheckDataFlowThread()
         {
             while (true)
             {
                 try
                 {
-                    Thread.Sleep(3000);
+                    Thread.Sleep(1000);
 
                     if (MainWindow.ProccesIsWorked == false)
                     {
@@ -2406,12 +2430,22 @@ namespace OsEngine.Market.Servers
                         continue;
                     }
 
+                    if(_needToCheckDataFeedOnDisconnect.Value == false)
+                    {
+                        continue;
+                    }
+
+                    SecurityFlowTime securityFlowTime = null;
+
+                    while (_securitiesFeedFlow.Count > 15000)
+                    {
+                        _securitiesFeedFlow.TryDequeue(out securityFlowTime);
+                    }
+
                     // 1 разбираем очередь с обновлением данных с сервера
 
                     while (_securitiesFeedFlow.Count > 0)
                     {
-                        SecurityFlowTime securityFlowTime = null;
-
                         if (_securitiesFeedFlow.TryDequeue(out securityFlowTime))
                         {
                             if (securityFlowTime.LastTimeMarketDepth != DateTime.MinValue)
@@ -3209,42 +3243,18 @@ namespace OsEngine.Market.Servers
                     {
                         OrderAserverSender order;
 
+                        SystemUsageAnalyzeMaster.OrdersInQueue = _ordersToExecute.Count;
+
                         if (_ordersToExecute.TryDequeue(out order))
                         {
-                            if (order.OrderSendType == OrderSendType.Execute)
+                            if(_asyncOrdersSender != null)
                             {
-                                ServerRealization.SendOrder(order.Order);
+                                _asyncOrdersSender.ExecuteAsync(order);
                             }
-                            else if (order.OrderSendType == OrderSendType.Cancel)
+                            else
                             {
-                                if(IsAlreadyCancelled(order.Order) == false)
-                                {
-                                    if (ServerRealization.CancelOrder(order.Order) == false)
-                                    {
-                                        if (CancelOrderFailEvent != null)
-                                        {
-                                            CancelOrderFailEvent(order.Order);
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if(string.IsNullOrEmpty(order.Order.NumberMarket) == false)
-                                        {
-                                            _cancelledOrdersNumbers.Add(order.Order.NumberMarket);
-
-                                            if(_cancelledOrdersNumbers.Count > 100)
-                                            {
-                                                _cancelledOrdersNumbers.RemoveAt(0);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                            else if (order.OrderSendType == OrderSendType.ChangePrice
-                                && IsCanChangeOrderPrice)
-                            {
-                                ServerRealization.ChangeOrderPrice(order.Order, order.NewPrice);
-                            }
+                                ExecuteOrderInRealization(order);
+                            } 
                         }
                     }
                 }
@@ -3252,6 +3262,56 @@ namespace OsEngine.Market.Servers
                 {
                     SendLogMessage(error.ToString(), LogMessageType.Error);
                 }
+            }
+        }
+
+        private AServerAsyncOrderSender _asyncOrdersSender;
+
+        private void ExecuteOrderInRealization(OrderAserverSender order)
+        {
+            try
+            {
+                if (order.OrderSendType == OrderSendType.Execute)
+                {
+                    ServerRealization.SendOrder(order.Order);
+                }
+                else if (order.OrderSendType == OrderSendType.Cancel)
+                {
+                    if (IsAlreadyCancelled(order.Order) == false)
+                    {
+                        if (ServerRealization.CancelOrder(order.Order) == false)
+                        {
+                            if (CancelOrderFailEvent != null)
+                            {
+                                CancelOrderFailEvent(order.Order);
+                            }
+                        }
+                        else
+                        {
+                            if (string.IsNullOrEmpty(order.Order.NumberMarket) == false)
+                            {
+                                lock (_cancelledOrdersNumbersLocker)
+                                {
+                                    _cancelledOrdersNumbers.Add(order.Order.NumberMarket);
+
+                                    if (_cancelledOrdersNumbers.Count > 150)
+                                    {
+                                        _cancelledOrdersNumbers.RemoveAt(0);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                else if (order.OrderSendType == OrderSendType.ChangePrice
+                    && IsCanChangeOrderPrice)
+                {
+                    ServerRealization.ChangeOrderPrice(order.Order, order.NewPrice);
+                }
+            }
+            catch (Exception error)
+            {
+                SendLogMessage(error.ToString(), LogMessageType.Error);
             }
         }
 
@@ -3263,15 +3323,20 @@ namespace OsEngine.Market.Servers
             }
             bool isCancelled = false;
 
-            if (_cancelledOrdersNumbers.Find(o => o == order.NumberMarket) != null)
+            lock (_cancelledOrdersNumbersLocker)
             {
-                isCancelled = true;
+                if (_cancelledOrdersNumbers.Find(o => o == order.NumberMarket) != null)
+                {
+                    isCancelled = true;
+                }
             }
 
             return isCancelled;
         }
 
         private List<string> _cancelledOrdersNumbers = new List<string>();
+
+        private string _cancelledOrdersNumbersLocker = "_cancelledOrdersNumbersLocker";
 
         /// <summary>
         /// array for storing orders to be sent to the exchange
@@ -3499,26 +3564,34 @@ namespace OsEngine.Market.Servers
                     return;
                 }
 
-                OrderCounter saveOrder = null;
-
-                for (int i = 0; i < _canceledOrders.Count; i++)
+                if(IsAlreadyCancelled(order))
                 {
-                    if (_canceledOrders[i].NumberMarket == order.NumberMarket)
-                    {
-                        saveOrder = _canceledOrders[i];
-                        break;
-                    }
+                    return;
                 }
 
-                if (saveOrder == null)
-                {
-                    saveOrder = new OrderCounter();
-                    saveOrder.NumberMarket = order.NumberMarket;
-                    _canceledOrders.Add(saveOrder);
+                OrderCounter saveOrder = null;
 
-                    if (_canceledOrders.Count > 50)
+                lock (_cancelOrdersLocker)
+                {
+                    for (int i = 0; i < _canceledOrders.Count; i++)
                     {
-                        _canceledOrders.RemoveAt(0);
+                        if (_canceledOrders[i].NumberMarket == order.NumberMarket)
+                        {
+                            saveOrder = _canceledOrders[i];
+                            break;
+                        }
+                    }
+
+                    if (saveOrder == null)
+                    {
+                        saveOrder = new OrderCounter();
+                        saveOrder.NumberMarket = order.NumberMarket;
+                        _canceledOrders.Add(saveOrder);
+
+                        if (_canceledOrders.Count > 100)
+                        {
+                            _canceledOrders.RemoveAt(0);
+                        }
                     }
                 }
 
@@ -3528,7 +3601,7 @@ namespace OsEngine.Market.Servers
                 {
                     saveOrder.NumberOfErrors++;
 
-                    if (saveOrder.NumberOfErrors <= 3)
+                    if (saveOrder.NumberOfErrors <= 5)
                     {
                         SendLogMessage(
                         "AServer Error. You can't cancel order. There have already been five attempts to cancel order. "
@@ -3556,6 +3629,8 @@ namespace OsEngine.Market.Servers
         }
 
         List<OrderCounter> _canceledOrders = new List<OrderCounter>();
+
+        private string _cancelOrdersLocker = "_cancelOrdersLocker";
 
         /// <summary>
         /// cancel all orders from trading system

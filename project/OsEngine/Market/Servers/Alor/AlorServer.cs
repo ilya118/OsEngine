@@ -16,6 +16,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading;
 using OsEngine.Entity.WebSocketOsEngine;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace OsEngine.Market.Servers.Alor
 {
@@ -1971,16 +1972,19 @@ namespace OsEngine.Market.Servers.Alor
                 MyTradeEvent(trade);
             }
 
-            if (_spreadOrders.Count > 0)
+            lock(_spreadOrdersLocker)
             {
-                _spreadMyTrades.Add(trade);
-
-                for (int i = 0; i < _spreadOrders.Count; i++)
+                if (_spreadOrders.Count > 0)
                 {
-                    if(TryGenerateFakeMyTradeToOrderBySpread(_spreadOrders[i]))
+                    _spreadMyTrades.Add(trade);
+
+                    for (int i = 0; i < _spreadOrders.Count; i++)
                     {
-                        _spreadOrders.RemoveAt(i);
-                        break;
+                        if (TryGenerateFakeMyTradeToOrderBySpread(_spreadOrders[i]))
+                        {
+                            _spreadOrders.RemoveAt(i);
+                            break;
+                        }
                     }
                 }
             }
@@ -2056,40 +2060,43 @@ namespace OsEngine.Market.Servers.Alor
                 MyOrderEvent(order);
             }
 
-            if(order.State == OrderStateType.Done)
+            lock(_spreadOrdersLocker)
             {
-                // Проверяем, является ли бумага спредом
-
-                for (int i = 0; i < _spreadOrders.Count; i++)
+                if (order.State == OrderStateType.Done)
                 {
-                    if (_spreadOrders[i].NumberUser == order.NumberUser 
-                        && _spreadOrders[i].NumberMarket == "")
+                    // Проверяем, является ли бумага спредом
+
+                    for (int i = 0; i < _spreadOrders.Count; i++)
                     {
-                        _spreadOrders[i].NumberMarket = order.NumberMarket;
+                        if (_spreadOrders[i].NumberUser == order.NumberUser
+                            && _spreadOrders[i].NumberMarket == "")
+                        {
+                            _spreadOrders[i].NumberMarket = order.NumberMarket;
+                        }
+                    }
+
+                    for (int i = 0; i < _spreadOrders.Count; i++)
+                    {
+                        if (_spreadOrders[i].SecurityNameCode == order.SecurityNameCode)
+                        {
+                            if (TryGenerateFakeMyTradeToOrderBySpread(order))
+                            {
+                                _spreadOrders.RemoveAt(i);
+                                break;
+                            }
+                        }
                     }
                 }
-
-                for (int i = 0; i < _spreadOrders.Count; i++)
+                else if (order.State == OrderStateType.Cancel
+                        || order.State == OrderStateType.Fail)
                 {
-                    if (_spreadOrders[i].SecurityNameCode == order.SecurityNameCode)
+                    for (int i = 0; i < _spreadOrders.Count; i++)
                     {
-                        if(TryGenerateFakeMyTradeToOrderBySpread(order))
+                        if (_spreadOrders[i].NumberUser == order.NumberUser)
                         {
                             _spreadOrders.RemoveAt(i);
                             break;
                         }
-                    }
-                }
-            }
-            else if(order.State == OrderStateType.Cancel
-                    || order.State == OrderStateType.Fail)
-            {
-                for (int i = 0; i < _spreadOrders.Count; i++)
-                {
-                    if (_spreadOrders[i].NumberUser == order.NumberUser)
-                    {
-                        _spreadOrders.RemoveAt(i);
-                        break;
                     }
                 }
             }
@@ -2324,11 +2331,11 @@ namespace OsEngine.Market.Servers.Alor
 
         #region 11 Trade
 
-        private RateGate _rateGateSendOrder = new RateGate(1, TimeSpan.FromMilliseconds(350));
+        private RateGate _rateGateSendOrder = new RateGate(1, TimeSpan.FromMilliseconds(10));
 
-        private RateGate _rateGateCancelOrder = new RateGate(1, TimeSpan.FromMilliseconds(350));
+        private RateGate _rateGateCancelOrder = new RateGate(1, TimeSpan.FromMilliseconds(10));
 
-        private RateGate _rateGateChangePriceOrder = new RateGate(1, TimeSpan.FromMilliseconds(350));
+        private RateGate _rateGateChangePriceOrder = new RateGate(1, TimeSpan.FromMilliseconds(10));
 
         private List<AlorSecuritiesAndPortfolios> _securitiesAndPortfolios = new List<AlorSecuritiesAndPortfolios>();
 
@@ -2337,17 +2344,21 @@ namespace OsEngine.Market.Servers.Alor
         private string _sendOrdersArrayLocker = "alorSendOrdersArrayLocker";
 
         private List<Order> _spreadOrders = new List<Order>();
+        private string _spreadOrdersLocker = "_spreadOrdersLocker";
 
         public void SendOrder(Order order)
         {
-            _rateGateSendOrder.WaitToProceed();
+            //_rateGateSendOrder.WaitToProceed();
 
             try
             {
                 if (order.SecurityClassCode == "Futures spread")
                 { // календарный спред
                   // сохраняем бумагу для дальнейшего использования
-                    _spreadOrders.Add(order);
+                    lock (_spreadOrdersLocker)
+                    {
+                        _spreadOrders.Add(order);
+                    }
                 }
 
                 if (order.TypeOrder == OrderPriceType.Market)
@@ -2588,36 +2599,55 @@ namespace OsEngine.Market.Servers.Alor
         }
 
         List<string> _cancelOrderNums = new List<string>();
+        private string _cancelOrderNumsLocker = "_cancelOrderNumsLocker";
 
         public bool CancelOrder(Order order)
         {
-            _rateGateCancelOrder.WaitToProceed();
+            //_rateGateCancelOrder.WaitToProceed();
 
             //curl -X DELETE "/commandapi/warptrans/TRADE/v2/client/orders/93713183?portfolio=D39004&exchange=MOEX&stop=false&format=Simple" -H "accept: application/json"
 
             try
             {
+                if(order.NumberMarket == null)
+                {
+                    return false;
+                }
+
                 int countTryRevokeOrder = 0;
 
-                for(int i = 0; i< _cancelOrderNums.Count;i++)
+                lock (_cancelOrderNumsLocker)
                 {
-                    if (_cancelOrderNums[i].Equals(order.NumberMarket))
+                    for (int i = 0; i < _cancelOrderNums.Count; i++)
                     {
-                        countTryRevokeOrder++;
+                        if(_cancelOrderNums[i] == null)
+                        {
+                            continue;
+                        }
+                        if (_cancelOrderNums[i].Equals(order.NumberMarket))
+                        {
+                            countTryRevokeOrder++;
+                        }
                     }
                 }
 
-                if(countTryRevokeOrder >= 2)
+                if(countTryRevokeOrder >= 5)
                 {
                     SendLogMessage("Order cancel request error. The order has already been revoked " + order.SecurityClassCode, LogMessageType.Error);
                     return false;
                 }
 
-                _cancelOrderNums.Add(order.NumberMarket);
-
-                while(_cancelOrderNums.Count > 100)
+                lock (_cancelOrderNumsLocker)
                 {
-                    _cancelOrderNums.RemoveAt(0);
+                    if (order.NumberMarket != null)
+                    {
+                        _cancelOrderNums.Add(order.NumberMarket);
+                    }
+
+                    while (_cancelOrderNums.Count > 1000)
+                    {
+                        _cancelOrderNums.RemoveAt(0);
+                    }
                 }
 
                 string portfolio = order.PortfolioNumber.Split('_')[0];

@@ -88,6 +88,14 @@ namespace OsEngine.Market.Servers
 
         bool IsSupports_ProxyFor_MultipleInstances { get; }
 
+        bool IsSupports_AsyncOrderSending { get; }
+
+        int AsyncOrderSending_RateGateLimitMls { get; }
+
+        bool IsSupports_AsyncCandlesStarter { get; }
+
+        int AsyncCandlesStarter_RateGateLimitMls { get; }
+
         #endregion
     }
 

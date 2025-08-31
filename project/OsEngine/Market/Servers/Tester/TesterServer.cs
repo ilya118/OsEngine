@@ -441,8 +441,7 @@ namespace OsEngine.Market.Servers.Tester
                     return;
                 }
 
-                TimeNow = new DateTime(TimeStart.Year, TimeStart.Month, TimeStart.Day, 
-                    TimeStart.Hour, TimeStart.Minute, TimeStart.Second);
+                TimeNow = new DateTime(TimeStart.Year, TimeStart.Month, TimeStart.Day, 0, 0, 0);
 
                 while (TimeNow.Minute != 0)
                 {
@@ -2635,10 +2634,19 @@ namespace OsEngine.Market.Servers.Tester
 
             for (int i = 0; i < folders.Length; i++)
             {
-                if (folders[i].Split('_').Length == 2)
+                string pathCurrent = folders[i];
+
+                if (pathCurrent.Contains("Set_") == false)
                 {
-                    sets.Add(folders[i].Split('_')[1]);
-                    SendLogMessage("Найден сет: " + folders[i].Split('_')[1], LogMessageType.System);
+                    continue;
+                }
+
+                if (pathCurrent.Split('_').Length == 2)
+                {
+                    string setName = pathCurrent.Split('_')[1];
+
+                    sets.Add(setName);
+                    SendLogMessage(OsLocalization.Market.Label244 + ": " + setName, LogMessageType.System);
                 }
             }
 
@@ -4874,8 +4882,8 @@ namespace OsEngine.Market.Servers.Tester
             {
                 List<Trade> trades = new List<Trade>() { lastTradesSeries[i] };
                 LastTradeSeries = trades;
-                NewTradesEvent(trades);
                 NeedToCheckOrders();
+                NewTradesEvent(trades);
             }
 
             if (lastTradesSeries.Count > 0)

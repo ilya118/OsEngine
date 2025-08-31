@@ -661,8 +661,7 @@ namespace OsEngine.OsOptimizer
                 {
                     OptimizerReport report = fazeReport.Reports[i];
                     if (report == null ||
-                        report.TabsReports.Count == 0 ||
-                        !_master.IsAcceptedByFilter(report))
+                        report.TabsReports.Count == 0)
                     {
                         continue;
                     }
@@ -1021,8 +1020,7 @@ namespace OsEngine.OsOptimizer
                     OptimizerReport report = fazeReport.Reports[i];
 
                     if (report == null ||
-                        report.TabsReports.Count == 0 ||
-                        !_master.IsAcceptedByFilter(report))
+                        report.TabsReports.Count == 0)
                     {
                         continue;
                     }

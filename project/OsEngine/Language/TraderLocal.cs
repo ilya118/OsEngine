@@ -1121,7 +1121,7 @@ namespace OsEngine.Language
 
         public string Label304 => OsLocalization.ConvertToLocString(
          "Eng:You have not selected a strategy type. You need to click on the table. It will turn orange_" +
-         "Ru:Вы не выбрали тип стратегии. Нужно клацнуть по таблице. Загориться оранжевым_");
+         "Ru:Вы не выбрали тип стратегии. Нужно клацнуть по таблице. Загорится оранжевым_");
 
         public string Label305 => OsLocalization.ConvertToLocString(
          "Eng:Updating the robots involves building and testing them one by one. This will take some time_" +
@@ -2190,5 +2190,30 @@ namespace OsEngine.Language
         public string Label572 => OsLocalization.ConvertToLocString(
         "Eng:Check micro volumes_" +
         "Ru:Проверять микро объёмы_");
+
+        public string Label573 => OsLocalization.ConvertToLocString(
+        "Eng:Orders in queue_" +
+        "Ru:Очередь ордеров");
+
+        public string Label574 => OsLocalization.ConvertToLocString(
+        "Eng:The maximum number of orders in the queue for sending in connectors. If you see values greater than 5, this is not a good sign._" +
+        "Ru:Максимальное кол-во ордеров в очереди на отправку в коннекторах. Если видите значения больше чем 5 - это не хорошо.");
+
+        public string Label575 => OsLocalization.ConvertToLocString(
+        "Eng:No trade periods settings_" +
+        "Ru:Настройки не торговых периодов_");
+
+        public string Label576 => OsLocalization.ConvertToLocString(
+        "Eng:Page_" +
+        "Ru:Страница_");
+
+        public string Label577 => OsLocalization.ConvertToLocString(
+        "Eng:from_" +
+        "Ru:из_");
+
+        public string Label578 => OsLocalization.ConvertToLocString(
+        "Eng:Quantity per page:_" +
+        "Ru:Количество на странице:_");
+
     }
 }

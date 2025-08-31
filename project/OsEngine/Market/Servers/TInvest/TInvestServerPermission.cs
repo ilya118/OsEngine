@@ -238,6 +238,26 @@ namespace OsEngine.Market.Servers.TInvest
             get { return true; }
         }
 
+        public bool IsSupports_AsyncOrderSending
+        {
+            get { return true; }
+        }
+
+        public int AsyncOrderSending_RateGateLimitMls
+        {
+            get { return 1; }
+        }
+
+        public bool IsSupports_AsyncCandlesStarter
+        {
+            get { return false; }
+        }
+
+        public int AsyncCandlesStarter_RateGateLimitMls
+        {
+            get { return 10; }
+        }
+
         #endregion
     }
 }

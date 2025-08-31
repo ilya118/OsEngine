@@ -162,8 +162,7 @@ namespace OsEngine.Market.Servers.Optimizer
 
             TimeNow = _storages[0].TimeStart;
 
-            TimeNow = new DateTime(TimeNow.Year, TimeNow.Month, TimeNow.Day, 
-                10, 0, 0);
+            TimeNow = new DateTime(TimeNow.Year, TimeNow.Month, TimeNow.Day, 0, 0, 0);
 
             if (TypeTesterData == TesterDataType.TickAllCandleState ||
     TypeTesterData == TesterDataType.TickOnlyReadyCandle)
@@ -2378,6 +2377,9 @@ namespace OsEngine.Market.Servers.Optimizer
                 if (_lastCandleIndex >= Candles.Count)
                 {
                     _lastCandleIndex = Candles.Count - 1;
+                    LastCandle = Candles[_lastCandleIndex];
+                    LastCandle.State = CandleState.Finished;
+                    break;
                 }
 
                 LastCandle = Candles[_lastCandleIndex];
@@ -2545,8 +2547,8 @@ namespace OsEngine.Market.Servers.Optimizer
             {
                 List<Trade> trades = new List<Trade>() { lastTradesSeries[i] };
                 LastTradeSeries = trades;
-                NewTradesEvent(trades, _lastTradeIndexInArray, Trades.Count);
                 NeedToCheckOrders();
+                NewTradesEvent(trades, _lastTradeIndexInArray, Trades.Count);
             }
 
             if (lastTradesSeries.Count > 0)
